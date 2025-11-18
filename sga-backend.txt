@@ -1,0 +1,453 @@
+ O volume na unidade E n∆o tem nome.
+ O N£mero de SÇrie do Volume Ç 14C1-4308
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga
+
+11/11/2025  14:41    <DIR>          .
+11/11/2025  15:12    <DIR>          ..
+14/11/2025  15:16             2.035 .classpath
+14/11/2025  15:16               288 .factorypath
+10/11/2025  14:19                38 .gitattributes
+10/11/2025  14:19               394 .gitignore
+10/11/2025  14:19    <DIR>          .mvn
+10/11/2025  14:47               708 .project
+10/11/2025  14:19    <DIR>          .settings
+10/11/2025  14:19             1.680 HELP.md
+10/11/2025  15:56            15.510 hs_err_pid23624.log
+11/11/2025  14:41            15.510 hs_err_pid4740.log
+10/11/2025  14:19            11.790 mvnw
+10/11/2025  14:19             8.292 mvnw.cmd
+13/11/2025  17:52             5.126 pom.xml
+18/11/2025  08:34                 0 sga-backend.txt
+10/11/2025  14:19    <DIR>          src
+14/11/2025  15:16    <DIR>          target
+              12 arquivo(s)         61.371 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.mvn
+
+10/11/2025  14:19    <DIR>          .
+11/11/2025  14:41    <DIR>          ..
+10/11/2025  14:19    <DIR>          wrapper
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.mvn\wrapper
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19               168 maven-wrapper.properties
+               1 arquivo(s)            168 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.settings
+
+10/11/2025  14:19    <DIR>          .
+11/11/2025  14:41    <DIR>          ..
+10/11/2025  15:55               191 org.eclipse.core.resources.prefs
+14/11/2025  15:16               218 org.eclipse.jdt.apt.core.prefs
+14/11/2025  15:16               549 org.eclipse.jdt.core.prefs
+10/11/2025  14:19                97 org.eclipse.m2e.core.prefs
+10/11/2025  14:19                65 org.springframework.ide.eclipse.prefs
+               5 arquivo(s)          1.120 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
+
+10/11/2025  14:19    <DIR>          .
+11/11/2025  14:41    <DIR>          ..
+10/11/2025  14:19    <DIR>          main
+10/11/2025  15:14    <DIR>          test
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19    <DIR>          java
+10/11/2025  14:19    <DIR>          resources
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19    <DIR>          com
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+12/11/2025  16:30    <DIR>          sga
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga
+
+12/11/2025  16:30    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+14/11/2025  14:11    <DIR>          config
+13/11/2025  16:58    <DIR>          controller
+13/11/2025  15:02    <DIR>          dto
+12/11/2025  17:21    <DIR>          model
+12/11/2025  17:26    <DIR>          repository
+10/11/2025  14:28    <DIR>          security
+12/11/2025  16:30    <DIR>          service
+10/11/2025  14:19               294 SgaApplication.java
+               1 arquivo(s)            294 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\config
+
+14/11/2025  14:11    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+10/11/2025  17:22               660 AppProperties.java
+14/11/2025  15:40             1.487 CorsConfig.java
+14/11/2025  14:11               614 DataSourceConfig.java
+14/11/2025  14:08               694 JwtConfig.java
+12/11/2025  15:32             1.057 MultipartConfig.java
+14/11/2025  15:41             2.912 SecurityConfig.java
+               6 arquivo(s)          7.424 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\controller
+
+13/11/2025  16:58    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+11/11/2025  09:47             5.544 AuthController.java
+13/11/2025  17:29             5.379 EstatisticasImportacaoController.java
+13/11/2025  16:06             7.835 ImportacaoSPCController.java
+12/11/2025  16:34             2.760 VerificacaoImportacaoController.java
+               4 arquivo(s)         21.518 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\dto
+
+13/11/2025  15:02    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+13/11/2025  16:04             2.924 ImportacaoResponseDTO.java
+13/11/2025  17:20             2.340 VerificacaoResultadoDTO.java
+               2 arquivo(s)          5.264 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\model
+
+12/11/2025  17:21    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+10/11/2025  17:37             5.700 Associado.java
+10/11/2025  17:40             2.563 AssociadoDefFaturamento.java
+10/11/2025  17:39             4.439 AssociadoDefNotificacao.java
+10/11/2025  15:26             1.189 Categoria.java
+10/11/2025  17:43             1.825 Email.java
+10/11/2025  17:45             1.683 Endereco.java
+12/11/2025  17:19             2.222 Faturamento.java
+11/11/2025  11:41             4.987 HeaderSPC.java
+11/11/2025  13:29             2.947 ImportacaoSPC.java
+11/11/2025  14:05             5.281 ItemSPC.java
+11/11/2025  13:29             5.413 NotaDebitoSPC.java
+11/11/2025  11:41             3.875 ParametrosSPC.java
+10/11/2025  17:41             1.980 Planos.java
+10/11/2025  15:22             1.431 PlanosModelo.java
+12/11/2025  17:45             1.926 Produto.java
+10/11/2025  15:28             3.002 ProdutoFaixa.java
+10/11/2025  17:44             2.246 Telefone.java
+11/11/2025  13:23             1.770 TraillerSPC.java
+10/11/2025  15:15             2.343 Usuario.java
+10/11/2025  15:21             2.042 Vendedor.java
+              20 arquivo(s)         58.864 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\repository
+
+12/11/2025  17:26    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+14/11/2025  15:20             1.602 AssociadoRepository.java
+12/11/2025  17:54             1.186 FaturamentoRepository.java
+11/11/2025  11:54               275 HeaderSPCRepository.java
+11/11/2025  09:20               291 ImportacaoSPCRepository.java
+11/11/2025  13:08               352 ItemSPCRepository.java
+11/11/2025  13:09               378 NotaDebitoSPCRepository.java
+11/11/2025  13:03               287 ParametrosSPCRepository.java
+13/11/2025  17:34               554 ProdutoRepository.java
+11/11/2025  13:04               281 TraillerSPCRepository.java
+11/11/2025  09:43               469 UsuarioRepository.java
+              10 arquivo(s)          5.675 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\security
+
+10/11/2025  14:28    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+14/11/2025  15:14             2.107 JwtAuthenticationFilter.java
+14/11/2025  14:07             2.569 JwtService.java
+               2 arquivo(s)          4.676 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\service
+
+12/11/2025  16:30    <DIR>          .
+12/11/2025  16:30    <DIR>          ..
+12/11/2025  16:21            14.079 ImportacaoSPService.java
+14/11/2025  15:15             2.061 UsuarioService.java
+14/11/2025  15:24            22.512 VerificacaoImportacaoService.java
+               3 arquivo(s)         38.652 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\resources
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+14/11/2025  08:47             2.358 application.properties
+10/11/2025  14:19    <DIR>          static
+10/11/2025  14:19    <DIR>          templates
+               1 arquivo(s)          2.358 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\resources\static
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\resources\templates
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\test
+
+10/11/2025  15:14    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19    <DIR>          java
+10/11/2025  15:14    <DIR>          resources
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\test\java
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  15:14    <DIR>          ..
+10/11/2025  14:19    <DIR>          com
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\test\java\com
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19    <DIR>          sga
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\test\java\com\sga
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19               196 SgaApplicationTests.java
+               1 arquivo(s)            196 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\test\resources
+
+10/11/2025  15:14    <DIR>          .
+10/11/2025  15:14    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target
+
+14/11/2025  15:16    <DIR>          .
+11/11/2025  14:41    <DIR>          ..
+18/11/2025  08:22    <DIR>          classes
+14/11/2025  15:16    <DIR>          generated-sources
+14/11/2025  15:16    <DIR>          generated-test-sources
+18/11/2025  08:22    <DIR>          test-classes
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes
+
+18/11/2025  08:22    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+18/11/2025  08:22                 0 application.properties
+18/11/2025  08:22    <DIR>          com
+18/11/2025  08:22    <DIR>          META-INF
+               1 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22    <DIR>          sga
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22    <DIR>          config
+18/11/2025  08:22    <DIR>          controller
+18/11/2025  08:22    <DIR>          dto
+18/11/2025  08:22    <DIR>          model
+18/11/2025  08:22    <DIR>          repository
+18/11/2025  08:22    <DIR>          security
+18/11/2025  08:22    <DIR>          service
+18/11/2025  08:22               712 SgaApplication.class
+               1 arquivo(s)            712 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\config
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22               483 AppProperties$File.class
+18/11/2025  08:22               455 AppProperties$Jwt.class
+18/11/2025  08:22               888 AppProperties.class
+18/11/2025  08:22             2.083 CorsConfig.class
+18/11/2025  08:22               996 DataSourceConfig.class
+18/11/2025  08:22             1.097 JwtConfig.class
+18/11/2025  08:22             1.288 MultipartConfig.class
+18/11/2025  08:22             7.393 SecurityConfig.class
+               8 arquivo(s)         14.683 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\controller
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22               964 AuthController$JwtResponse.class
+18/11/2025  08:22               932 AuthController$LoginRequest.class
+18/11/2025  08:22             1.550 AuthController$RegistrarRequest.class
+18/11/2025  08:22             5.452 AuthController.class
+18/11/2025  08:22             8.372 EstatisticasImportacaoController.class
+18/11/2025  08:22             9.485 ImportacaoSPCController.class
+18/11/2025  08:22             3.929 VerificacaoImportacaoController.class
+               7 arquivo(s)         30.684 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\dto
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22             3.458 ImportacaoResponseDTO.class
+18/11/2025  08:22             3.118 VerificacaoResultadoDTO.class
+               2 arquivo(s)          6.576 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\model
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22             7.541 Associado.class
+18/11/2025  08:22             3.458 AssociadoDefFaturamento.class
+18/11/2025  08:22             5.420 AssociadoDefNotificacao.class
+18/11/2025  08:22             1.729 Categoria.class
+18/11/2025  08:22             2.687 Email.class
+18/11/2025  08:22             1.920 Endereco.class
+18/11/2025  08:22             2.917 Faturamento.class
+18/11/2025  08:22             5.910 HeaderSPC.class
+18/11/2025  08:22             4.066 ImportacaoSPC.class
+18/11/2025  08:22             5.986 ItemSPC.class
+18/11/2025  08:22             6.377 NotaDebitoSPC.class
+18/11/2025  08:22             4.666 ParametrosSPC.class
+18/11/2025  08:22             2.728 Planos.class
+18/11/2025  08:22             1.983 PlanosModelo.class
+18/11/2025  08:22             2.604 Produto.class
+18/11/2025  08:22             3.586 ProdutoFaixa.class
+18/11/2025  08:22             3.174 Telefone.class
+18/11/2025  08:22             2.676 TraillerSPC.class
+18/11/2025  08:22             3.416 Usuario.class
+18/11/2025  08:22             2.702 Vendedor.class
+              20 arquivo(s)         75.546 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\repository
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22             1.545 AssociadoRepository.class
+18/11/2025  08:22             1.372 FaturamentoRepository.class
+18/11/2025  08:22               424 HeaderSPCRepository.class
+18/11/2025  08:22               436 ImportacaoSPCRepository.class
+18/11/2025  08:22               599 ItemSPCRepository.class
+18/11/2025  08:22               625 NotaDebitoSPCRepository.class
+18/11/2025  08:22               436 ParametrosSPCRepository.class
+18/11/2025  08:22               770 ProdutoRepository.class
+18/11/2025  08:22               430 TraillerSPCRepository.class
+18/11/2025  08:22               732 UsuarioRepository.class
+              10 arquivo(s)          7.369 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\security
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22             3.364 JwtAuthenticationFilter.class
+18/11/2025  08:22             5.477 JwtService.class
+               2 arquivo(s)          8.841 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\service
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22            14.208 ImportacaoSPService.class
+18/11/2025  08:22             4.324 UsuarioService.class
+18/11/2025  08:22            25.668 VerificacaoImportacaoService.class
+               3 arquivo(s)         44.200 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22               165 MANIFEST.MF
+18/11/2025  08:22    <DIR>          maven
+               1 arquivo(s)            165 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22    <DIR>          com.sistema
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven\com.sistema
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22    <DIR>          faturamento-associados
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven\com.sistema\faturamento-associados
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22               247 pom.properties
+18/11/2025  08:22             5.126 pom.xml
+               2 arquivo(s)          5.373 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-sources
+
+14/11/2025  15:16    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+14/11/2025  15:16    <DIR>          annotations
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-sources\annotations
+
+14/11/2025  15:16    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-test-sources
+
+14/11/2025  15:16    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+14/11/2025  15:16    <DIR>          test-annotations
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-test-sources\test-annotations
+
+14/11/2025  15:16    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes
+
+18/11/2025  08:22    <DIR>          .
+14/11/2025  15:16    <DIR>          ..
+18/11/2025  08:22    <DIR>          com
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes\com
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22    <DIR>          sga
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes\com\sga
+
+18/11/2025  08:22    <DIR>          .
+18/11/2025  08:22    <DIR>          ..
+18/11/2025  08:22               510 SgaApplicationTests.class
+               1 arquivo(s)            510 bytes
+
+     Total de Arquivos na Lista:
+             126 arquivo(s)        402.239 bytes
+             137 pasta(s)   25.973.858.304 bytes dispon°veis
