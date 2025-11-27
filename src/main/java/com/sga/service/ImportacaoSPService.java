@@ -247,9 +247,24 @@ public class ImportacaoSPService {
 			nota.setCidadeCobranca(linha.substring(201, 231).trim()); // pos 202-231
 			nota.setUfCobranca(linha.substring(231, 233).trim()); // pos 232-233
 			nota.setTelefoneCobranca(linha.substring(233, 248).trim()); // pos 234-248
-			nota.setTipoPessoa(linha.substring(248, 249).trim()); // pos 249-249
-			nota.setCnpjCic(linha.substring(249, 268).trim()); // pos 250-268
-			nota.setInscricaoEstadual(linha.substring(268, 282).trim()); // pos 269-282
+			
+			// Tipo Pessoa: F ou J 
+			nota.setTipoPessoa(linha.substring(263, 264).trim()); // pos 264-264
+			
+			// CNPJ/CPF bruto (pos 250–268)
+			String documentoBruto = linha.substring(264, 283).trim();
+			
+			// Define tamanho correto conforme tipo
+			int tamanho = "F".equalsIgnoreCase(nota.getTipoPessoa()) ? 11 : 14;
+			
+			// Mantém apenas os últimos caracteres necessários (CPF=11 / CNPJ=14)
+			String documento = documentoBruto.substring(documentoBruto.length() - tamanho);
+			
+			// Remove apenas espaços, nunca zeros
+			documento = documento.trim();
+			nota.setCnpjCic(documento); // pos 250-268
+			
+			nota.setInscricaoEstadual(linha.substring(283, 297).trim()); // pos 269-282
 			nota.setImportacao(importacao);
 
 			logger.info("Nota débito processada: {} - {}", nota.getCodigoSocio(), nota.getNomeAssociado());
@@ -340,7 +355,8 @@ public class ImportacaoSPService {
 			// Qtde total boletos (pos 8-13)
 			String qtdBolStr = linha.substring(7, 13).trim();
 			if (!qtdBolStr.isEmpty()) {
-				trailler.setQtdeTotalBoletos(Integer.parseInt(qtdBolStr));
+				//trailler.setQtdeTotalBoletos(Integer.parseInt(qtdBolStr));
+				trailler.setQtdeTotalBoletos(Long.parseLong(qtdBolStr));
 			}
 
 			// Valor total boletos (pos 14-26)

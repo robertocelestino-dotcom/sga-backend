@@ -16,5 +16,6 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
 	@Query("SELECT p.codigo FROM Produto p WHERE p.status = 'A'")
 	List<String> findAllCodigosAtivos();
-	
+
+
 }

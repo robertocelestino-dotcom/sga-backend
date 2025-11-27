@@ -9,6 +9,9 @@ import com.sga.model.NotaDebitoSPC;
 
 @Repository
 public interface NotaDebitoSPCRepository extends JpaRepository<NotaDebitoSPC, Long> {
-	
-	 List<NotaDebitoSPC> findByCodigoSocio(String codigoSocio);
+
+	int countByImportacao_Id(Long importacaoId);
+
+	List<NotaDebitoSPC> findByImportacao_Id(Long importacaoId);
+
 }

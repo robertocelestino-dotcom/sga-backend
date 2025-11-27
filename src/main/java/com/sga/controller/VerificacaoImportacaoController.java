@@ -4,63 +4,43 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import com.sga.service.VerificacaoImportacaoService;
 
 @RestController
 @RequestMapping("/api/importacao-spc")
+@CrossOrigin(origins = "http://localhost:3000", allowCredentials = "true")
 public class VerificacaoImportacaoController {
 
     @Autowired
     private VerificacaoImportacaoService verificacaoService;
 
-    @GetMapping("/{importacaoId}/verificar")
-    public ResponseEntity<?> verificarImportacao(@PathVariable Long importacaoId) {
+    @GetMapping("/{id}/verificar")
+    public ResponseEntity<?> verificar(@PathVariable Long importacaoId) {
         try {
-            Map<String, Object> resultado = verificacaoService.verificarImportacao(importacaoId);
-            return ResponseEntity.ok(resultado);
+            Map<String, Object> resp = verificacaoService.verificarImportacao(importacaoId);
+            return ResponseEntity.ok(resp);
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("erro", "Erro na verificação: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
     }
 
-    @GetMapping("/{importacaoId}/divergencias-detalhadas")
-    public ResponseEntity<?> getDivergenciasDetalhadas(@PathVariable Long importacaoId) {
+    @GetMapping("/{id}/divergencias-detalhadas")
+    public ResponseEntity<?> detalhadas(@PathVariable Long importacaoId) {
         try {
-            Map<String, Object> divergencias = verificacaoService.verificarDivergenciasDetalhadas(importacaoId);
-            return ResponseEntity.ok(divergencias);
+            return ResponseEntity.ok(verificacaoService.verificarDivergenciasDetalhadas(importacaoId));
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("erro", "Erro ao buscar divergências: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
     }
 
-    @GetMapping("/{importacaoId}/relatorio")
-    public ResponseEntity<?> gerarRelatorioVerificacao(@PathVariable Long importacaoId) {
+    @GetMapping("/{id}/relatorio")
+    public ResponseEntity<?> relatorio(@PathVariable Long importacaoId) {
         try {
-            Map<String, Object> relatorio = verificacaoService.verificarImportacao(importacaoId);
-            
-            // Formatar para exibição no frontend
-            Map<String, Object> resposta = Map.of(
-                "importacao", Map.of(
-                    "id", relatorio.get("importacaoId"),
-                    "arquivo", relatorio.get("nomeArquivo"),
-                    "status", relatorio.get("status")
-                ),
-                "possuiDivergencias", relatorio.get("possuiDivergencias"),
-                "totalDivergencias", relatorio.get("totalDivergencias"),
-                "resultados", relatorio.get("resultados")
-            );
-            
-            return ResponseEntity.ok(resposta);
+            return ResponseEntity.ok(verificacaoService.verificarImportacao(importacaoId));
         } catch (Exception e) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("erro", "Erro ao gerar relatório: " + e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
     }
 }

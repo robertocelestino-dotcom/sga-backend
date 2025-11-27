@@ -42,8 +42,8 @@ public class VerificacaoResultadoDTO {
 		return quantidadeArquivo;
 	}
 
-	public void setQuantidadeArquivo(Long quantidadeArquivo) {
-		this.quantidadeArquivo = quantidadeArquivo;
+	public void setQuantidadeArquivo(Long qtdArquivo) {
+		this.quantidadeArquivo = qtdArquivo;
 	}
 
 	public Long getQuantidadeBanco() {

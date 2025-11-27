@@ -18,7 +18,7 @@ public class TraillerSPC {
 	private Integer qtdeTotalRegistros;
 
 	@Column(name = "qtde_total_boletos")
-	private Integer qtdeTotalBoletos;
+	private Long qtdeTotalBoletos;
 
 	@Column(name = "valor_total_boletos", precision = 15, scale = 2)
 	private BigDecimal valorTotalBoletos;
@@ -55,11 +55,11 @@ public class TraillerSPC {
 		this.qtdeTotalRegistros = qtdeTotalRegistros;
 	}
 
-	public Integer getQtdeTotalBoletos() {
+	public Long getQtdeTotalBoletos() {
 		return qtdeTotalBoletos;
 	}
 
-	public void setQtdeTotalBoletos(Integer qtdeTotalBoletos) {
+	public void setQtdeTotalBoletos(Long qtdeTotalBoletos) {
 		this.qtdeTotalBoletos = qtdeTotalBoletos;
 	}
 

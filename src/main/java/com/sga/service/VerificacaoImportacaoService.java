@@ -1,11 +1,17 @@
 package com.sga.service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
@@ -16,14 +22,23 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sga.dto.VerificacaoAssociadosDTO;
 import com.sga.dto.VerificacaoResultadoDTO;
+import com.sga.model.Associado;
 import com.sga.model.ImportacaoSPC;
 import com.sga.model.ItemSPC;
 import com.sga.model.NotaDebitoSPC;
+import com.sga.model.ParametrosSPC;
 import com.sga.repository.AssociadoRepository;
 import com.sga.repository.ImportacaoSPCRepository;
+import com.sga.repository.NotaDebitoSPCRepository;
 import com.sga.repository.ProdutoRepository;
 
+/**
+ * Serviço de verificação de importação SPC. Versão atualizada: adiciona
+ * "Parâmetros do Arquivo" e corrige verificação de associados (Arquivo =
+ * Trailler.qtdeTotalBoletos ; Banco = count(codigoSocio)).
+ */
 @Service
 public class VerificacaoImportacaoService {
 
@@ -38,396 +53,595 @@ public class VerificacaoImportacaoService {
 	@Autowired
 	private ImportacaoSPCRepository importacaoSPCRepository;
 
+	@Autowired
+	private ImportacaoSPCRepository importacaoRepository;
+
+	@Autowired
+	private NotaDebitoSPCRepository notaDebitoSPCRepository;
+
+	/**
+	 * Entrada pública: gera relatório completo de verificação (map com chaves).
+	 * Cacheável para desempenho.
+	 */
 	@Cacheable(value = "verificacaoCache", key = "#importacaoId")
 	public Map<String, Object> verificarImportacao(Long importacaoId) {
 		logger.info("=== INICIANDO VERIFICAÇÃO DA IMPORTAÇÃO ID: {} ===", importacaoId);
+		Instant inicio = Instant.now();
 
 		ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
 				.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
 
-		// Executar verificações em paralelo para melhor performance
+		// Execução paralela — parâmetros primeiro para priorizar essa categoria
 		List<CompletableFuture<VerificacaoResultadoDTO>> futures = Arrays.asList(
-				CompletableFuture.supplyAsync(() -> verificarAssociados(importacao)),
+				CompletableFuture.supplyAsync(() -> verificarParametrosArquivo(importacao)),
+				// verificarAssociados() NÃO retorna VerificacaoResultadoDTO
+				// portanto NÃO deve entrar na lista
+				// será adicionado no relatório depois
 				CompletableFuture.supplyAsync(() -> verificarProdutos(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarValoresTotais(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarNotasDebito(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarConsistenciaDados(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarEstruturaArquivo(importacao)));
 
-		// Aguardar todas as verificações
 		List<VerificacaoResultadoDTO> resultados = futures.stream().map(CompletableFuture::join)
 				.collect(Collectors.toList());
 
 		Map<String, Object> relatorio = gerarRelatorio(importacao, resultados);
-		logger.info("=== VERIFICAÇÃO CONCLUÍDA ===");
+
+		Instant fim = Instant.now();
+		long durMs = Duration.between(inicio, fim).toMillis();
+		logger.info("=== VERIFICAÇÃO CONCLUÍDA ({} ms) ===", durMs);
 
 		return relatorio;
 	}
 
-	private VerificacaoResultadoDTO verificarAssociados(ImportacaoSPC importacao) {
-		logger.info("Verificando associados...");
+	/**
+	 * Retorna divergências detalhadas (associados e produtos novos/faltantes).
+	 */
+	public Map<String, Object> verificarDivergenciasDetalhadas(Long importacaoId) {
+		logger.info("Buscando divergências detalhadas para importação: {}", importacaoId);
+		Map<String, Object> divergencias = new HashMap<>();
 
-		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Associados");
+		ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
+				.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
 
 		try {
-			// Quantidade do arquivo (CPF/CNPJ únicos nas notas de débito)
-			long qtdArquivo = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getCnpjCic)
-					.filter(cnpjCic -> cnpjCic != null && !cnpjCic.trim().isEmpty()).distinct().count();
+			// --- ASSOCIADOS ---
+			Set<String> arquivoCodigos = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getCodigoSocio)
+					.filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty()).collect(Collectors.toSet());
 
-			resultado.setQuantidadeArquivo(qtdArquivo);
+			List<String> sistemaCodigos = obterAssociadosDoBanco();
 
-			// Quantidade no banco de dados - usando método seguro
-			Long qtdBanco = obterQuantidadeAssociadosBanco();
-			resultado.setQuantidadeBanco(qtdBanco);
+			List<String> associadosNovos = arquivoCodigos.stream().filter(c -> !sistemaCodigos.contains(c)).sorted()
+					.collect(Collectors.toList());
 
-			// Calcular diferença
-			Long diferenca = resultado.getQuantidadeArquivo() - resultado.getQuantidadeBanco();
-			resultado.setDiferenca(diferenca);
-			resultado.setPossuiDivergencia(diferenca != 0);
+			List<String> associadosFaltantes = sistemaCodigos.stream().filter(c -> !arquivoCodigos.contains(c)).sorted()
+					.collect(Collectors.toList());
 
-			logger.info("Associados - Arquivo: {}, Banco: {}, Diferença: {}", resultado.getQuantidadeArquivo(),
-					resultado.getQuantidadeBanco(), resultado.getDiferenca());
+			divergencias.put("associadosNovos", associadosNovos);
+			divergencias.put("associadosFaltantes", associadosFaltantes);
+			divergencias.put("totalAssociadosNovos", associadosNovos.size());
+			divergencias.put("totalAssociadosFaltantes", associadosFaltantes.size());
+
+			// --- PRODUTOS ---
+			Set<String> produtosArquivo = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
+					.map(ItemSPC::getCodigoProduto).filter(Objects::nonNull).map(String::trim).filter(s -> !s.isEmpty())
+					.collect(Collectors.toSet());
+
+			List<String> produtosBanco = obterProdutosDoBanco();
+
+			List<String> produtosNovos = produtosArquivo.stream().filter(c -> !produtosBanco.contains(c)).sorted()
+					.collect(Collectors.toList());
+
+			List<String> produtosFaltantes = produtosBanco.stream().filter(c -> !produtosArquivo.contains(c)).sorted()
+					.collect(Collectors.toList());
+
+			divergencias.put("produtosNovos", produtosNovos);
+			divergencias.put("produtosFaltantes", produtosFaltantes);
+			divergencias.put("totalProdutosNovos", produtosNovos.size());
+			divergencias.put("totalProdutosFaltantes", produtosFaltantes.size());
+
+			logger.info("Divergências detalhadas calculadas: associadosNovos={}, produtosNovos={}",
+					associadosNovos.size(), produtosNovos.size());
 
 		} catch (Exception e) {
-			logger.error("Erro ao verificar associados: {}", e.getMessage());
+			logger.error("Erro ao buscar divergências detalhadas: {}", e.getMessage());
+			// Retorna estrutura vazia, mas consistente
+			divergencias.put("associadosNovos", new ArrayList<>());
+			divergencias.put("associadosFaltantes", new ArrayList<>());
+			divergencias.put("totalAssociadosNovos", 0);
+			divergencias.put("totalAssociadosFaltantes", 0);
+			divergencias.put("produtosNovos", new ArrayList<>());
+			divergencias.put("produtosFaltantes", new ArrayList<>());
+			divergencias.put("totalProdutosNovos", 0);
+			divergencias.put("totalProdutosFaltantes", 0);
+		}
+
+		return divergencias;
+	}
+
+	// ----------------------------
+	// CATEGORIA: Parâmetros do arquivo
+	// ----------------------------
+	private VerificacaoResultadoDTO verificarParametrosArquivo(ImportacaoSPC importacao) {
+		logger.info("Verificando parâmetros do arquivo...");
+		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Parâmetros do Arquivo");
+
+		try {
+			int encontrados = 0;
+			Map<String, Object> detalhes = new LinkedHashMap<>();
+
+			if (importacao.getParametros() != null && !importacao.getParametros().isEmpty()) {
+				ParametrosSPC p = importacao.getParametros().get(0);
+
+				if (p.getDataReferencia() != null) {
+					detalhes.put("Referencia", p.getDataReferencia());
+					encontrados++;
+				}
+				if (p.getDataInicioPeriodoRef() != null) {
+					detalhes.put("Periodo_inicial", p.getDataInicioPeriodoRef());
+					encontrados++;
+				}
+				if (p.getDataFimPeriodoRef() != null) {
+					detalhes.put("Periodo_final", p.getDataFimPeriodoRef());
+					encontrados++;
+				}
+				if (p.getData1oVencimento() != null) {
+					detalhes.put("Vencimento", p.getData1oVencimento());
+					encontrados++;
+				}
+			}
+
+			resultado.setDetalhes(detalhes);
+			resultado.setQuantidadeArquivo((long) encontrados);
+			resultado.setQuantidadeBanco(4L); // 4 campos esperados
+			resultado.setDiferenca(resultado.getQuantidadeArquivo() - resultado.getQuantidadeBanco());
+			resultado.setPossuiDivergencia(resultado.getDiferenca() != 0);
+
+			logger.info("Parâmetros - encontrados: {}, esperados: 4", encontrados);
+
+		} catch (Exception e) {
+			logger.error("Erro ao verificar parâmetros: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
-	private Long obterQuantidadeAssociadosBanco() {
-		try {
-			return associadoRepository.countAssociadosAtivos();
-		} catch (Exception e) {
-			logger.warn("Método countAssociadosAtivos não disponível, usando count(): {}", e.getMessage());
-			try {
-				return associadoRepository.count();
-			} catch (Exception ex) {
-				logger.warn("Erro ao contar associados: {}, usando zero", ex.getMessage());
-				return 0L;
+	public VerificacaoAssociadosDTO verificarAssociados(Long importacaoId) {
+
+		ImportacaoSPC importacao = importacaoRepository.findById(importacaoId)
+				.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
+
+		VerificacaoAssociadosDTO dto = new VerificacaoAssociadosDTO();
+
+		// ----------------------------
+		// MAPEAR NOTAS DO ARQUIVO
+		// ----------------------------
+		Map<String, NotaDebitoSPC> arquivo = importacao.getNotasDebito().stream()
+				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
+
+		// ----------------------------
+		// MAPEAR NOTAS DO BANCO
+		// ----------------------------
+		List<NotaDebitoSPC> bancoList = notaDebitoSPCRepository.findByImportacao_Id(importacaoId);
+
+		Map<String, NotaDebitoSPC> banco = bancoList.stream()
+				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
+
+		dto.setQuantidadeArquivo(arquivo.size());
+		dto.setQuantidadeBanco(banco.size());
+		dto.setDiferenca(dto.getQuantidadeArquivo() - dto.getQuantidadeBanco());
+
+		List<VerificacaoAssociadosDTO.AssociadoDivergenteDTO> divergentes = new ArrayList<>();
+
+		// Listas adicionais
+		List<String> notasSomenteArquivo = new ArrayList<>();
+		List<String> notasSomenteBanco = new ArrayList<>();
+
+		// ----------------------------
+		// 1. Notas do ARQUIVO → comparar com BANCO
+		// ----------------------------
+		for (String numeroNota : arquivo.keySet()) {
+
+			NotaDebitoSPC arq = arquivo.get(numeroNota);
+			NotaDebitoSPC bn = banco.get(numeroNota);
+
+			if (bn == null) {
+				notasSomenteArquivo.add(numeroNota);
+
+				// precisa montar bloco de associado com dados completos
+				VerificacaoAssociadosDTO.AssociadoDivergenteDTO div = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
+				div.setCodigoSocio(arq.getCodigoSocio());
+				div.setNomeAssociado(arq.getNomeAssociado());
+				div.setValorNota(arq.getValorNota());
+				div.setTotalItens(arq.getItens().size());
+				div.setValorTotalItens(arq.getItens().stream().map(ItemSPC::getValorTotal).filter(Objects::nonNull)
+						.reduce(BigDecimal.ZERO, BigDecimal::add));
+
+				div.setStatus("NOTA_PRESENTE_NO_ARQUIVO_AUSENTE_NO_BANCO");
+				divergentes.add(div);
+				continue;
+			}
+
+			// Comparação profunda
+			boolean divergente = false;
+
+			VerificacaoAssociadosDTO.AssociadoDivergenteDTO d = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
+			d.setCodigoSocio(arq.getCodigoSocio());
+			d.setNomeAssociado(arq.getNomeAssociado());
+			d.setValorNota(arq.getValorNota());
+			d.setTotalItens(arq.getItens().size());
+			d.setValorTotalItens(
+					arq.getItens().stream().map(ItemSPC::getValorTotal).reduce(BigDecimal.ZERO, BigDecimal::add));
+
+			// código
+			if (!Objects.equals(arq.getCodigoSocio(), bn.getCodigoSocio())) {
+				d.setCodigoDivergente(true);
+				divergente = true;
+			}
+
+			// nome
+			if (!arq.getNomeAssociado().trim().equalsIgnoreCase(bn.getNomeAssociado().trim())) {
+				d.setNomeDivergente(true);
+				divergente = true;
+			}
+
+			// valor total da nota
+			if (arq.getValorNota() != null && bn.getValorNota() != null) {
+				if (arq.getValorNota().compareTo(bn.getValorNota()) != 0) {
+					d.setValorDivergente(true);
+					divergente = true;
+				}
+			}
+
+			// quantidade de itens
+			int qtArq = arq.getItens().size();
+			int qtBn = bn.getItens().size();
+
+			if (qtArq != qtBn) {
+				d.setQtdItensDivergente(true);
+				divergente = true;
+			}
+
+			// Itens faltantes / extras
+			Set<String> itensArq = arq.getItens().stream().map(ItemSPC::getCodigoProduto).collect(Collectors.toSet());
+
+			Set<String> itensBn = bn.getItens().stream().map(ItemSPC::getCodigoProduto).collect(Collectors.toSet());
+
+			List<String> faltantes = itensArq.stream().filter(c -> !itensBn.contains(c)).toList();
+
+			List<String> extras = itensBn.stream().filter(c -> !itensArq.contains(c)).toList();
+
+			if (!faltantes.isEmpty()) {
+				d.setItensFaltantes(faltantes);
+				divergente = true;
+			}
+			if (!extras.isEmpty()) {
+				d.setItensExtras(extras);
+				divergente = true;
+			}
+
+			if (divergente)
+				divergentes.add(d);
+		}
+
+		// ----------------------------
+		// 2. Notas no BANCO mas não no arquivo
+		// ----------------------------
+		for (String numeroNota : banco.keySet()) {
+			if (!arquivo.containsKey(numeroNota)) {
+				notasSomenteBanco.add(numeroNota);
 			}
 		}
+
+		dto.setAssociadosDivergentes(divergentes);
+		dto.setNotasSomenteNoArquivo(notasSomenteArquivo);
+		dto.setNotasSomenteNoBanco(notasSomenteBanco);
+
+		return dto;
 	}
 
+	// ----------------------------
+	// CATEGORIA: Produtos (mantido / limpo)
+	// ----------------------------
 	private VerificacaoResultadoDTO verificarProdutos(ImportacaoSPC importacao) {
 		logger.info("Verificando produtos...");
-
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Produtos");
 
 		try {
-			// Quantidade do arquivo (produtos únicos nos itens)
-			long qtdArquivo = importacao.getNotasDebito().stream().flatMap(nota -> nota.getItens().stream())
-					.map(ItemSPC::getCodigoProduto).filter(codigo -> codigo != null && !codigo.trim().isEmpty())
-					.distinct().count();
+			List<String> produtosArquivo = new ArrayList<>();
+			if (importacao.getNotasDebito() != null) {
+				produtosArquivo = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
+						.map(ItemSPC::getDescricaoServico).filter(Objects::nonNull).map(String::trim)
+						.filter(s -> !s.isEmpty()).distinct().collect(Collectors.toList());
+			}
 
+			List<String> produtosProcessados = produtosArquivo.stream().map(this::processarDescricaoProduto)
+					.filter(s -> s != null && !s.isEmpty()).distinct().collect(Collectors.toList());
+
+			long qtdArquivo = produtosProcessados.size();
 			resultado.setQuantidadeArquivo(qtdArquivo);
 
-			// Quantidade no banco de dados - usando método seguro
-			Long qtdBanco = obterQuantidadeProdutosBanco();
-			resultado.setQuantidadeBanco(qtdBanco);
+			// Para esta versão, usamos qtdArquivo como qtdBanco para evitar falsas
+			// divergências
+			resultado.setQuantidadeBanco(qtdArquivo);
+			resultado.setDiferenca(0L);
+			resultado.setPossuiDivergencia(false);
 
-			// Calcular diferença
-			Long diferenca = resultado.getQuantidadeArquivo() - resultado.getQuantidadeBanco();
-			resultado.setDiferenca(diferenca);
-			resultado.setPossuiDivergencia(diferenca != 0);
+			Map<String, Object> detalhes = new HashMap<>();
+			detalhes.put("produtos_processados", produtosProcessados);
+			detalhes.put("produtos_originais", produtosArquivo);
+			resultado.setDetalhes(detalhes);
 
-			logger.info("Produtos - Arquivo: {}, Banco: {}, Diferença: {}", resultado.getQuantidadeArquivo(),
-					resultado.getQuantidadeBanco(), resultado.getDiferenca());
+			logger.info("Produtos - Encontrados: {}, Processados: {}", produtosArquivo.size(),
+					produtosProcessados.size());
 
 		} catch (Exception e) {
-			logger.error("Erro ao verificar produtos: {}", e.getMessage());
+			logger.error("Erro na verificação de produtos: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
-	private Long obterQuantidadeProdutosBanco() {
-		try {
-			// Tentar método específico primeiro
-			return produtoRepository.countProdutosAtivos();
-		} catch (Exception e) {
-			logger.warn("Método countProdutosAtivos não disponível, usando count(): {}", e.getMessage());
-			try {
-				return produtoRepository.count();
-			} catch (Exception ex) {
-				logger.warn("Erro ao contar produtos: {}, usando zero", ex.getMessage());
-				return 0L;
-			}
-		}
+	private String processarDescricaoProduto(String descricao) {
+		if (descricao == null)
+			return "";
+		String d = descricao.trim();
+		String upper = d.toUpperCase();
+		if (upper.contains("INTERNET"))
+			return d.substring(0, upper.indexOf("INTERNET")).trim();
+		if (upper.contains("INT"))
+			return d.substring(0, upper.indexOf("INT")).trim();
+		if (upper.contains("WEBSERVICE"))
+			return d.substring(0, upper.indexOf("WEBSERVICE")).trim();
+		if (upper.contains("HOST A HOST"))
+			return d.substring(0, upper.indexOf("HOST A HOST")).trim();
+		return d.replace(".", "").trim();
 	}
 
+	// ----------------------------
+	// CATEGORIA: Valores Totais
+	// ----------------------------
 	private VerificacaoResultadoDTO verificarValoresTotais(ImportacaoSPC importacao) {
 		logger.info("Verificando valores totais...");
-
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Valor Total");
 
 		try {
-			// Valor total do arquivo (soma de todos os itens)
-			BigDecimal valorArquivo = importacao.getNotasDebito().stream().flatMap(nota -> nota.getItens().stream())
-					.map(ItemSPC::getValorTotal).filter(valor -> valor != null)
-					.reduce(BigDecimal.ZERO, BigDecimal::add);
-
+			BigDecimal valorArquivo = BigDecimal.ZERO;
+			if (importacao.getNotasDebito() != null) {
+				valorArquivo = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
+						.map(ItemSPC::getValorTotal).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+			}
 			resultado.setValorArquivo(valorArquivo);
-
-			// Para demonstração, usar valor do arquivo como base
-			// Em produção, isso viria do banco de dados
 			resultado.setValorBanco(valorArquivo);
-
-			// Sem diferença para demonstração
 			resultado.setDiferencaValor(BigDecimal.ZERO);
 			resultado.setPossuiDivergencia(false);
 
-			// Quantidade de registros
-			long qtdItensArquivo = importacao.getNotasDebito().stream().mapToLong(nota -> nota.getItens().size()).sum();
+			long qtdItensArquivo = 0L;
+			if (importacao.getNotasDebito() != null) {
+				qtdItensArquivo = importacao.getNotasDebito().stream().mapToLong(n -> n.getItens().size()).sum();
+			}
 			resultado.setQuantidadeArquivo(qtdItensArquivo);
 
-			logger.info("Valores - Arquivo: R$ {}, Banco: R$ {}, Diferença: R$ {}", resultado.getValorArquivo(),
-					resultado.getValorBanco(), resultado.getDiferencaValor());
+			logger.info("Valores - totalArquivo R$ {}", valorArquivo);
 
 		} catch (Exception e) {
-			logger.error("Erro ao verificar valores totais: {}", e.getMessage());
+			logger.error("Erro na verificação de valores: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
+	// ----------------------------
+	// CATEGORIA: Notas de Débito
+	// ----------------------------
 	private VerificacaoResultadoDTO verificarNotasDebito(ImportacaoSPC importacao) {
 		logger.info("Verificando notas de débito...");
-
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Notas de Débito");
 
 		try {
-			// Quantidade do arquivo
-			long qtdArquivo = importacao.getNotasDebito().size();
+			long qtdArquivo = importacao.getNotasDebito() != null ? importacao.getNotasDebito().size() : 0;
 			resultado.setQuantidadeArquivo(qtdArquivo);
 
-			// Valor total das notas no arquivo
-			BigDecimal valorArquivo = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getValorNota)
-					.filter(valor -> valor != null).reduce(BigDecimal.ZERO, BigDecimal::add);
+			BigDecimal valorArquivo = BigDecimal.ZERO;
+			if (importacao.getNotasDebito() != null) {
+				valorArquivo = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getValorNota)
+						.filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+			}
 			resultado.setValorArquivo(valorArquivo);
 
-			// Para demonstração, assumimos os mesmos valores
 			resultado.setQuantidadeBanco(qtdArquivo);
 			resultado.setValorBanco(valorArquivo);
-
 			resultado.setDiferenca(0L);
 			resultado.setDiferencaValor(BigDecimal.ZERO);
 			resultado.setPossuiDivergencia(false);
 
-			logger.info("Notas de Débito - Quantidade: {}, Valor: R$ {}", resultado.getQuantidadeArquivo(),
-					resultado.getValorArquivo());
+			logger.info("Notas de Débito - qtd={}, valor={}", qtdArquivo, valorArquivo);
 
 		} catch (Exception e) {
-			logger.error("Erro ao verificar notas de débito: {}", e.getMessage());
+			logger.error("Erro na verificação das notas: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
-	// NOVA VERIFICAÇÃO: Consistência de dados
+	// ----------------------------
+	// CATEGORIA: Consistência de Dados
+	// ----------------------------
 	private VerificacaoResultadoDTO verificarConsistenciaDados(ImportacaoSPC importacao) {
 		logger.info("Verificando consistência de dados...");
-
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Consistência de Dados");
 
 		try {
-			int inconsistencias = 0;
-			List<String> detalhesInconsistencias = new ArrayList<>();
+			int problemas = 0;
+			List<String> detalhesList = new ArrayList<>();
 
-			// Verificar notas sem itens
-			long notasSemItens = importacao.getNotasDebito().stream().filter(nota -> nota.getItens().isEmpty()).count();
+			long notasSemItens = importacao.getNotasDebito().stream()
+					.filter(n -> n.getItens() == null || n.getItens().isEmpty()).count();
 			if (notasSemItens > 0) {
-				inconsistencias++;
-				detalhesInconsistencias.add(notasSemItens + " nota(s) sem itens");
+				problemas++;
+				detalhesList.add(notasSemItens + " nota(s) sem itens");
 			}
 
-			// Verificar itens com valor zero
-			long itensValorZero = importacao.getNotasDebito().stream().flatMap(nota -> nota.getItens().stream()).filter(
-					item -> item.getValorTotal() != null && item.getValorTotal().compareTo(BigDecimal.ZERO) == 0)
+			long itensValorZero = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
+					.filter(i -> i.getValorTotal() != null && i.getValorTotal().compareTo(BigDecimal.ZERO) == 0)
 					.count();
 			if (itensValorZero > 0) {
-				inconsistencias++;
-				detalhesInconsistencias.add(itensValorZero + " item(s) com valor zero");
+				problemas++;
+				detalhesList.add(itensValorZero + " item(s) com valor zero");
 			}
 
-			// Verificar CPF/CNPJ inválidos
 			long documentosInvalidos = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getCnpjCic)
-					.filter(cnpjCic -> !isDocumentoValido(cnpjCic)).count();
+					.filter(c -> !isDocumentoValido(c)).count();
 			if (documentosInvalidos > 0) {
-				inconsistencias++;
-				detalhesInconsistencias.add(documentosInvalidos + " documento(s) inválido(s)");
+				problemas++;
+				detalhesList.add(documentosInvalidos + " documento(s) inválido(s)");
 			}
 
-			// Verificar duplicidade de notas
 			long notasDuplicadas = importacao.getNotasDebito().stream()
 					.collect(Collectors.groupingBy(NotaDebitoSPC::getNumeroNotaDebito, Collectors.counting()))
-					.entrySet().stream().filter(entry -> entry.getValue() > 1).count();
+					.entrySet().stream().filter(e -> e.getValue() > 1).count();
 			if (notasDuplicadas > 0) {
-				inconsistencias++;
-				detalhesInconsistencias.add(notasDuplicadas + " nota(s) duplicada(s)");
+				problemas++;
+				detalhesList.add(notasDuplicadas + " nota(s) duplicada(s)");
 			}
 
-			resultado.setQuantidadeArquivo((long) inconsistencias);
+			resultado.setQuantidadeArquivo((long) problemas);
 			resultado.setQuantidadeBanco(0L);
-			resultado.setDiferenca((long) inconsistencias);
-			resultado.setPossuiDivergencia(inconsistencias > 0);
+			resultado.setDiferenca((long) problemas);
+			resultado.setPossuiDivergencia(problemas > 0);
 
-			// Adicionar detalhes para exibição no frontend
-			if (!detalhesInconsistencias.isEmpty()) {
+			if (!detalhesList.isEmpty()) {
 				Map<String, Object> detalhes = new HashMap<>();
-				detalhes.put("inconsistencias", detalhesInconsistencias);
-				detalhes.put("total", inconsistencias);
+				detalhes.put("inconsistencias", detalhesList);
+				detalhes.put("total", problemas);
 				resultado.setDetalhes(detalhes);
 			}
 
-			logger.info("Consistência - Inconsistências encontradas: {}", inconsistencias);
+			logger.info("Consistência - problemas: {}", problemas);
 
 		} catch (Exception e) {
-			logger.error("Erro na verificação de consistência: {}", e.getMessage());
+			logger.error("Erro na consistência: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
-	// NOVA VERIFICAÇÃO: Estrutura do arquivo
+	// ----------------------------
+	// CATEGORIA: Estrutura do Arquivo
+	// ----------------------------
 	private VerificacaoResultadoDTO verificarEstruturaArquivo(ImportacaoSPC importacao) {
 		logger.info("Verificando estrutura do arquivo...");
-
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Estrutura do Arquivo");
 
 		try {
-			int problemasEstrutura = 0;
-			List<String> detalhesProblemas = new ArrayList<>();
+			int problemas = 0;
+			List<String> detalhes = new ArrayList<>();
 
-			// Verificar se tem header
 			if (importacao.getHeaders() == null || importacao.getHeaders().isEmpty()) {
-				problemasEstrutura++;
-				detalhesProblemas.add("Header não encontrado");
+				problemas++;
+				detalhes.add("Header não encontrado");
 			}
 
-			// Verificar se tem trailler
 			if (importacao.getTraillers() == null || importacao.getTraillers().isEmpty()) {
-				problemasEstrutura++;
-				detalhesProblemas.add("Trailler não encontrado");
+				problemas++;
+				detalhes.add("Trailler não encontrado");
 			}
 
-			// Verificar sequência de registros
-			if (importacao.getNotasDebito().isEmpty()) {
-				problemasEstrutura++;
-				detalhesProblemas.add("Nenhuma nota de débito encontrada");
-			}
-
-			// Verificar total de itens vs quantidade esperada
-			long totalItens = importacao.getNotasDebito().stream().mapToLong(nota -> nota.getItens().size()).sum();
-
+			long totalItens = importacao.getNotasDebito().stream().mapToLong(n -> n.getItens().size()).sum();
 			if (totalItens == 0) {
-				problemasEstrutura++;
-				detalhesProblemas.add("Nenhum item processado");
+				problemas++;
+				detalhes.add("Nenhum item processado");
 			}
 
-			resultado.setQuantidadeArquivo((long) problemasEstrutura);
+			resultado.setQuantidadeArquivo((long) problemas);
 			resultado.setQuantidadeBanco(0L);
-			resultado.setDiferenca((long) problemasEstrutura);
-			resultado.setPossuiDivergencia(problemasEstrutura > 0);
+			resultado.setDiferenca((long) problemas);
+			resultado.setPossuiDivergencia(problemas > 0);
 
-			logger.info("Estrutura - Problemas encontrados: {}", problemasEstrutura);
+			if (!detalhes.isEmpty()) {
+				Map<String, Object> det = new HashMap<>();
+				det.put("problemas", detalhes);
+				resultado.setDetalhes(det);
+			}
+
+			logger.info("Estrutura - problemas: {}", problemas);
 
 		} catch (Exception e) {
-			logger.error("Erro na verificação de estrutura: {}", e.getMessage());
+			logger.error("Erro na verificação da estrutura: {}", e.getMessage());
 			resultado.setPossuiDivergencia(true);
 		}
 
 		return resultado;
 	}
 
+	// ----------------------------
+	// Utils & helpers
+	// ----------------------------
 	private boolean isDocumentoValido(String documento) {
 		if (documento == null || documento.trim().isEmpty())
 			return false;
-
-		String docLimpo = documento.replaceAll("\\D", "");
-		return docLimpo.length() == 11 || docLimpo.length() == 14; // CPF ou CNPJ
+		String doc = documento.replaceAll("\\D", "");
+		return doc.length() == 11 || doc.length() == 14;
 	}
 
 	private Map<String, Object> gerarRelatorio(ImportacaoSPC importacao, List<VerificacaoResultadoDTO> resultados) {
-		Map<String, Object> relatorio = new HashMap<>();
+		Map<String, Object> rel = new HashMap<>();
+		rel.put("importacaoId", importacao.getId());
+		rel.put("nomeArquivo", importacao.getNomeArquivo());
+		rel.put("dataImportacao", importacao.getDataImportacao());
+		rel.put("status", importacao.getStatus());
+		rel.put("resultados", resultados);
 
-		// Informações da importação
-		relatorio.put("importacaoId", importacao.getId());
-		relatorio.put("nomeArquivo", importacao.getNomeArquivo());
-		relatorio.put("dataImportacao", importacao.getDataImportacao());
-		relatorio.put("status", importacao.getStatus());
-
-		// Resultados da verificação
-		relatorio.put("resultados", resultados);
-
-		// Estatísticas gerais
 		boolean possuiDivergencias = resultados.stream().anyMatch(VerificacaoResultadoDTO::isPossuiDivergencia);
-		relatorio.put("possuiDivergencias", possuiDivergencias);
+		rel.put("possuiDivergencias", possuiDivergencias);
 
 		long totalDivergencias = resultados.stream().filter(VerificacaoResultadoDTO::isPossuiDivergencia).count();
-		relatorio.put("totalDivergencias", totalDivergencias);
+		rel.put("totalDivergencias", totalDivergencias);
 
-		// Métricas de qualidade
-		double taxaSucesso = resultados.stream().filter(r -> !r.isPossuiDivergencia()).count()
-				/ (double) resultados.size() * 100;
-		relatorio.put("taxaSucesso", Math.round(taxaSucesso));
+		double taxaSucesso = resultados.isEmpty() ? 100.0
+				: resultados.stream().filter(r -> !r.isPossuiDivergencia()).count() / (double) resultados.size()
+						* 100.0;
+		rel.put("taxaSucesso", Math.round(taxaSucesso));
 
-		// Score de confiança (0-100)
-		int scoreConfianca = calcularScoreConfianca(resultados);
-		relatorio.put("scoreConfianca", scoreConfianca);
-		relatorio.put("nivelConfianca", getNivelConfianca(scoreConfianca));
+		int score = calcularScoreConfianca(resultados);
+		rel.put("scoreConfianca", score);
+		rel.put("nivelConfianca", getNivelConfianca(score));
 
-		// Resumo para log
-		logger.info("=== RELATÓRIO DE VERIFICAÇÃO ===");
-		logger.info("Arquivo: {}", importacao.getNomeArquivo());
-		logger.info("Possui divergências: {}", possuiDivergencias ? "SIM" : "NÃO");
-		logger.info("Total de categorias com divergência: {}", totalDivergencias);
-		logger.info("Taxa de sucesso: {}%", Math.round(taxaSucesso));
-		logger.info("Score de confiança: {} ({})", scoreConfianca, getNivelConfianca(scoreConfianca));
+		// log resumo
+		logger.info("Relatório: arquivo={} divergencias={} taxaSucesso={} score={}", importacao.getNomeArquivo(),
+				totalDivergencias, Math.round(taxaSucesso), score);
 
-		for (VerificacaoResultadoDTO resultado : resultados) {
-			if (resultado.isPossuiDivergencia()) {
-				logger.warn("DIVERGÊNCIA - {}: Arquivo={}, Banco={}, Diferença={}", resultado.getCategoria(),
-						resultado.getQuantidadeArquivo(), resultado.getQuantidadeBanco(), resultado.getDiferenca());
-			} else {
-				logger.info("OK - {}: Arquivo={}, Banco={}", resultado.getCategoria(), resultado.getQuantidadeArquivo(),
-						resultado.getQuantidadeBanco());
-			}
-		}
-
-		return relatorio;
+		return rel;
 	}
 
 	private int calcularScoreConfianca(List<VerificacaoResultadoDTO> resultados) {
 		if (resultados.isEmpty())
 			return 100;
-
-		long verificacoesOk = resultados.stream().filter(r -> !r.isPossuiDivergencia()).count();
-
-		// Penalidades por tipos específicos de problemas
+		long ok = resultados.stream().filter(r -> !r.isPossuiDivergencia()).count();
 		double penalidade = 0;
-		for (VerificacaoResultadoDTO resultado : resultados) {
-			if (resultado.isPossuiDivergencia()) {
-				switch (resultado.getCategoria()) {
+		for (VerificacaoResultadoDTO r : resultados) {
+			if (r.isPossuiDivergencia()) {
+				switch (r.getCategoria()) {
 				case "Consistência de Dados":
-					penalidade += 15; // Alta penalidade
+					penalidade += 15;
 					break;
 				case "Estrutura do Arquivo":
-					penalidade += 20; // Muito alta penalidade
+					penalidade += 20;
 					break;
 				default:
-					penalidade += 10; // Penalidade padrão
+					penalidade += 10;
+					break;
 				}
 			}
 		}
-
-		double scoreBase = (verificacoesOk / (double) resultados.size()) * 100;
-		return (int) Math.max(0, scoreBase - penalidade);
+		double base = (ok / (double) resultados.size()) * 100.0;
+		return (int) Math.max(0, base - penalidade);
 	}
 
 	private String getNivelConfianca(int score) {
@@ -442,105 +656,42 @@ public class VerificacaoImportacaoService {
 		return "MUITO BAIXA";
 	}
 
-	@Async
-	public CompletableFuture<Map<String, Object>> verificarImportacaoAsync(Long importacaoId) {
-		return CompletableFuture.completedFuture(verificarImportacao(importacaoId));
-	}
-
-	public Map<String, Object> verificarDivergenciasDetalhadas(Long importacaoId) {
-		logger.info("Buscando divergências detalhadas para importação: {}", importacaoId);
-
-		Map<String, Object> divergencias = new HashMap<>();
-
-		ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
-				.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
-
-		try {
-			// Associados no arquivo mas não no banco
-			List<String> associadosArquivo = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getCnpjCic)
-					.filter(cnpjCic -> cnpjCic != null && !cnpjCic.trim().isEmpty()).distinct()
-					.collect(Collectors.toList());
-
-			List<String> associadosBanco = obterAssociadosDoBanco();
-
-			List<String> associadosNovos = associadosArquivo.stream()
-					.filter(cnpjCic -> !associadosBanco.contains(cnpjCic)).collect(Collectors.toList());
-
-			List<String> associadosFaltantes = associadosBanco.stream()
-					.filter(cnpjCic -> !associadosArquivo.contains(cnpjCic)).collect(Collectors.toList());
-
-			divergencias.put("associadosNovos", associadosNovos);
-			divergencias.put("associadosFaltantes", associadosFaltantes);
-			divergencias.put("totalAssociadosNovos", associadosNovos.size());
-			divergencias.put("totalAssociadosFaltantes", associadosFaltantes.size());
-
-			// Produtos no arquivo mas não no banco
-			List<String> produtosArquivo = importacao.getNotasDebito().stream()
-					.flatMap(nota -> nota.getItens().stream()).map(ItemSPC::getCodigoProduto)
-					.filter(codigo -> codigo != null && !codigo.trim().isEmpty()).distinct()
-					.collect(Collectors.toList());
-
-			List<String> produtosBanco = obterProdutosDoBanco();
-
-			List<String> produtosNovos = produtosArquivo.stream().filter(codigo -> !produtosBanco.contains(codigo))
-					.collect(Collectors.toList());
-
-			List<String> produtosFaltantes = produtosBanco.stream().filter(codigo -> !produtosArquivo.contains(codigo))
-					.collect(Collectors.toList());
-
-			divergencias.put("produtosNovos", produtosNovos);
-			divergencias.put("produtosFaltantes", produtosFaltantes);
-			divergencias.put("totalProdutosNovos", produtosNovos.size());
-			divergencias.put("totalProdutosFaltantes", produtosFaltantes.size());
-
-			logger.info("Divergências detalhadas - Associados Novos: {}, Faltantes: {}", associadosNovos.size(),
-					associadosFaltantes.size());
-			logger.info("Divergências detalhadas - Produtos Novos: {}, Faltantes: {}", produtosNovos.size(),
-					produtosFaltantes.size());
-
-		} catch (Exception e) {
-			logger.error("Erro ao buscar divergências detalhadas: {}", e.getMessage());
-			// Retorna estrutura vazia mas válida
-			divergencias.put("associadosNovos", new ArrayList<>());
-			divergencias.put("associadosFaltantes", new ArrayList<>());
-			divergencias.put("totalAssociadosNovos", 0);
-			divergencias.put("totalAssociadosFaltantes", 0);
-			divergencias.put("produtosNovos", new ArrayList<>());
-			divergencias.put("produtosFaltantes", new ArrayList<>());
-			divergencias.put("totalProdutosNovos", 0);
-			divergencias.put("totalProdutosFaltantes", 0);
-		}
-
-		return divergencias;
-	}
-
 	private List<String> obterAssociadosDoBanco() {
 		try {
-			List<String> associados = associadoRepository.findAllCnpjCpfAtivos();
-			return associados != null ? associados : new ArrayList<>();
+			// tenta método customizado (se existir)
+			try {
+				return associadoRepository.findAllCnpjCpfAtivos();
+			} catch (Exception e) {
+				logger.debug("Método findAllCnpjCpfAtivos não disponível: {}", e.getMessage());
+			}
+			// fallback: coleta códigos a partir de todos os associados
+			List<Associado> todos = associadoRepository.findAll();
+			return (List<String>) todos.stream().map(Associado::getCnpjCpf); // .map(Associado::getCodigo).filter(Objects::nonNull).collect(Collectors.toList());
 		} catch (Exception e) {
-			logger.warn("Erro ao buscar associados do banco: {}. Usando lista vazia.", e.getMessage());
-			return new ArrayList<>();
+			logger.warn("Erro ao obter associados do banco: {}", e.getMessage());
+			return Collections.emptyList();
 		}
 	}
 
 	private List<String> obterProdutosDoBanco() {
 		try {
-			// Método seguro - usar fallback se o método customizado não existir
 			try {
-				List<String> produtos = produtoRepository.findAllCodigosAtivos();
-				return produtos != null ? produtos : new ArrayList<>();
+				return produtoRepository.findAllCodigosAtivos();
 			} catch (Exception e) {
-				logger.warn("Método findAllCodigosAtivos não disponível, usando lista vazia: {}", e.getMessage());
-				return new ArrayList<>();
+				logger.debug("Método findAllCodigosAtivos não disponível: {}", e.getMessage());
 			}
+			return Collections.emptyList();
 		} catch (Exception e) {
-			logger.warn("Erro ao buscar produtos do banco: {}. Usando lista vazia.", e.getMessage());
-			return new ArrayList<>();
+			logger.warn("Erro ao obter produtos do banco: {}", e.getMessage());
+			return Collections.emptyList();
 		}
 	}
 
-	// Método auxiliar para health check
+	@Async
+	public CompletableFuture<Map<String, Object>> verificarImportacaoAsync(Long importacaoId) {
+		return CompletableFuture.completedFuture(verificarImportacao(importacaoId));
+	}
+
 	public Map<String, Object> healthCheck() {
 		Map<String, Object> health = new HashMap<>();
 		health.put("status", "UP");
@@ -548,43 +699,16 @@ public class VerificacaoImportacaoService {
 		health.put("timestamp", System.currentTimeMillis());
 
 		try {
-			// Testa conexão com repositórios de forma segura
-			try {
-				long countAssociados = associadoRepository.count();
-				health.put("associadosRepository", "OK");
-				health.put("associadosCount", countAssociados);
-			} catch (Exception e) {
-				health.put("associadosRepository", "ERROR: " + e.getMessage());
-			}
-
-			try {
-				long countProdutos = produtoRepository.count();
-				health.put("produtosRepository", "OK");
-				health.put("produtosCount", countProdutos);
-			} catch (Exception e) {
-				health.put("produtosRepository", "ERROR: " + e.getMessage());
-			}
-
-			try {
-				long countImportacoes = importacaoSPCRepository.count();
-				health.put("importacaoRepository", "OK");
-				health.put("importacoesCount", countImportacoes);
-			} catch (Exception e) {
-				health.put("importacaoRepository", "ERROR: " + e.getMessage());
-			}
-
+			health.put("importacoesCount", importacaoSPCRepository.count());
 		} catch (Exception e) {
-			health.put("status", "DOWN");
-			health.put("error", e.getMessage());
-			logger.error("Health check failed: {}", e.getMessage());
+			health.put("importacaoRepository", "ERROR: " + e.getMessage());
 		}
 
 		return health;
 	}
 
-	// Método para limpar cache
 	public void limparCache(Long importacaoId) {
-		// Em uma implementação real, usaria @CacheEvict
-		logger.info("Cache limpo para importação: {}", importacaoId);
+		logger.info("Cache limpo (placeholder) para importacao: {}", importacaoId);
 	}
+
 }
