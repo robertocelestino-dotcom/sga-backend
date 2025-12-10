@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -110,4 +109,51 @@ public class ImportacaoSPCController {
 		map.put("timestamp", String.valueOf(System.currentTimeMillis()));
 		return ResponseEntity.badRequest().body(map);
 	}
+
+	/*
+	 * ============================================================ NOVO ENDPOINT —
+	 * RESUMO GERAL DA VERIFICAÇÃO Usado pelo FRONTEND em /{id}/verificacao
+	 * ============================================================
+	 */
+	@GetMapping("/{id}/verificacao")
+	public ResponseEntity<?> verificarImportacao(@PathVariable Long id) {
+		try {
+			Map<String, Object> resultado = verificacaoImportacaoService.verificarImportacao(id);
+			return ResponseEntity.ok(resultado);
+		} catch (Exception e) {
+			log.error("Erro na verificação: {}", e.getMessage());
+			return ResponseEntity.status(500).body(Map.of("erro", e.getMessage()));
+		}
+	}
+
+	/*
+	 * ============================================================ NOVO ENDPOINT —
+	 * VERIFICAÇÃO COMPLETA (associados + divergências) Usado futuramente no
+	 * frontend ============================================================
+	 */
+	@GetMapping("/{id}/verificacao/completo")
+	public ResponseEntity<?> verificarAssociadosCompleto(@PathVariable Long id) {
+		try {
+			Object dto = verificacaoImportacaoService.verificarAssociadosCompleto(id);
+			return ResponseEntity.ok(dto);
+		} catch (RuntimeException e) {
+			return ResponseEntity.status(404).body(Map.of("erro", e.getMessage()));
+		}
+	}
+
+	/*
+	 * ============================================================ NOVO ENDPOINT —
+	 * DETALHES DAS DIVERGÊNCIAS
+	 * ============================================================
+	 */
+	@GetMapping("/{id}/verificacao/detalhes")
+	public ResponseEntity<?> verificarDivergencias(@PathVariable Long id) {
+		try {
+			Map<String, Object> dados = verificacaoImportacaoService.verificarDivergenciasDetalhadas(id);
+			return ResponseEntity.ok(dados);
+		} catch (RuntimeException e) {
+			return ResponseEntity.status(404).body(Map.of("erro", e.getMessage()));
+		}
+	}
+
 }

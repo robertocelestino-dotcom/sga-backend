@@ -4,33 +4,22 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * DTO principal para retorno da verificação de associados / notas entre
- * arquivo SPC e banco.
- */
 public class VerificacaoAssociadosDTO {
 
-    // ----------------------------------------------------------
-    // RESUMO GERAL
-    // ----------------------------------------------------------
     private int quantidadeArquivo;
     private int quantidadeBanco;
-    private int diferenca;
+    private int quantidadeTrailler;
 
-    // Lista detalhada de divergências
-    private List<AssociadoDivergenteDTO> associadosDivergentes = new ArrayList<>();
+    private int diferencaTraillerArquivo;
+    private int diferencaArquivoBanco;
 
-    // Notas presentes apenas no arquivo
-    private List<String> notasSomenteNoArquivo = new ArrayList<>();
+    private List<AssociadoDivergenteDTO> divergentes = new ArrayList<>();
+    private List<AssociadoDivergenteDTO> somenteArquivo = new ArrayList<>();
+    private List<AssociadoDivergenteDTO> somenteBanco = new ArrayList<>();
+    private List<AssociadoDivergenteDTO> faltandoPorTrailler = new ArrayList<>();
 
-    // Notas presentes apenas no banco
-    private List<String> notasSomenteNoBanco = new ArrayList<>();
 
-
-    // ==========================================================
-    // GETTERS / SETTERS
-    // ==========================================================
-
+    // GETTERS E SETTERS
     public int getQuantidadeArquivo() {
         return quantidadeArquivo;
     }
@@ -47,165 +36,121 @@ public class VerificacaoAssociadosDTO {
         this.quantidadeBanco = quantidadeBanco;
     }
 
-    public int getDiferenca() {
-        return diferenca;
+    public int getQuantidadeTrailler() {
+        return quantidadeTrailler;
     }
 
-    public void setDiferenca(int diferenca) {
-        this.diferenca = diferenca;
+    public void setQuantidadeTrailler(int quantidadeTrailler) {
+        this.quantidadeTrailler = quantidadeTrailler;
     }
 
-    public List<AssociadoDivergenteDTO> getAssociadosDivergentes() {
-        return associadosDivergentes;
+    public int getDiferencaTraillerArquivo() {
+        return diferencaTraillerArquivo;
     }
 
-    public void setAssociadosDivergentes(List<AssociadoDivergenteDTO> associadosDivergentes) {
-        this.associadosDivergentes = associadosDivergentes;
+    public void setDiferencaTraillerArquivo(int diferencaTraillerArquivo) {
+        this.diferencaTraillerArquivo = diferencaTraillerArquivo;
     }
 
-    public List<String> getNotasSomenteNoArquivo() {
-        return notasSomenteNoArquivo;
+    public int getDiferencaArquivoBanco() {
+        return diferencaArquivoBanco;
     }
 
-    public void setNotasSomenteNoArquivo(List<String> notasSomenteNoArquivo) {
-        this.notasSomenteNoArquivo = notasSomenteNoArquivo;
+    public void setDiferencaArquivoBanco(int diferencaArquivoBanco) {
+        this.diferencaArquivoBanco = diferencaArquivoBanco;
     }
 
-    public List<String> getNotasSomenteNoBanco() {
-        return notasSomenteNoBanco;
+    public List<AssociadoDivergenteDTO> getDivergentes() {
+        return divergentes;
     }
 
-    public void setNotasSomenteNoBanco(List<String> notasSomenteNoBanco) {
-        this.notasSomenteNoBanco = notasSomenteNoBanco;
+    public void setDivergentes(List<AssociadoDivergenteDTO> divergentes) {
+        this.divergentes = divergentes;
+    }
+
+    public List<AssociadoDivergenteDTO> getSomenteArquivo() {
+        return somenteArquivo;
+    }
+
+    public void setSomenteArquivo(List<AssociadoDivergenteDTO> somenteArquivo) {
+        this.somenteArquivo = somenteArquivo;
+    }
+
+    public List<AssociadoDivergenteDTO> getSomenteBanco() {
+        return somenteBanco;
+    }
+
+    public void setSomenteBanco(List<AssociadoDivergenteDTO> somenteBanco) {
+        this.somenteBanco = somenteBanco;
+    }
+
+    public List<AssociadoDivergenteDTO> getFaltandoPorTrailler() {
+        return faltandoPorTrailler;
+    }
+
+    public void setFaltandoPorTrailler(List<AssociadoDivergenteDTO> faltandoPorTrailler) {
+        this.faltandoPorTrailler = faltandoPorTrailler;
     }
 
 
-    // ========================================================================
-    // INNER DTO — REPRESENTA UMA NOTA / ASSOCIADO COM ALGUM TIPO DE DIVERGÊNCIA
-    // ========================================================================
+    // ============================
+    // DTO INTERNO
+    // ============================
     public static class AssociadoDivergenteDTO {
 
-        // Dados básicos
+        private String status;
+
+        private String numeroNota;
         private String codigoSocio;
         private String nomeAssociado;
 
-        // Dados completos da nota
-        private BigDecimal valorNota;      // Valor da nota (arq)
-        private int totalItens;            // Total de itens (arq)
-        private BigDecimal valorTotalItens; // Soma dos itens (arq)
+        private BigDecimal valorNota;
+        private int totalItens;
+        private BigDecimal valorTotalItens;
 
-        // Flags de divergência
-        private boolean codigoDivergente;
         private boolean nomeDivergente;
         private boolean valorDivergente;
         private boolean qtdItensDivergente;
 
-        // Divergência de itens
         private List<String> itensFaltantes = new ArrayList<>();
         private List<String> itensExtras = new ArrayList<>();
 
-        // Status especial
-        private String status; // ex.: "NOTA_PRESENTE_NO_ARQUIVO_AUSENTE_NO_BANCO"
 
+        // GETTERS E SETTERS
+        public String getStatus() { return status; }
+        public void setStatus(String status) { this.status = status; }
 
-        // ==========================================================
-        // GETTERS / SETTERS
-        // ==========================================================
+        public String getNumeroNota() { return numeroNota; }
+        public void setNumeroNota(String numeroNota) { this.numeroNota = numeroNota; }
 
-        public String getCodigoSocio() {
-            return codigoSocio;
-        }
+        public String getCodigoSocio() { return codigoSocio; }
+        public void setCodigoSocio(String codigoSocio) { this.codigoSocio = codigoSocio; }
 
-        public void setCodigoSocio(String codigoSocio) {
-            this.codigoSocio = codigoSocio;
-        }
+        public String getNomeAssociado() { return nomeAssociado; }
+        public void setNomeAssociado(String nomeAssociado) { this.nomeAssociado = nomeAssociado; }
 
-        public String getNomeAssociado() {
-            return nomeAssociado;
-        }
+        public BigDecimal getValorNota() { return valorNota; }
+        public void setValorNota(BigDecimal valorNota) { this.valorNota = valorNota; }
 
-        public void setNomeAssociado(String nomeAssociado) {
-            this.nomeAssociado = nomeAssociado;
-        }
+        public int getTotalItens() { return totalItens; }
+        public void setTotalItens(int totalItens) { this.totalItens = totalItens; }
 
-        public BigDecimal getValorNota() {
-            return valorNota;
-        }
+        public BigDecimal getValorTotalItens() { return valorTotalItens; }
+        public void setValorTotalItens(BigDecimal valorTotalItens) { this.valorTotalItens = valorTotalItens; }
 
-        public void setValorNota(BigDecimal valorNota) {
-            this.valorNota = valorNota;
-        }
+        public boolean isNomeDivergente() { return nomeDivergente; }
+        public void setNomeDivergente(boolean nomeDivergente) { this.nomeDivergente = nomeDivergente; }
 
-        public int getTotalItens() {
-            return totalItens;
-        }
+        public boolean isValorDivergente() { return valorDivergente; }
+        public void setValorDivergente(boolean valorDivergente) { this.valorDivergente = valorDivergente; }
 
-        public void setTotalItens(int totalItens) {
-            this.totalItens = totalItens;
-        }
+        public boolean isQtdItensDivergente() { return qtdItensDivergente; }
+        public void setQtdItensDivergente(boolean qtdItensDivergente) { this.qtdItensDivergente = qtdItensDivergente; }
 
-        public BigDecimal getValorTotalItens() {
-            return valorTotalItens;
-        }
+        public List<String> getItensFaltantes() { return itensFaltantes; }
+        public void setItensFaltantes(List<String> itensFaltantes) { this.itensFaltantes = itensFaltantes; }
 
-        public void setValorTotalItens(BigDecimal valorTotalItens) {
-            this.valorTotalItens = valorTotalItens;
-        }
-
-        public boolean isCodigoDivergente() {
-            return codigoDivergente;
-        }
-
-        public void setCodigoDivergente(boolean codigoDivergente) {
-            this.codigoDivergente = codigoDivergente;
-        }
-
-        public boolean isNomeDivergente() {
-            return nomeDivergente;
-        }
-
-        public void setNomeDivergente(boolean nomeDivergente) {
-            this.nomeDivergente = nomeDivergente;
-        }
-
-        public boolean isValorDivergente() {
-            return valorDivergente;
-        }
-
-        public void setValorDivergente(boolean valorDivergente) {
-            this.valorDivergente = valorDivergente;
-        }
-
-        public boolean isQtdItensDivergente() {
-            return qtdItensDivergente;
-        }
-
-        public void setQtdItensDivergente(boolean qtdItensDivergente) {
-            this.qtdItensDivergente = qtdItensDivergente;
-        }
-
-        public List<String> getItensFaltantes() {
-            return itensFaltantes;
-        }
-
-        public void setItensFaltantes(List<String> itensFaltantes) {
-            this.itensFaltantes = itensFaltantes;
-        }
-
-        public List<String> getItensExtras() {
-            return itensExtras;
-        }
-
-        public void setItensExtras(List<String> itensExtras) {
-            this.itensExtras = itensExtras;
-        }
-
-        public String getStatus() {
-            return status;
-        }
-
-        public void setStatus(String status) {
-            this.status = status;
-        }
+        public List<String> getItensExtras() { return itensExtras; }
+        public void setItensExtras(List<String> itensExtras) { this.itensExtras = itensExtras; }
     }
 }

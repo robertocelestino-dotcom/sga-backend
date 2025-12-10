@@ -3,7 +3,11 @@ package com.sga.service;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.text.Normalizer;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,14 +37,20 @@ public class ImportacaoSPService {
 
 		ImportacaoSPC importacao = new ImportacaoSPC(arquivo.getOriginalFilename());
 
-		try (BufferedReader br = new BufferedReader(new InputStreamReader(arquivo.getInputStream()))) {
+		try (BufferedReader br = new BufferedReader(
+		        new InputStreamReader(arquivo.getInputStream(), Charset.forName("windows-1252"))
+				)) {
 
 			String linha;
 			NotaDebitoSPC notaDebitoAtual = null;
 			int linhaNumero = 0;
 
 			while ((linha = br.readLine()) != null) {
+
 				linhaNumero++;
+
+				linha = sanitizeLine(linha);
+
 				logger.debug("Linha {}: {}", linhaNumero, linha.substring(0, Math.min(50, linha.length())));
 
 				if (linha.length() >= 1) {
@@ -247,23 +257,23 @@ public class ImportacaoSPService {
 			nota.setCidadeCobranca(linha.substring(201, 231).trim()); // pos 202-231
 			nota.setUfCobranca(linha.substring(231, 233).trim()); // pos 232-233
 			nota.setTelefoneCobranca(linha.substring(233, 248).trim()); // pos 234-248
-			
-			// Tipo Pessoa: F ou J 
+
+			// Tipo Pessoa: F ou J
 			nota.setTipoPessoa(linha.substring(263, 264).trim()); // pos 264-264
-			
+
 			// CNPJ/CPF bruto (pos 250–268)
 			String documentoBruto = linha.substring(264, 283).trim();
-			
+
 			// Define tamanho correto conforme tipo
 			int tamanho = "F".equalsIgnoreCase(nota.getTipoPessoa()) ? 11 : 14;
-			
+
 			// Mantém apenas os últimos caracteres necessários (CPF=11 / CNPJ=14)
 			String documento = documentoBruto.substring(documentoBruto.length() - tamanho);
-			
+
 			// Remove apenas espaços, nunca zeros
 			documento = documento.trim();
 			nota.setCnpjCic(documento); // pos 250-268
-			
+
 			nota.setInscricaoEstadual(linha.substring(283, 297).trim()); // pos 269-282
 			nota.setImportacao(importacao);
 
@@ -274,6 +284,67 @@ public class ImportacaoSPService {
 			logger.error("Erro ao processar nota débito: {}", e.getMessage());
 			return null;
 		}
+	}
+
+	public static String sanitizeLine(String line) {
+
+		if (line == null)
+			return null;
+
+		// 0) Remove BOM se existir
+		line = line.replace("\uFEFF", "");
+
+		// 1) Correções rápidas de "mojibake" comuns (expanda conforme for encontrando)
+		// usamos LinkedHashMap para garantir aplicação em ordem previsível
+		Map<String, String> fixes = new LinkedHashMap<>();
+		fixes.put("Ã¡", "á");
+		fixes.put("ÃÂ¡", "á");
+		fixes.put("Ã©", "é");
+		fixes.put("Ãª", "ê");
+		fixes.put("Ã¡", "á");
+		fixes.put("Ã³", "ó");
+		fixes.put("Ãµ", "õ");
+		fixes.put("Ãº", "ú");
+		fixes.put("ÃÃ", "Á");
+		fixes.put("Ã‰", "É");
+		fixes.put("ÃŠ", "Ê");
+		fixes.put("Ã§", "ç");
+		fixes.put("Ã‡", "Ç");
+		fixes.put("Ã", "A"); // fallback leve (opcional)
+		fixes.put("Ã¿", "Ç"); // seu caso específico
+		// adicionar outras sequências conforme identificar nos arquivos...
+		for (Map.Entry<String, String> e : fixes.entrySet()) {
+			if (line.contains(e.getKey())) {
+				line = line.replace(e.getKey(), e.getValue());
+			}
+		}
+
+		// 2) Remove caracteres de controle (exceto espaços normais)
+		// Isso preserva letras acentuadas antes da normalização
+		line = line.replaceAll("\\p{Cc}", " ");
+
+		// 3) Normaliza e remove marcas diacríticas (transforma Á->A, ç->c, etc.)
+		line = Normalizer.normalize(line, Normalizer.Form.NFD);
+		// remove marcas (acentos)
+		line = line.replaceAll("\\p{M}", "");
+
+		// 4) Substitui caracteres não imprimíveis/estranhos restantes por espaço
+		// \p{Print} nem sempre abrangente em todas as JVMs, então permitimos
+		// todos os caracteres imprimíveis Unicode (exceto controles) e substituímos o
+		// resto.
+		line = line.replaceAll("[^\\p{Graph}\\p{Blank}]", " "); // mantém letras, números, símbolos e espaços
+
+		// 5) Opcional: remover "caracteres de contagem zero" e outros invisíveis
+		line = line.replaceAll("\\p{Cf}", " ");
+
+		// 6) Garante comprimento fixo de 575 (layout SPC)
+		if (line.length() > 575) {
+			line = line.substring(0, 575);
+		} else if (line.length() < 575) {
+			line = String.format("%-" + 575 + "s", line);
+		}
+
+		return line;
 	}
 
 	private ItemSPC processarItem(String linha, NotaDebitoSPC notaDebito, ImportacaoSPC importacao) {
@@ -355,7 +426,7 @@ public class ImportacaoSPService {
 			// Qtde total boletos (pos 8-13)
 			String qtdBolStr = linha.substring(7, 13).trim();
 			if (!qtdBolStr.isEmpty()) {
-				//trailler.setQtdeTotalBoletos(Integer.parseInt(qtdBolStr));
+				// trailler.setQtdeTotalBoletos(Integer.parseInt(qtdBolStr));
 				trailler.setQtdeTotalBoletos(Long.parseLong(qtdBolStr));
 			}
 

@@ -22,6 +22,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import com.sga.dto.VerificacaoAssociadosCompletoDTO;
 import com.sga.dto.VerificacaoAssociadosDTO;
 import com.sga.dto.VerificacaoResultadoDTO;
 import com.sga.model.Associado;
@@ -29,8 +30,10 @@ import com.sga.model.ImportacaoSPC;
 import com.sga.model.ItemSPC;
 import com.sga.model.NotaDebitoSPC;
 import com.sga.model.ParametrosSPC;
+import com.sga.model.TraillerSPC;
 import com.sga.repository.AssociadoRepository;
 import com.sga.repository.ImportacaoSPCRepository;
+import com.sga.repository.ItemSPCRepository;
 import com.sga.repository.NotaDebitoSPCRepository;
 import com.sga.repository.ProdutoRepository;
 
@@ -59,6 +62,9 @@ public class VerificacaoImportacaoService {
 	@Autowired
 	private NotaDebitoSPCRepository notaDebitoSPCRepository;
 
+	@Autowired
+	private ItemSPCRepository itemSPCRepository;
+
 	/**
 	 * Entrada pública: gera relatório completo de verificação (map com chaves).
 	 * Cacheável para desempenho.
@@ -74,12 +80,10 @@ public class VerificacaoImportacaoService {
 		// Execução paralela — parâmetros primeiro para priorizar essa categoria
 		List<CompletableFuture<VerificacaoResultadoDTO>> futures = Arrays.asList(
 				CompletableFuture.supplyAsync(() -> verificarParametrosArquivo(importacao)),
-				// verificarAssociados() NÃO retorna VerificacaoResultadoDTO
-				// portanto NÃO deve entrar na lista
-				// será adicionado no relatório depois
 				CompletableFuture.supplyAsync(() -> verificarProdutos(importacao)),
-				CompletableFuture.supplyAsync(() -> verificarValoresTotais(importacao)),
+				// CompletableFuture.supplyAsync(() -> verificarValoresTotais(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarNotasDebito(importacao)),
+				CompletableFuture.supplyAsync(() -> verificarItensNota(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarConsistenciaDados(importacao)),
 				CompletableFuture.supplyAsync(() -> verificarEstruturaArquivo(importacao)));
 
@@ -160,9 +164,9 @@ public class VerificacaoImportacaoService {
 		return divergencias;
 	}
 
-	// ----------------------------
+	// ----------------------------------
 	// CATEGORIA: Parâmetros do arquivo
-	// ----------------------------
+	// ----------------------------------
 	private VerificacaoResultadoDTO verificarParametrosArquivo(ImportacaoSPC importacao) {
 		logger.info("Verificando parâmetros do arquivo...");
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Parâmetros do Arquivo");
@@ -215,175 +219,254 @@ public class VerificacaoImportacaoService {
 
 		VerificacaoAssociadosDTO dto = new VerificacaoAssociadosDTO();
 
-		// ----------------------------
-		// MAPEAR NOTAS DO ARQUIVO
-		// ----------------------------
-		Map<String, NotaDebitoSPC> arquivo = importacao.getNotasDebito().stream()
+		// ============================================================
+		// 1. QUANTIDADE TRAILLER (verdade absoluta do arquivo)
+		// ============================================================
+		int qtdTrailler = importacao.getTraillers().stream().map(TraillerSPC::getQtdeTotalBoletos)
+				.filter(Objects::nonNull).findFirst().orElse(0L).intValue();
+
+		// ============================================================
+		// 2. MAPAS DE NOTAS (arquivo)
+		// ============================================================
+		Map<String, NotaDebitoSPC> notasArquivo = importacao.getNotasDebito().stream()
 				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
 
-		// ----------------------------
-		// MAPEAR NOTAS DO BANCO
-		// ----------------------------
-		List<NotaDebitoSPC> bancoList = notaDebitoSPCRepository.findByImportacao_Id(importacaoId);
+		int qtdArquivo = notasArquivo.size();
 
-		Map<String, NotaDebitoSPC> banco = bancoList.stream()
+		// ============================================================
+		// 3. MAPAS DE NOTAS (banco)
+		// ============================================================
+		List<NotaDebitoSPC> listaBanco = notaDebitoSPCRepository.findByImportacao_Id(importacaoId);
+
+		Map<String, NotaDebitoSPC> notasBanco = listaBanco.stream()
 				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
 
-		dto.setQuantidadeArquivo(arquivo.size());
-		dto.setQuantidadeBanco(banco.size());
-		dto.setDiferenca(dto.getQuantidadeArquivo() - dto.getQuantidadeBanco());
+		int qtdBanco = notasBanco.size();
 
+		// ============================================================
+		// 4. PREENCHER DTO COM AS MESMAS REGRAS DO SEU SELECT
+		// ============================================================
+		dto.setQuantidadeTrailler(qtdTrailler);
+		dto.setQuantidadeArquivo(qtdArquivo);
+		dto.setQuantidadeBanco(qtdBanco);
+
+		dto.setDiferencaTraillerArquivo(qtdTrailler - qtdArquivo);
+		dto.setDiferencaArquivoBanco(qtdArquivo - qtdBanco);
+
+		// ============================================================
+		// LISTAS
+		// ============================================================
+		List<VerificacaoAssociadosDTO.AssociadoDivergenteDTO> faltandoPorTrailler = new ArrayList<>();
+		List<VerificacaoAssociadosDTO.AssociadoDivergenteDTO> somenteArquivo = new ArrayList<>();
+		List<VerificacaoAssociadosDTO.AssociadoDivergenteDTO> somenteBanco = new ArrayList<>();
 		List<VerificacaoAssociadosDTO.AssociadoDivergenteDTO> divergentes = new ArrayList<>();
 
-		// Listas adicionais
-		List<String> notasSomenteArquivo = new ArrayList<>();
-		List<String> notasSomenteBanco = new ArrayList<>();
+		// ============================================================
+		// 5. ARQUIVO → BANCO (somenteArquivo)
+		// Nota existe no arquivo, mas não existe no banco
+		// ============================================================
+		for (String numero : notasArquivo.keySet()) {
+			if (!notasBanco.containsKey(numero)) {
 
-		// ----------------------------
-		// 1. Notas do ARQUIVO → comparar com BANCO
-		// ----------------------------
-		for (String numeroNota : arquivo.keySet()) {
+				NotaDebitoSPC n = notasArquivo.get(numero);
 
-			NotaDebitoSPC arq = arquivo.get(numeroNota);
-			NotaDebitoSPC bn = banco.get(numeroNota);
+				VerificacaoAssociadosDTO.AssociadoDivergenteDTO d = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
 
-			if (bn == null) {
-				notasSomenteArquivo.add(numeroNota);
+				d.setStatus("SOMENTE_NO_ARQUIVO");
+				d.setNumeroNota(n.getNumeroNotaDebito());
+				d.setCodigoSocio(n.getCodigoSocio());
+				d.setNomeAssociado(n.getNomeAssociado());
+				d.setValorNota(n.getValorNota());
+				d.setTotalItens(n.getItens().size());
 
-				// precisa montar bloco de associado com dados completos
-				VerificacaoAssociadosDTO.AssociadoDivergenteDTO div = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
-				div.setCodigoSocio(arq.getCodigoSocio());
-				div.setNomeAssociado(arq.getNomeAssociado());
-				div.setValorNota(arq.getValorNota());
-				div.setTotalItens(arq.getItens().size());
-				div.setValorTotalItens(arq.getItens().stream().map(ItemSPC::getValorTotal).filter(Objects::nonNull)
-						.reduce(BigDecimal.ZERO, BigDecimal::add));
+				BigDecimal totalItens = n.getItens().stream().map(ItemSPC::getValorTotal).filter(Objects::nonNull)
+						.reduce(BigDecimal.ZERO, BigDecimal::add);
 
-				div.setStatus("NOTA_PRESENTE_NO_ARQUIVO_AUSENTE_NO_BANCO");
-				divergentes.add(div);
-				continue;
-			}
+				d.setValorTotalItens(totalItens);
 
-			// Comparação profunda
-			boolean divergente = false;
-
-			VerificacaoAssociadosDTO.AssociadoDivergenteDTO d = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
-			d.setCodigoSocio(arq.getCodigoSocio());
-			d.setNomeAssociado(arq.getNomeAssociado());
-			d.setValorNota(arq.getValorNota());
-			d.setTotalItens(arq.getItens().size());
-			d.setValorTotalItens(
-					arq.getItens().stream().map(ItemSPC::getValorTotal).reduce(BigDecimal.ZERO, BigDecimal::add));
-
-			// código
-			if (!Objects.equals(arq.getCodigoSocio(), bn.getCodigoSocio())) {
-				d.setCodigoDivergente(true);
-				divergente = true;
-			}
-
-			// nome
-			if (!arq.getNomeAssociado().trim().equalsIgnoreCase(bn.getNomeAssociado().trim())) {
-				d.setNomeDivergente(true);
-				divergente = true;
-			}
-
-			// valor total da nota
-			if (arq.getValorNota() != null && bn.getValorNota() != null) {
-				if (arq.getValorNota().compareTo(bn.getValorNota()) != 0) {
-					d.setValorDivergente(true);
-					divergente = true;
-				}
-			}
-
-			// quantidade de itens
-			int qtArq = arq.getItens().size();
-			int qtBn = bn.getItens().size();
-
-			if (qtArq != qtBn) {
-				d.setQtdItensDivergente(true);
-				divergente = true;
-			}
-
-			// Itens faltantes / extras
-			Set<String> itensArq = arq.getItens().stream().map(ItemSPC::getCodigoProduto).collect(Collectors.toSet());
-
-			Set<String> itensBn = bn.getItens().stream().map(ItemSPC::getCodigoProduto).collect(Collectors.toSet());
-
-			List<String> faltantes = itensArq.stream().filter(c -> !itensBn.contains(c)).toList();
-
-			List<String> extras = itensBn.stream().filter(c -> !itensArq.contains(c)).toList();
-
-			if (!faltantes.isEmpty()) {
-				d.setItensFaltantes(faltantes);
-				divergente = true;
-			}
-			if (!extras.isEmpty()) {
-				d.setItensExtras(extras);
-				divergente = true;
-			}
-
-			if (divergente)
-				divergentes.add(d);
-		}
-
-		// ----------------------------
-		// 2. Notas no BANCO mas não no arquivo
-		// ----------------------------
-		for (String numeroNota : banco.keySet()) {
-			if (!arquivo.containsKey(numeroNota)) {
-				notasSomenteBanco.add(numeroNota);
+				somenteArquivo.add(d);
 			}
 		}
 
-		dto.setAssociadosDivergentes(divergentes);
-		dto.setNotasSomenteNoArquivo(notasSomenteArquivo);
-		dto.setNotasSomenteNoBanco(notasSomenteBanco);
+		// ============================================================
+		// 6. BANCO → ARQUIVO (somenteBanco)
+		// Nota existe no banco, mas não existe no arquivo
+		// ============================================================
+		for (String numero : notasBanco.keySet()) {
+			if (!notasArquivo.containsKey(numero)) {
+
+				NotaDebitoSPC n = notasBanco.get(numero);
+
+				VerificacaoAssociadosDTO.AssociadoDivergenteDTO d = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
+
+				d.setStatus("SOMENTE_NO_BANCO");
+				d.setNumeroNota(n.getNumeroNotaDebito());
+				d.setCodigoSocio(n.getCodigoSocio());
+				d.setNomeAssociado(n.getNomeAssociado());
+				d.setValorNota(n.getValorNota());
+				d.setTotalItens(n.getItens().size());
+
+				BigDecimal totalItens = n.getItens().stream().map(ItemSPC::getValorTotal).filter(Objects::nonNull)
+						.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+				d.setValorTotalItens(totalItens);
+
+				somenteBanco.add(d);
+			}
+		}
+
+		// ============================================================
+		// 7. BANCO → ARQUIVO — SOMENTE BANCO
+		// ============================================================
+		for (String numero : notasBanco.keySet()) {
+			if (!notasArquivo.containsKey(numero)) {
+
+				NotaDebitoSPC n = notasBanco.get(numero);
+
+				VerificacaoAssociadosDTO.AssociadoDivergenteDTO d = new VerificacaoAssociadosDTO.AssociadoDivergenteDTO();
+
+				d.setStatus("SOMENTE_BANCO");
+				d.setNumeroNota(n.getNumeroNotaDebito());
+				d.setCodigoSocio(n.getCodigoSocio());
+				d.setNomeAssociado(n.getNomeAssociado());
+				d.setValorNota(n.getValorNota());
+				d.setTotalItens(n.getItens().size());
+
+				BigDecimal total = n.getItens().stream().map(ItemSPC::getValorTotal).filter(Objects::nonNull)
+						.reduce(BigDecimal.ZERO, BigDecimal::add);
+
+				d.setValorTotalItens(total);
+
+				somenteBanco.add(d);
+			}
+		}
+
+		// ============================================================
+		// 8. FALTANDO POR TRAILLER
+		// (quando Trailler != qtdArquivo, mostrar diferença real)
+		// ============================================================
+		int diferenca = qtdTrailler - qtdArquivo;
+
+		if (diferenca != 0) {
+			// Apenas informar a diferença, sem assumir que está no banco
+			// porque quem manda é o TRAILLER
+			// exemplo: trailler=2645 arquivo=2644 → faltando 1
+			// NÃO usar notasBanco aqui
+			dto.setDiferencaTraillerArquivo(diferenca);
+		}
+
+		// ============================================================
+		// ATRIBUI AO DTO
+		// ============================================================
+		dto.setFaltandoPorTrailler(faltandoPorTrailler);
+		dto.setSomenteArquivo(somenteArquivo);
+		dto.setSomenteBanco(somenteBanco);
+		dto.setDivergentes(divergentes);
 
 		return dto;
 	}
 
-	// ----------------------------
-	// CATEGORIA: Produtos (mantido / limpo)
-	// ----------------------------
-	private VerificacaoResultadoDTO verificarProdutos(ImportacaoSPC importacao) {
-		logger.info("Verificando produtos...");
-		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Produtos");
+	private VerificacaoResultadoDTO verificarItensNota(ImportacaoSPC importacao) {
+		logger.info("Verificando itens da nota...");
+
+		VerificacaoResultadoDTO r = new VerificacaoResultadoDTO("Itens da Nota");
 
 		try {
-			List<String> produtosArquivo = new ArrayList<>();
-			if (importacao.getNotasDebito() != null) {
-				produtosArquivo = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
-						.map(ItemSPC::getDescricaoServico).filter(Objects::nonNull).map(String::trim)
-						.filter(s -> !s.isEmpty()).distinct().collect(Collectors.toList());
-			}
+			// Quantidade no ARQUIVO
+			long qtdArquivo = importacao.getNotasDebito().stream().mapToLong(n -> n.getItens().size()).sum();
 
-			List<String> produtosProcessados = produtosArquivo.stream().map(this::processarDescricaoProduto)
-					.filter(s -> s != null && !s.isEmpty()).distinct().collect(Collectors.toList());
+			// Quantidade no BANCO
+			long qtdBanco = itemSPCRepository.countByNotaDebito_Importacao_Id(importacao.getId());
 
-			long qtdArquivo = produtosProcessados.size();
-			resultado.setQuantidadeArquivo(qtdArquivo);
+			// Valor no ARQUIVO
+			BigDecimal valorArquivo = importacao.getNotasDebito().stream().flatMap(n -> n.getItens().stream())
+					.map(ItemSPC::getValorTotal).filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
 
-			// Para esta versão, usamos qtdArquivo como qtdBanco para evitar falsas
-			// divergências
-			resultado.setQuantidadeBanco(qtdArquivo);
-			resultado.setDiferenca(0L);
-			resultado.setPossuiDivergencia(false);
+			// Banco usa a mesma lógica (controle virá depois se necessário)
+			BigDecimal valorBanco = valorArquivo;
 
-			Map<String, Object> detalhes = new HashMap<>();
-			detalhes.put("produtos_processados", produtosProcessados);
-			detalhes.put("produtos_originais", produtosArquivo);
-			resultado.setDetalhes(detalhes);
+			r.setQuantidadeArquivo(qtdArquivo);
+			r.setQuantidadeBanco(qtdBanco);
+			r.setDiferenca(qtdArquivo - qtdBanco);
 
-			logger.info("Produtos - Encontrados: {}, Processados: {}", produtosArquivo.size(),
-					produtosProcessados.size());
+			r.setValorArquivo(valorArquivo);
+			r.setValorBanco(valorBanco);
+			r.setDiferencaValor(valorArquivo.subtract(valorBanco));
+
+			r.setPossuiDivergencia(qtdArquivo != qtdBanco || r.getDiferencaValor().compareTo(BigDecimal.ZERO) != 0);
+
+			logger.info("Itens da Nota - arquivo={}, banco={}, valor={}", qtdArquivo, qtdBanco, valorArquivo);
 
 		} catch (Exception e) {
-			logger.error("Erro na verificação de produtos: {}", e.getMessage());
-			resultado.setPossuiDivergencia(true);
+			logger.error("Erro ao verificar itens da nota: {}", e.getMessage());
+			r.setPossuiDivergencia(true);
 		}
 
-		return resultado;
+		return r;
 	}
+
+	// -------------------------------------------
+	// CATEGORIA: Produtos (mantido / limpo)
+	// ------------------------------------------
+	private VerificacaoResultadoDTO verificarProdutos(ImportacaoSPC importacao) {
+	    logger.info("Verificando produtos (modo STRICT, igual ao banco)...");
+
+	    VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Produtos");
+
+	    try {
+	        // ------------------------------
+	        // 1) COLETAR PRODUTOS DO ARQUIVO
+	        // ------------------------------
+	        List<String> produtosArquivo = new ArrayList<>();
+
+	        if (importacao.getNotasDebito() != null) {
+	            produtosArquivo = importacao.getNotasDebito().stream()
+	                    .flatMap(n -> n.getItens().stream())
+	                    .map(ItemSPC::getDescricaoServico)
+	                    .filter(Objects::nonNull)
+	                    .map(String::trim)
+	                    .filter(s -> !s.isEmpty())
+	                    .distinct() // mantém distintos exatamente como estão
+	                    .collect(Collectors.toList());
+	        }
+
+	        long qtdArquivo = produtosArquivo.size();
+	        resultado.setQuantidadeArquivo(qtdArquivo);
+
+	        // ----------------------------------------
+	        // 2) COLETAR PRODUTOS DO BANCO (DISTINCT)
+	        // ----------------------------------------
+	        List<String> produtosBanco = itemSPCRepository.findDistinctProdutos(importacao.getId());
+
+	        long qtdBanco = produtosBanco.size();
+	        resultado.setQuantidadeBanco(qtdBanco);
+
+	        // ------------------------------
+	        // 3) DIFERENÇA
+	        // ------------------------------
+	        long diferenca = qtdArquivo - qtdBanco;
+	        resultado.setDiferenca(diferenca);
+	        resultado.setPossuiDivergencia(diferenca != 0);
+
+	        // ------------------------------
+	        // 4) DETALHES OPCIONAIS
+	        // ------------------------------
+	        Map<String, Object> detalhes = new HashMap<>();
+	        detalhes.put("produtos_arquivo", produtosArquivo);
+	        detalhes.put("produtos_banco", produtosBanco);
+	        resultado.setDetalhes(detalhes);
+
+	        logger.info("Produtos - Arquivo: {}, Banco: {}, Diferença: {}",
+	                qtdArquivo, qtdBanco, diferenca);
+
+	    } catch (Exception e) {
+	        logger.error("Erro na verificação de produtos: {}", e.getMessage());
+	        resultado.setPossuiDivergencia(true);
+	    }
+
+	    return resultado;
+	}
+
 
 	private String processarDescricaoProduto(String descricao) {
 		if (descricao == null)
@@ -435,31 +518,67 @@ public class VerificacaoImportacaoService {
 		return resultado;
 	}
 
-	// ----------------------------
-	// CATEGORIA: Notas de Débito
-	// ----------------------------
+	// --------------------------------------
+	// CATEGORIA: Notas de Débito (CORRIGIDO)
+	// --------------------------------------
 	private VerificacaoResultadoDTO verificarNotasDebito(ImportacaoSPC importacao) {
 		logger.info("Verificando notas de débito...");
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Notas de Débito");
 
 		try {
-			long qtdArquivo = importacao.getNotasDebito() != null ? importacao.getNotasDebito().size() : 0;
-			resultado.setQuantidadeArquivo(qtdArquivo);
 
+			// ------------------------------
+			// 1) TOTAL DO ARQUIVO (Trailler)
+			// ------------------------------
+			Long qtdTrailler = 0L;
+
+			try {
+				if (importacao.getTraillers() != null && !importacao.getTraillers().isEmpty()) {
+
+					// Usa qtdeTotalRegistros se existir, senão qtdeTotalBoletos
+					TraillerSPC t = importacao.getTraillers().get(0);
+
+					if (t.getQtdeTotalBoletos() != null) {
+						qtdTrailler = t.getQtdeTotalBoletos(); // t.getQtdeTotalRegistros();
+					} else if (t.getQtdeTotalBoletos() != null) {
+						// qtdTrailler = t.getQtdeTotalBoletos().intValue();
+						qtdTrailler = t.getQtdeTotalBoletos();
+					}
+				}
+			} catch (Exception e) {
+				logger.warn("Falha ao ler trailler, usando notas do arquivo como fallback");
+				qtdTrailler = (long) importacao.getNotasDebito().size();
+			}
+
+			// ------------------------------------------------------
+			// 2) TOTAL ENCONTRADO NO ARQUIVO (NotasDebito persisted)
+			// ------------------------------------------------------
+			long qtdArquivo = importacao.getNotasDebito() != null ? importacao.getNotasDebito().size() : 0;
+
+			// ------------------------------
+			// 3) VALOR TOTAL DO ARQUIVO
+			// ------------------------------
 			BigDecimal valorArquivo = BigDecimal.ZERO;
 			if (importacao.getNotasDebito() != null) {
 				valorArquivo = importacao.getNotasDebito().stream().map(NotaDebitoSPC::getValorNota)
 						.filter(Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
 			}
+
+			// -----------------------------------------
+			// 4) Preenche DTO com os valores corretos
+			// -----------------------------------------
+			resultado.setQuantidadeArquivo((long) qtdTrailler); // ARQUIVO = TRAILLER
+			resultado.setQuantidadeBanco(qtdArquivo); // BANCO = notas persistidas
+			resultado.setDiferenca(qtdTrailler - qtdArquivo);
+
 			resultado.setValorArquivo(valorArquivo);
-
-			resultado.setQuantidadeBanco(qtdArquivo);
 			resultado.setValorBanco(valorArquivo);
-			resultado.setDiferenca(0L);
 			resultado.setDiferencaValor(BigDecimal.ZERO);
-			resultado.setPossuiDivergencia(false);
 
-			logger.info("Notas de Débito - qtd={}, valor={}", qtdArquivo, valorArquivo);
+			resultado.setPossuiDivergencia(qtdTrailler != qtdArquivo);
+
+			logger.info("Notas de Débito - trailler={}, arquivo={}, valorTotal={}", qtdTrailler, qtdArquivo,
+					valorArquivo);
 
 		} catch (Exception e) {
 			logger.error("Erro na verificação das notas: {}", e.getMessage());
@@ -469,9 +588,9 @@ public class VerificacaoImportacaoService {
 		return resultado;
 	}
 
-	// ----------------------------
+	// ---------------------------------
 	// CATEGORIA: Consistência de Dados
-	// ----------------------------
+	// ---------------------------------
 	private VerificacaoResultadoDTO verificarConsistenciaDados(ImportacaoSPC importacao) {
 		logger.info("Verificando consistência de dados...");
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Consistência de Dados");
@@ -709,6 +828,123 @@ public class VerificacaoImportacaoService {
 
 	public void limparCache(Long importacaoId) {
 		logger.info("Cache limpo (placeholder) para importacao: {}", importacaoId);
+	}
+
+	public VerificacaoAssociadosCompletoDTO verificarAssociadosCompleto(Long importacaoId) {
+
+		ImportacaoSPC importacao = importacaoRepository.findById(importacaoId)
+				.orElseThrow(() -> new RuntimeException("Importação não encontrada"));
+
+		VerificacaoAssociadosCompletoDTO dto = new VerificacaoAssociadosCompletoDTO();
+
+		// ------------------------------
+		// 1) Total esperado no ARQUIVO (Trailler)
+		// ------------------------------
+		int qtdTrailler = 0;
+
+		try {
+			if (importacao.getTraillers() != null && !importacao.getTraillers().isEmpty()) {
+				qtdTrailler = importacao.getTraillers().get(0).getQtdeTotalRegistros();
+			}
+		} catch (Exception e) {
+			qtdTrailler = importacao.getNotasDebito().size();
+		}
+
+		// ------------------------------
+		// 2) Total encontrado no BANCO (Notas)
+		// ------------------------------
+		List<NotaDebitoSPC> notasBanco = notaDebitoSPCRepository.findByImportacao_Id(importacaoId);
+		int qtdBanco = notasBanco.size();
+
+		dto.setQuantidadeArquivo(qtdTrailler);
+		dto.setQuantidadeBanco(qtdBanco);
+		dto.setDiferenca(qtdTrailler - qtdBanco);
+
+		// ------------------------------
+		// Mapas para facilitar a comparação
+		// ------------------------------
+		Map<String, NotaDebitoSPC> mapaArquivo = importacao.getNotasDebito().stream()
+				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
+
+		Map<String, NotaDebitoSPC> mapaBanco = notasBanco.stream()
+				.collect(Collectors.toMap(NotaDebitoSPC::getNumeroNotaDebito, n -> n, (a, b) -> a));
+
+		// ------------------------------
+		// 3) Notas faltantes (Arquivo -> Banco)
+		// ------------------------------
+		List<String> notasSomenteArquivo = mapaArquivo.keySet().stream().filter(n -> !mapaBanco.containsKey(n))
+				.collect(Collectors.toList());
+
+		// Dados completos do associado para o frontend
+		for (String numero : notasSomenteArquivo) {
+			NotaDebitoSPC n = mapaArquivo.get(numero);
+
+			VerificacaoAssociadosCompletoDTO.NotaBasicaDTO nb = new VerificacaoAssociadosCompletoDTO.NotaBasicaDTO();
+			nb.numeroNota = numero;
+			nb.codigoSocio = n.getCodigoSocio();
+			nb.nomeAssociado = n.getNomeAssociado();
+			nb.valorNota = n.getValorNota();
+			nb.totalItens = n.getItens().size();
+
+			dto.getNotasSomenteNoArquivo().add(nb);
+		}
+
+		// ------------------------------
+		// 4) Notas que existem no banco mas não existem no arquivo
+		// ------------------------------
+		List<String> notasSomenteBanco = mapaBanco.keySet().stream().filter(n -> !mapaArquivo.containsKey(n))
+				.collect(Collectors.toList());
+
+		for (String numero : notasSomenteBanco) {
+			NotaDebitoSPC n = mapaBanco.get(numero);
+
+			VerificacaoAssociadosCompletoDTO.NotaBasicaDTO nb = new VerificacaoAssociadosCompletoDTO.NotaBasicaDTO();
+			nb.numeroNota = numero;
+			nb.codigoSocio = n.getCodigoSocio();
+			nb.nomeAssociado = n.getNomeAssociado();
+			nb.valorNota = n.getValorNota();
+			nb.totalItens = n.getItens().size();
+
+			dto.getNotasSomenteNoBanco().add(nb);
+		}
+
+		// ------------------------------
+		// 5) Divergências completas
+		// ------------------------------
+		for (String numero : mapaArquivo.keySet()) {
+
+			if (!mapaBanco.containsKey(numero)) {
+				// já tratado nas notas faltantes
+				continue;
+			}
+
+			NotaDebitoSPC arq = mapaArquivo.get(numero);
+			NotaDebitoSPC banco = mapaBanco.get(numero);
+
+			VerificacaoAssociadosCompletoDTO.DivergenciaAssociadoDTO div = new VerificacaoAssociadosCompletoDTO.DivergenciaAssociadoDTO();
+
+			div.numeroNota = numero;
+			div.codigoSocio = arq.getCodigoSocio();
+
+			div.nomeArquivo = arq.getNomeAssociado();
+			div.nomeBanco = banco.getNomeAssociado();
+			div.nomeDivergente = !arq.getNomeAssociado().trim().equalsIgnoreCase(banco.getNomeAssociado().trim());
+
+			div.valorArquivo = arq.getValorNota();
+			div.valorBanco = banco.getValorNota();
+			div.valorDivergente = arq.getValorNota() != null && banco.getValorNota() != null
+					&& arq.getValorNota().compareTo(banco.getValorNota()) != 0;
+
+			div.itensArquivo = arq.getItens().size();
+			div.itensBanco = banco.getItens().size();
+			div.itensDivergentes = div.itensArquivo != div.itensBanco;
+
+			if (div.nomeDivergente || div.valorDivergente || div.itensDivergentes) {
+				dto.getDivergencias().add(div);
+			}
+		}
+
+		return dto;
 	}
 
 }
