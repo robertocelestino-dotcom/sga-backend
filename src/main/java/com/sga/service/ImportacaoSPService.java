@@ -408,7 +408,9 @@ public class ImportacaoSPService {
 	}
 
 	private TraillerSPC processarTrailler(String linha, ImportacaoSPC importacao) {
+		
 		try {
+			
 			if (linha.length() < 575) {
 				logger.warn("Linha TRAILLER muito curta: {} caracteres", linha.length());
 				return null;

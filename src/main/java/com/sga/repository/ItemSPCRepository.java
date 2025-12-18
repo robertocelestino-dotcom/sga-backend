@@ -18,13 +18,13 @@ public interface ItemSPCRepository extends JpaRepository<ItemSPC, Long> {
 
 	List<ItemSPC> findByNotaDebito_Importacao_Id(Long importacaoId);
 
-	// Novo: conta itens corretamente por importação
+	// conta itens corretamente por importação
 	long countByImportacao_Id(Long importacaoId);
 
-	// Novo: contagem direta (melhor performance)
+	// contagem direta (melhor performance)
 	long countByNotaDebito_Importacao_Id(Long importacaoId);
 
-	// Novo: soma valor total dos itens vinculados à importação
+	// soma valor total dos itens vinculados à importação
 	@Query("SELECT COALESCE(SUM(i.valorTotal), 0) " + "FROM ItemSPC i WHERE i.importacao.id = :importacaoId")
 	BigDecimal sumValorTotalByImportacaoId(@Param("importacaoId") Long importacaoId);
 
@@ -32,5 +32,17 @@ public interface ItemSPCRepository extends JpaRepository<ItemSPC, Long> {
 			+ "AND i.descricaoServico IS NOT NULL " + "AND TRIM(i.descricaoServico) <> '' "
 			+ "ORDER BY i.descricaoServico")
 	List<String> findDistinctProdutos(Long importacaoId);
+
+	@Query("SELECT " + "COALESCE(SUM(CASE WHEN i.creditoDebito = 'D' THEN i.valorTotal ELSE 0 END), 0) "
+			+ "- COALESCE(SUM(CASE WHEN i.creditoDebito = 'C' THEN i.valorTotal ELSE 0 END), 0) " + "FROM ItemSPC i "
+			+ "WHERE i.notaDebito.importacao.id = :importacaoId")
+	BigDecimal calcularValorCobrado(Long importacaoId);
+
+	// soma de débito/credito por nota (opcional)
+	@Query("select coalesce(sum(case when i.creditoDebito = 'D' then i.valorTotal else 0 end),0) from ItemSPC i where i.notaDebito.id = :notaId")
+	BigDecimal sumDebitosByNotaId(Long notaId);
+
+	@Query("select coalesce(sum(case when i.creditoDebito = 'C' then i.valorTotal else 0 end),0) from ItemSPC i where i.notaDebito.id = :notaId")
+	BigDecimal sumCreditosByNotaId(Long notaId);
 
 }
