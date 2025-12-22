@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,6 +16,15 @@ import com.sga.model.Associado;
 @Repository
 public interface AssociadoRepository extends JpaRepository<Associado, Long> {
 
+	// Métodos de filtro para paginação
+    Page<Associado> findAllByCodigoSpcContainingIgnoreCase(String codigoSpc, Pageable pageable);
+    
+    Page<Associado> findAllByNomeRazaoContainingIgnoreCase(String nomeRazao, Pageable pageable);
+    
+    Page<Associado> findAllByCnpjCpfContaining(String cnpjCpf, Pageable pageable);
+    
+    Page<Associado> findAllByStatus(String status, Pageable pageable);	
+	
 	// Método correto - usando campo cnpjCpf
 	@Query("SELECT COUNT(a) FROM Associado a WHERE a.status = 'A'")
 	Long countAssociadosAtivos();
@@ -38,5 +49,7 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long> {
 	// Método adicional útil
 	@Query("SELECT COUNT(a) FROM Associado a")
 	Long countAllAssociados();
+	
+	
 
 }

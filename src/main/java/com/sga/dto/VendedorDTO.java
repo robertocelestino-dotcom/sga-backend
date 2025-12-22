@@ -1,51 +1,30 @@
-package com.sga.model;
+package com.sga.dto;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
-
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.Lob;
-import javax.persistence.Table;
 
 import lombok.Data;
 
 @Data
-@Entity
-@Table(name = "TB_VENDEDOR")
-public class Vendedor {
-
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+public class VendedorDTO {
 	private Long id;
-
-	@Column(name = "NOMERAZAO", nullable = false)
 	private String nomeRazao;
-
-	@Column(name = "NOMEFANTASIA")
 	private String nomeFantasia;
-
-	@Column(name = "CARGOFUNCAO")
 	private String cargoFuncao;
-
-	@Column(name = "STATUS", length = 1)
-	private String status = "A";
-
-	@Lob
-	@Column(name = "OBSERVACAO")
-	private String observacao;
-
-	@Column(name = "DATACADASTRO")
+	private String status; // "A" = Ativo, "I" = Inativo
+	private String observacoes; // No modelo é "observacao"
 	private LocalDateTime dataCadastro;
 
-	public Vendedor() {
-		super();
+	// Construtor vazio
+	public VendedorDTO() {}
+
+	// Construtor útil
+	public VendedorDTO(String nomeRazao, String status) {
+		this.nomeRazao = nomeRazao;
+		this.status = status;
 		this.dataCadastro = LocalDateTime.now();
 	}
 
+	// Getters e Setters (mantidos por compatibilidade)
 	public Long getId() {
 		return id;
 	}
@@ -86,12 +65,12 @@ public class Vendedor {
 		this.status = status;
 	}
 
-	public String getObservacao() {
-		return observacao;
+	public String getObservacoes() {
+		return observacoes;
 	}
 
-	public void setObservacao(String observacao) {
-		this.observacao = observacao;
+	public void setObservacoes(String observacoes) {
+		this.observacoes = observacoes;
 	}
 
 	public LocalDateTime getDataCadastro() {
@@ -101,6 +80,4 @@ public class Vendedor {
 	public void setDataCadastro(LocalDateTime dataCadastro) {
 		this.dataCadastro = dataCadastro;
 	}
-
-	// hashCode, equals, outros getters/setters...
 }

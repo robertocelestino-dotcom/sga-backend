@@ -83,7 +83,11 @@ public class Associado {
 	private List<AssociadoDefFaturamento> definicoesFaturamento;
 
 	public Associado(Long id) {
-		super();
+		
+	}
+
+	public Associado() {
+	
 	}
 
 	public Long getId() {

@@ -1,17 +1,14 @@
 package com.sga.model;
 
-import java.util.Objects;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import java.time.LocalDateTime;
+import java.util.Objects;
 
-import lombok.Data;
-
-@Data
 @Entity
 @Table(name = "TB_CATEGORIA")
 public class Categoria {
@@ -23,11 +20,26 @@ public class Categoria {
 	@Column(name = "DESCRICAO", nullable = false, length = 100)
 	private String descricao;
 
-	public Categoria(Long id) {
-		super();
-		this.id = id;
+	@Column(name = "TIPO", length = 20)
+	private String tipo = "GERAL";
+
+	@Column(name = "STATUS", length = 10)
+	private String status = "ATIVO";
+
+	@Column(name = "DATA_CADASTRO")
+	private LocalDateTime dataCadastro;
+
+	// Construtores
+	public Categoria() {
+		this.dataCadastro = LocalDateTime.now();
 	}
 
+	public Categoria(String descricao) {
+		this();
+		this.descricao = descricao;
+	}
+
+	// Getters e Setters
 	public Long getId() {
 		return id;
 	}
@@ -42,6 +54,30 @@ public class Categoria {
 
 	public void setDescricao(String descricao) {
 		this.descricao = descricao;
+	}
+
+	public String getTipo() {
+		return tipo;
+	}
+
+	public void setTipo(String tipo) {
+		this.tipo = tipo;
+	}
+
+	public String getStatus() {
+		return status;
+	}
+
+	public void setStatus(String status) {
+		this.status = status;
+	}
+
+	public LocalDateTime getDataCadastro() {
+		return dataCadastro;
+	}
+
+	public void setDataCadastro(LocalDateTime dataCadastro) {
+		this.dataCadastro = dataCadastro;
 	}
 
 	@Override
@@ -60,5 +96,4 @@ public class Categoria {
 		Categoria other = (Categoria) obj;
 		return Objects.equals(id, other.id);
 	}
-
 }
