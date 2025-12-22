@@ -15,7 +15,7 @@ import com.sga.model.Categoria;
 @Repository
 public interface CategoriaRepository extends JpaRepository<Categoria, Long> {
 
-	Optional<Categoria> findByCodigo(String codigo);
+	Optional<Categoria> findById(Integer codigo);
 
 	List<Categoria> findByStatus(String status);
 

@@ -14,7 +14,7 @@ import com.sga.model.Vendedor;
 @Repository
 public interface VendedorRepository extends JpaRepository<Vendedor, Long> {
 	
-	Optional<Vendedor> findByCodigo(String codigo);
+	Optional<Vendedor> findById(Integer codigo);
 
 	List<Vendedor> findByStatus(String status);
 

@@ -13,7 +13,7 @@ public class PlanoResumoDTO {
 	private String status;
 	private LocalDateTime dataCadastro;
 
-	public PlanoResumoDTO(Long long1, String string, BigDecimal bigDecimal) {
+	public PlanoResumoDTO(Long long1, String string, String string2, BigDecimal bigDecimal) {
 
 	}
 

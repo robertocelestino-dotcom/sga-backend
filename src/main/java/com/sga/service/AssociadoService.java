@@ -38,10 +38,13 @@ public class AssociadoService {
     
     @Autowired
     private AssociadoRepository associadoRepository;
+    
     @Autowired
     private VendedorRepository vendedorRepository;
+    
     @Autowired
     private PlanosRepository planosRepository;
+    
     @Autowired
     private CategoriaRepository categoriaRepository;
 
