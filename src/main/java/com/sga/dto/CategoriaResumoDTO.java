@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 public class CategoriaResumoDTO {
 
 	private Long id;
-	private String codigo;
 	private String descricao;
 	private String tipo;
 	private String status;
@@ -21,14 +20,6 @@ public class CategoriaResumoDTO {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public String getCodigo() {
-		return codigo;
-	}
-
-	public void setCodigo(String codigo) {
-		this.codigo = codigo;
 	}
 
 	public String getDescricao() {

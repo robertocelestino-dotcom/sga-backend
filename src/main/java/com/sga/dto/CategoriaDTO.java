@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 public class CategoriaDTO {
 
 	private Long id;
-	private String codigo;
 	private String descricao;
 	private String tipo; // ASSOCIADO, PRODUTO, GERAL
 	private String status; // ATIVO, INATIVO
@@ -29,14 +28,6 @@ public class CategoriaDTO {
 
 	public void setId(Long id) {
 		this.id = id;
-	}
-
-	public String getCodigo() {
-		return codigo;
-	}
-
-	public void setCodigo(String codigo) {
-		this.codigo = codigo;
 	}
 
 	public String getDescricao() {

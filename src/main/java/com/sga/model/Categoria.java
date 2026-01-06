@@ -6,8 +6,6 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Entity
 @Table(name = "TB_CATEGORIA")
@@ -20,26 +18,16 @@ public class Categoria {
 	@Column(name = "DESCRICAO", nullable = false, length = 100)
 	private String descricao;
 
-	@Column(name = "TIPO", length = 20)
-	private String tipo = "GERAL";
-
-	@Column(name = "STATUS", length = 10)
-	private String status = "ATIVO";
-
-	@Column(name = "DATA_CADASTRO")
-	private LocalDateTime dataCadastro;
-
 	// Construtores
 	public Categoria() {
-		this.dataCadastro = LocalDateTime.now();
 	}
 
 	public Categoria(String descricao) {
 		this();
 		this.descricao = descricao;
+		// this.codigo = "CAT-" + System.currentTimeMillis(); // Código temporário
 	}
 
-	// Getters e Setters
 	public Long getId() {
 		return id;
 	}
@@ -56,44 +44,19 @@ public class Categoria {
 		this.descricao = descricao;
 	}
 
-	public String getTipo() {
-		return tipo;
-	}
-
-	public void setTipo(String tipo) {
-		this.tipo = tipo;
-	}
-
-	public String getStatus() {
-		return status;
-	}
-
-	public void setStatus(String status) {
-		this.status = status;
-	}
-
-	public LocalDateTime getDataCadastro() {
-		return dataCadastro;
-	}
-
-	public void setDataCadastro(LocalDateTime dataCadastro) {
-		this.dataCadastro = dataCadastro;
-	}
-
+	// hashCode e equals
 	@Override
 	public int hashCode() {
-		return Objects.hash(id);
+		return id != null ? id.hashCode() : 0;
 	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
+	public boolean equals(Object o) {
+		if (this == o)
 			return true;
-		if (obj == null)
+		if (o == null || getClass() != o.getClass())
 			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		Categoria other = (Categoria) obj;
-		return Objects.equals(id, other.id);
+		Categoria categoria = (Categoria) o;
+		return id != null && id.equals(categoria.id);
 	}
 }

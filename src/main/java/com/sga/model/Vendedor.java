@@ -1,14 +1,16 @@
 package com.sga.model;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.Lob;
+import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 import lombok.Data;
@@ -40,6 +42,10 @@ public class Vendedor {
 
 	@Column(name = "DATACADASTRO")
 	private LocalDateTime dataCadastro;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "vendedor_tipo_id", referencedColumnName = "id")
+	private VendedorTipo vendedorTipo;
 
 	public Vendedor() {
 		super();
@@ -102,5 +108,12 @@ public class Vendedor {
 		this.dataCadastro = dataCadastro;
 	}
 
-	// hashCode, equals, outros getters/setters...
+	public VendedorTipo getVendedorTipo() {
+		return vendedorTipo;
+	}
+
+	public void setVendedorTipo(VendedorTipo vendedorTipo) {
+		this.vendedorTipo = vendedorTipo;
+	}
+
 }

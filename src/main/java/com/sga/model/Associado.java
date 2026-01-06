@@ -65,7 +65,7 @@ public class Associado {
 	private BigDecimal faturamentoMinimo;
 
 	@Column(name = "DATA_CADASTRO")
-	private LocalDateTime dataCadastro = LocalDateTime.now();
+	private LocalDateTime dataCadastro;// = LocalDateTime.now();
 
 	@OneToMany(mappedBy = "associado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<Endereco> enderecos;

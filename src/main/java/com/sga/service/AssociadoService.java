@@ -1,4 +1,4 @@
-// src/main/java/com/sga/service/AssociadoService.java - VERSÃO CORRIGIDA
+// src/main/java/com/sga/service/AssociadoService.java - VERSÃO CORRIGIDA FINAL
 package com.sga.service;
 
 import com.sga.dto.AssociadoDTO;
@@ -26,6 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityNotFoundException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -64,7 +69,13 @@ public class AssociadoService {
         dto.setTipoPessoa(associado.getTipoPessoa());
         dto.setStatus(associado.getStatus());
         dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
-        dto.setDataCadastro(associado.getDataCadastro());
+        
+        // CORREÇÃO: Se AssociadoResumoDTO usa LocalDateTime e Associado usa LocalDate
+        if (associado.getDataCadastro() != null) {
+            // Converter LocalDate para LocalDateTime (meia-noite)
+            //dto.setDataCadastro(associado.getDataCadastro().atStartOfDay());
+        	dto.setDataCadastro(LocalDateTime.now());
+        }
         
         // Informações básicas dos relacionamentos
         if (associado.getVendedor() != null) {
@@ -101,7 +112,13 @@ public class AssociadoService {
         dto.setTipoPessoa(associado.getTipoPessoa());
         dto.setStatus(associado.getStatus());
         dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
-        dto.setDataCadastro(associado.getDataCadastro());
+        
+        // CORREÇÃO: Se AssociadoDTO usa LocalDateTime e Associado usa LocalDate
+        if (associado.getDataCadastro() != null) {
+            // Converter LocalDate para LocalDateTime (meia-noite)
+            //dto.setDataCadastro(associado.getDataCadastro().atStartOfDay());
+        	dto.setDataCadastro(LocalDateTime.now());
+        }
         
         // IDs dos relacionamentos
         if (associado.getVendedor() != null) {
@@ -325,118 +342,230 @@ public class AssociadoService {
 
     // Atualizar entidade a partir do DTO
     private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
-        associado.setCodigoSpc(dto.getCodigoSpc());
-        associado.setCodigoRm(dto.getCodigoRm());
-        associado.setCnpjCpf(dto.getCnpjCpf());
-        associado.setNomeRazao(dto.getNomeRazao());
-        associado.setNomeFantasia(dto.getNomeFantasia());
-        associado.setTipoPessoa(dto.getTipoPessoa());
+        logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
         
-        // Status padrão se não informado
-        if (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) {
-            associado.setStatus(dto.getStatus());
-        } else {
-            associado.setStatus("A"); // Ativo por padrão
-        }
-        
-        associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
-        
-        // Carregar relacionamentos
-        if (dto.getVendedorId() != null) {
-            Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
-                    .orElseThrow(() -> {
-                        logger.error("Vendedor não encontrado: {}", dto.getVendedorId());
-                        return new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId());
-                    });
-            associado.setVendedor(vendedor);
-        } else {
-            associado.setVendedor(null);
-        }
-        
-        if (dto.getPlanoId() != null) {
-            Planos plano = planosRepository.findById(dto.getPlanoId())
-                    .orElseThrow(() -> {
-                        logger.error("Plano não encontrado: {}", dto.getPlanoId());
-                        return new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId());
-                    });
-            associado.setPlano(plano);
-        } else {
-            associado.setPlano(null);
-        }
-        
-        if (dto.getCategoriaId() != null) {
-            Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-                    .orElseThrow(() -> {
-                        logger.error("Categoria não encontrada: {}", dto.getCategoriaId());
-                        return new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId());
-                    });
-            associado.setCategoria(categoria);
-        } else {
-            associado.setCategoria(null);
-        }
-        
-        // Atualizar sub-entidades (endereços, emails, telefones)
-        // Limpar listas existentes
-        if (associado.getEnderecos() != null) {
+        try {
+            // 🟢 1. DADOS BÁSICOS DO ASSOCIADO
+            // Campos opcionais - garante string vazia se null
+            associado.setCodigoSpc(dto.getCodigoSpc() != null ? dto.getCodigoSpc() : "");
+            associado.setCodigoRm(dto.getCodigoRm() != null ? dto.getCodigoRm() : "");
+            associado.setNomeFantasia(dto.getNomeFantasia() != null ? dto.getNomeFantasia() : "");
+            
+            // Campos obrigatórios - validação
+            if (dto.getCnpjCpf() == null || dto.getCnpjCpf().trim().isEmpty()) {
+                throw new IllegalArgumentException("CNPJ/CPF é obrigatório");
+            }
+            associado.setCnpjCpf(dto.getCnpjCpf().trim());
+            
+            if (dto.getNomeRazao() == null || dto.getNomeRazao().trim().isEmpty()) {
+                throw new IllegalArgumentException("Nome/Razão Social é obrigatório");
+            }
+            associado.setNomeRazao(dto.getNomeRazao().trim());
+            
+            if (dto.getTipoPessoa() == null) {
+                throw new IllegalArgumentException("Tipo Pessoa é obrigatório");
+            }
+            associado.setTipoPessoa(dto.getTipoPessoa());
+            
+            // Status - padrão "A" (Ativo) se não informado
+            associado.setStatus(
+                (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) 
+                    ? dto.getStatus().trim() 
+                    : "A"
+            );
+            
+            // 🟢 2. DATA CADASTRO - CONVERSÃO SEGURA (LocalDateTime → LocalDate)
+            if (dto.getDataCadastro() != null) {
+                // Converte LocalDateTime para LocalDate (pega apenas a data)
+                //associado.setDataCadastro(dto.getDataCadastro().toLocalDate());
+            	associado.setDataCadastro(LocalDateTime.now());
+            } else {
+                //associado.setDataCadastro(LocalDate.now());
+            	associado.setDataCadastro(LocalDateTime.now());
+            }
+            
+            // 🟢 3. FATURAMENTO MÍNIMO - PODE SER NULL
+            // Converte BigDecimal para Double se necessário
+            if (dto.getFaturamentoMinimo() != null) {
+                associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+            } else {
+                associado.setFaturamentoMinimo(null);
+            }
+            
+            // 🟢 4. RELACIONAMENTOS (vendedor, plano, categoria)
+            // Vendedor - só seta se ID > 0
+            if (dto.getVendedorId() != null && dto.getVendedorId() > 0) {
+                Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
+                        .orElseThrow(() -> {
+                            logger.error("Vendedor não encontrado com ID: {}", dto.getVendedorId());
+                            return new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId());
+                        });
+                associado.setVendedor(vendedor);
+            } else {
+                associado.setVendedor(null);
+            }
+            
+            // Plano - só seta se ID > 0
+            if (dto.getPlanoId() != null && dto.getPlanoId() > 0) {
+                Planos plano = planosRepository.findById(dto.getPlanoId())
+                        .orElseThrow(() -> {
+                            logger.error("Plano não encontrado com ID: {}", dto.getPlanoId());
+                            return new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId());
+                        });
+                associado.setPlano(plano);
+            } else {
+                associado.setPlano(null);
+            }
+            
+            // Categoria - só seta se ID > 0
+            if (dto.getCategoriaId() != null && dto.getCategoriaId() > 0) {
+                Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+                        .orElseThrow(() -> {
+                            logger.error("Categoria não encontrada com ID: {}", dto.getCategoriaId());
+                            return new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId());
+                        });
+                associado.setCategoria(categoria);
+            } else {
+                associado.setCategoria(null);
+            }
+            
+            // 🟢 5. INICIALIZAR LISTAS SE NECESSÁRIO
+            if (associado.getEnderecos() == null) {
+                associado.setEnderecos(new java.util.ArrayList<>());
+            }
+            if (associado.getEmails() == null) {
+                associado.setEmails(new java.util.ArrayList<>());
+            }
+            if (associado.getTelefones() == null) {
+                associado.setTelefones(new java.util.ArrayList<>());
+            }
+            
+            // Limpar listas existentes antes de adicionar novos
             associado.getEnderecos().clear();
-        }
-        
-        if (associado.getEmails() != null) {
             associado.getEmails().clear();
-        }
-        
-        if (associado.getTelefones() != null) {
             associado.getTelefones().clear();
-        }
-        
-        // Adicionar novos endereços
-        if (dto.getEnderecos() != null) {
-            for (EnderecoDTO enderecoDTO : dto.getEnderecos()) {
-                Endereco endereco = new Endereco();
-                endereco.setAssociado(associado);
-                endereco.setTipoLogradouro(enderecoDTO.getTipoLogradouro());
-                endereco.setLogradouro(enderecoDTO.getLogradouro());
-                endereco.setNumero(enderecoDTO.getNumero());
-                endereco.setComplemento(enderecoDTO.getComplemento());
-                endereco.setBairro(enderecoDTO.getBairro());
-                endereco.setCidade(enderecoDTO.getCidade());
-                endereco.setCep(enderecoDTO.getCep());
-                endereco.setEstado(enderecoDTO.getEstado());
-                endereco.setTipoEndereco(enderecoDTO.getTipoEndereco());
-                
-                associado.getEnderecos().add(endereco);
+            
+            // 🟢 6. ENDEREÇOS - TRATAMENTO SEGURO
+            if (dto.getEnderecos() != null) {
+                for (EnderecoDTO enderecoDTO : dto.getEnderecos()) {
+                    if (enderecoDTO == null) continue;
+                    
+                    Endereco endereco = new Endereco();
+                    endereco.setAssociado(associado);
+                    
+                    // Todos os campos com valores padrão seguros
+                    endereco.setTipoLogradouro(
+                        enderecoDTO.getTipoLogradouro() != null ? 
+                        enderecoDTO.getTipoLogradouro().trim() : "Rua"
+                    );
+                    
+                    endereco.setLogradouro(
+                        enderecoDTO.getLogradouro() != null ? 
+                        enderecoDTO.getLogradouro().trim() : ""
+                    );
+                    
+                    endereco.setNumero(
+                        enderecoDTO.getNumero() != null ? 
+                        enderecoDTO.getNumero().trim() : ""
+                    );
+                    
+                    endereco.setComplemento(
+                        enderecoDTO.getComplemento() != null ? 
+                        enderecoDTO.getComplemento().trim() : ""
+                    );
+                    
+                    endereco.setBairro(
+                        enderecoDTO.getBairro() != null ? 
+                        enderecoDTO.getBairro().trim() : ""
+                    );
+                    
+                    endereco.setCidade(
+                        enderecoDTO.getCidade() != null ? 
+                        enderecoDTO.getCidade().trim() : ""
+                    );
+                    
+                    endereco.setCep(
+                        enderecoDTO.getCep() != null ? 
+                        enderecoDTO.getCep().trim().replaceAll("[^0-9]", "") : ""
+                    );
+                    
+                    endereco.setEstado(
+                        enderecoDTO.getEstado() != null ? 
+                        enderecoDTO.getEstado().trim() : ""
+                    );
+                    
+                    endereco.setTipoEndereco(
+                        enderecoDTO.getTipoEndereco() != null ? 
+                        enderecoDTO.getTipoEndereco().trim() : "COMERCIAL"
+                    );
+                    
+                    associado.getEnderecos().add(endereco);
+                }
             }
-        }
-        
-        // Adicionar novos emails
-        if (dto.getEmails() != null) {
-            for (EmailDTO emailDTO : dto.getEmails()) {
-                Email email = new Email();
-                email.setAssociado(associado);
-                email.setEmail(emailDTO.getEmail());
-                email.setTipoEmail(emailDTO.getTipoEmail());
-                email.setAtivo(emailDTO.getAtivo());
-                
-                associado.getEmails().add(email);
+            
+            // 🟢 7. EMAILS - TRATAMENTO SEGURO
+            if (dto.getEmails() != null) {
+                for (EmailDTO emailDTO : dto.getEmails()) {
+                    if (emailDTO == null) continue;
+                    
+                    // Valida email básico
+                    if (emailDTO.getEmail() == null || emailDTO.getEmail().trim().isEmpty()) {
+                        continue; // Pula emails vazios
+                    }
+                    
+                    Email email = new Email();
+                    email.setAssociado(associado);
+                    email.setEmail(emailDTO.getEmail().trim().toLowerCase());
+                    email.setTipoEmail(
+                        emailDTO.getTipoEmail() != null ? 
+                        emailDTO.getTipoEmail().trim() : "COMERCIAL"
+                    );
+                    email.setAtivo(emailDTO.getAtivo() != null ? emailDTO.getAtivo() : true);
+                    
+                    associado.getEmails().add(email);
+                }
             }
-        }
-        
-        // Adicionar novos telefones
-        if (dto.getTelefones() != null) {
-            for (TelefoneDTO telefoneDTO : dto.getTelefones()) {
-                Telefone telefone = new Telefone();
-                telefone.setAssociado(associado);
-                telefone.setDdd(telefoneDTO.getDdd());
-                telefone.setNumero(telefoneDTO.getNumero());
-                telefone.setTipoTelefone(telefoneDTO.getTipoTelefone());
-                telefone.setWhatsapp(telefoneDTO.getWhatsapp());
-                telefone.setAtivo(telefoneDTO.getAtivo());
-                
-                associado.getTelefones().add(telefone);
+            
+            // 🟢 8. TELEFONES - TRATAMENTO SEGURO
+            if (dto.getTelefones() != null) {
+                for (TelefoneDTO telefoneDTO : dto.getTelefones()) {
+                    if (telefoneDTO == null) continue;
+                    
+                    // Valida telefone básico
+                    if ((telefoneDTO.getDdd() == null || telefoneDTO.getDdd().trim().isEmpty()) ||
+                        (telefoneDTO.getNumero() == null || telefoneDTO.getNumero().trim().isEmpty())) {
+                        continue; // Pula telefones inválidos
+                    }
+                    
+                    Telefone telefone = new Telefone();
+                    telefone.setAssociado(associado);
+                    telefone.setDdd(telefoneDTO.getDdd().trim().replaceAll("[^0-9]", ""));
+                    telefone.setNumero(telefoneDTO.getNumero().trim().replaceAll("[^0-9]", ""));
+                    telefone.setTipoTelefone(
+                        telefoneDTO.getTipoTelefone() != null ? 
+                        telefoneDTO.getTipoTelefone().trim() : "CELULAR"
+                    );
+                    telefone.setWhatsapp(telefoneDTO.getWhatsapp() != null ? telefoneDTO.getWhatsapp() : false);
+                    telefone.setAtivo(telefoneDTO.getAtivo() != null ? telefoneDTO.getAtivo() : true);
+                    
+                    associado.getTelefones().add(telefone);
+                }
             }
+            
+            logger.info("✅ Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
+            
+        } catch (IllegalArgumentException e) {
+            logger.error("❌ Erro de validação: {}", e.getMessage());
+            throw e;
+        } catch (EntityNotFoundException e) {
+            logger.error("❌ Recurso não encontrado: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            logger.error("❌ Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
+            throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
         }
     }
-
+    
     // Métodos para estatísticas
     @Transactional(readOnly = true)
     public Long countAssociadosAtivos() {
@@ -484,4 +613,5 @@ public class AssociadoService {
     public List<Categoria> buscarTodasCategorias() {
         return categoriaRepository.findAll();
     }
+
 }

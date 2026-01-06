@@ -1,32 +1,26 @@
-// src/main/java/com/sga/dto/PlanoDTO.java
 package com.sga.dto;
 
-import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Data
 public class PlanoDTO {
-
 	private Long id;
 	private String codigo;
 	private String plano;
 	private String descricao;
 	private BigDecimal valorMensal;
 	private BigDecimal valorAnual;
-	private String periodicidade; // MENSAL, ANUAL, SEMESTRAL, TRIMESTRAL
+	private String periodoCobranca;
+	private String status;
 	private Integer limiteAssociados;
-	private Integer limiteConsultas;
-	private Boolean incluiSuporte;
-	private Integer diasCarencia;
-	private String status; // ATIVO, INATIVO
 	private String observacoes;
 	private LocalDateTime dataCadastro;
 
 	public PlanoDTO() {
-
+		
 	}
 
+	// Getters e Setters para todos os campos
 	public Long getId() {
 		return id;
 	}
@@ -75,44 +69,12 @@ public class PlanoDTO {
 		this.valorAnual = valorAnual;
 	}
 
-	public String getPeriodicidade() {
-		return periodicidade;
+	public String getPeriodoCobranca() {
+		return periodoCobranca;
 	}
 
-	public void setPeriodicidade(String periodicidade) {
-		this.periodicidade = periodicidade;
-	}
-
-	public Integer getLimiteAssociados() {
-		return limiteAssociados;
-	}
-
-	public void setLimiteAssociados(Integer limiteAssociados) {
-		this.limiteAssociados = limiteAssociados;
-	}
-
-	public Integer getLimiteConsultas() {
-		return limiteConsultas;
-	}
-
-	public void setLimiteConsultas(Integer limiteConsultas) {
-		this.limiteConsultas = limiteConsultas;
-	}
-
-	public Boolean getIncluiSuporte() {
-		return incluiSuporte;
-	}
-
-	public void setIncluiSuporte(Boolean incluiSuporte) {
-		this.incluiSuporte = incluiSuporte;
-	}
-
-	public Integer getDiasCarencia() {
-		return diasCarencia;
-	}
-
-	public void setDiasCarencia(Integer diasCarencia) {
-		this.diasCarencia = diasCarencia;
+	public void setPeriodoCobranca(String periodoCobranca) {
+		this.periodoCobranca = periodoCobranca;
 	}
 
 	public String getStatus() {
@@ -121,6 +83,14 @@ public class PlanoDTO {
 
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public Integer getLimiteAssociados() {
+		return limiteAssociados;
+	}
+
+	public void setLimiteAssociados(Integer limiteAssociados) {
+		this.limiteAssociados = limiteAssociados;
 	}
 
 	public String getObservacoes() {
@@ -138,5 +108,4 @@ public class PlanoDTO {
 	public void setDataCadastro(LocalDateTime dataCadastro) {
 		this.dataCadastro = dataCadastro;
 	}
-
 }
