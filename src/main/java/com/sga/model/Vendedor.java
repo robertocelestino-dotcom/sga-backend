@@ -44,7 +44,7 @@ public class Vendedor {
 	private LocalDateTime dataCadastro;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "vendedor_tipo_id", referencedColumnName = "id")
+	@JoinColumn(name = "tipo_id", referencedColumnName = "id")
 	private VendedorTipo vendedorTipo;
 
 	public Vendedor() {

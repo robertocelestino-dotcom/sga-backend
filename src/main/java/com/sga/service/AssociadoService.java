@@ -1,5 +1,21 @@
-// src/main/java/com/sga/service/AssociadoService.java - VERSÃO CORRIGIDA FINAL
 package com.sga.service;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.persistence.EntityNotFoundException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.sga.dto.AssociadoDTO;
 import com.sga.dto.AssociadoResumoDTO;
@@ -15,603 +31,829 @@ import com.sga.model.Telefone;
 import com.sga.model.Vendedor;
 import com.sga.repository.AssociadoRepository;
 import com.sga.repository.CategoriaRepository;
+import com.sga.repository.EmailRepository;
+import com.sga.repository.EnderecoRepository;
 import com.sga.repository.PlanosRepository;
+import com.sga.repository.TelefoneRepository;
 import com.sga.repository.VendedorRepository;
-import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityNotFoundException;
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
 @Service
 public class AssociadoService {
 
-    private static final Logger logger = LoggerFactory.getLogger(AssociadoService.class);
-    
-    @Autowired
-    private AssociadoRepository associadoRepository;
-    
-    @Autowired
-    private VendedorRepository vendedorRepository;
-    
-    @Autowired
-    private PlanosRepository planosRepository;
-    
-    @Autowired
-    private CategoriaRepository categoriaRepository;
+	private static final Logger logger = LoggerFactory.getLogger(AssociadoService.class);
 
-    // Converter Entity para DTO resumido
-    private AssociadoResumoDTO toResumoDTO(Associado associado) {
-        if (associado == null) {
-            return null;
-        }
-        
-        AssociadoResumoDTO dto = new AssociadoResumoDTO();
-        dto.setId(associado.getId());
-        dto.setCodigoSpc(associado.getCodigoSpc());
-        dto.setCodigoRm(associado.getCodigoRm());
-        dto.setCnpjCpf(associado.getCnpjCpf());
-        dto.setNomeRazao(associado.getNomeRazao());
-        dto.setNomeFantasia(associado.getNomeFantasia());
-        dto.setTipoPessoa(associado.getTipoPessoa());
-        dto.setStatus(associado.getStatus());
-        dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
-        
-        // CORREÇÃO: Se AssociadoResumoDTO usa LocalDateTime e Associado usa LocalDate
-        if (associado.getDataCadastro() != null) {
-            // Converter LocalDate para LocalDateTime (meia-noite)
-            //dto.setDataCadastro(associado.getDataCadastro().atStartOfDay());
-        	dto.setDataCadastro(LocalDateTime.now());
-        }
-        
-        // Informações básicas dos relacionamentos
-        if (associado.getVendedor() != null) {
-            dto.setVendedorId(associado.getVendedor().getId());
-            dto.setVendedorNome(associado.getVendedor().getNomeRazao());
-        }
-        
-        if (associado.getPlano() != null) {
-            dto.setPlanoId(associado.getPlano().getId());
-            dto.setPlanoNome(associado.getPlano().getPlano());
-        }
-        
-        if (associado.getCategoria() != null) {
-            dto.setCategoriaId(associado.getCategoria().getId());
-            dto.setCategoriaNome(associado.getCategoria().getDescricao());
-        }
-        
-        return dto;
-    }
+	@Autowired
+	private AssociadoRepository associadoRepository;
 
-    // Converter Entity para DTO completo
-    private AssociadoDTO toDTO(Associado associado) {
-        if (associado == null) {
-            return null;
-        }
-        
-        AssociadoDTO dto = new AssociadoDTO();
-        dto.setId(associado.getId());
-        dto.setCodigoSpc(associado.getCodigoSpc());
-        dto.setCodigoRm(associado.getCodigoRm());
-        dto.setCnpjCpf(associado.getCnpjCpf());
-        dto.setNomeRazao(associado.getNomeRazao());
-        dto.setNomeFantasia(associado.getNomeFantasia());
-        dto.setTipoPessoa(associado.getTipoPessoa());
-        dto.setStatus(associado.getStatus());
-        dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
-        
-        // CORREÇÃO: Se AssociadoDTO usa LocalDateTime e Associado usa LocalDate
-        if (associado.getDataCadastro() != null) {
-            // Converter LocalDate para LocalDateTime (meia-noite)
-            //dto.setDataCadastro(associado.getDataCadastro().atStartOfDay());
-        	dto.setDataCadastro(LocalDateTime.now());
-        }
-        
-        // IDs dos relacionamentos
-        if (associado.getVendedor() != null) {
-            dto.setVendedorId(associado.getVendedor().getId());
-        }
-        
-        if (associado.getPlano() != null) {
-            dto.setPlanoId(associado.getPlano().getId());
-        }
-        
-        if (associado.getCategoria() != null) {
-            dto.setCategoriaId(associado.getCategoria().getId());
-        }
-        
-        // Converter sub-entidades
-        if (associado.getEnderecos() != null) {
-            dto.setEnderecos(associado.getEnderecos().stream()
-                .map(this::toEnderecoDTO)
-                .collect(Collectors.toList()));
-        }
-        
-        if (associado.getEmails() != null) {
-            dto.setEmails(associado.getEmails().stream()
-                .map(this::toEmailDTO)
-                .collect(Collectors.toList()));
-        }
-        
-        if (associado.getTelefones() != null) {
-            dto.setTelefones(associado.getTelefones().stream()
-                .map(this::toTelefoneDTO)
-                .collect(Collectors.toList()));
-        }
-        
-        return dto;
-    }
+	@Autowired
+	private VendedorRepository vendedorRepository;
 
-    // Converter sub-entidades
-    private EnderecoDTO toEnderecoDTO(Endereco endereco) {
-        EnderecoDTO dto = new EnderecoDTO();
-        dto.setId(endereco.getId());
-        dto.setTipoLogradouro(endereco.getTipoLogradouro());
-        dto.setLogradouro(endereco.getLogradouro());
-        dto.setNumero(endereco.getNumero());
-        dto.setComplemento(endereco.getComplemento());
-        dto.setBairro(endereco.getBairro());
-        dto.setCidade(endereco.getCidade());
-        dto.setCep(endereco.getCep());
-        dto.setEstado(endereco.getEstado());
-        dto.setTipoEndereco(endereco.getTipoEndereco());
-        return dto;
-    }
+	@Autowired
+	private PlanosRepository planosRepository;
 
-    private EmailDTO toEmailDTO(Email email) {
-        EmailDTO dto = new EmailDTO();
-        dto.setId(email.getId());
-        dto.setEmail(email.getEmail());
-        dto.setTipoEmail(email.getTipoEmail());
-        dto.setAtivo(email.getAtivo());
-        return dto;
-    }
+	@Autowired
+	private CategoriaRepository categoriaRepository;
 
-    private TelefoneDTO toTelefoneDTO(Telefone telefone) {
-        TelefoneDTO dto = new TelefoneDTO();
-        dto.setId(telefone.getId());
-        dto.setDdd(telefone.getDdd());
-        dto.setNumero(telefone.getNumero());
-        dto.setTipoTelefone(telefone.getTipoTelefone());
-        dto.setWhatsapp(telefone.getWhatsapp());
-        dto.setAtivo(telefone.getAtivo());
-        return dto;
-    }
+	@Autowired
+	private EnderecoRepository enderecoRepository;
 
-    // Listar com filtros otimizado
-    @Transactional(readOnly = true)
-    public Page<AssociadoResumoDTO> listarComFiltros(Pageable pageable, 
-                                                    String codigoSpc, 
-                                                    String nomeRazao, 
-                                                    String cnpjCpf, 
-                                                    String status) {
-        logger.info("Listando associados com filtros - page: {}, size: {}, sort: {}", 
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
-        
-        // Usar métodos específicos do repository se existirem
-        Page<Associado> associadosPage;
-        
-        // Aplicar filtros de forma otimizada
-        if (codigoSpc != null && !codigoSpc.trim().isEmpty()) {
-            associadosPage = associadoRepository.findAllByCodigoSpcContainingIgnoreCase(codigoSpc.trim(), pageable);
-        } else if (nomeRazao != null && !nomeRazao.trim().isEmpty()) {
-            associadosPage = associadoRepository.findAllByNomeRazaoContainingIgnoreCase(nomeRazao.trim(), pageable);
-        } else if (cnpjCpf != null && !cnpjCpf.trim().isEmpty()) {
-            associadosPage = associadoRepository.findAllByCnpjCpfContaining(cnpjCpf.trim(), pageable);
-        } else if (status != null && !status.trim().isEmpty()) {
-            associadosPage = associadoRepository.findAllByStatus(status.trim(), pageable);
-        } else {
-            associadosPage = associadoRepository.findAll(pageable);
-        }
-        
-        // Aplicar filtros adicionais manualmente se necessário
-        List<AssociadoResumoDTO> dtos = new ArrayList<>();
-        for (Associado associado : associadosPage.getContent()) {
-            boolean passaFiltros = true;
-            
-            // Filtro por código SPC (se já não foi aplicado)
-            if (codigoSpc != null && !codigoSpc.trim().isEmpty() && 
-                (associado.getCodigoSpc() == null || 
-                 !associado.getCodigoSpc().toLowerCase().contains(codigoSpc.toLowerCase().trim()))) {
-                passaFiltros = false;
-            }
-            
-            // Filtro por nome/razão (se já não foi aplicado)
-            if (passaFiltros && nomeRazao != null && !nomeRazao.trim().isEmpty() &&
-                (associado.getNomeRazao() == null || 
-                 !associado.getNomeRazao().toLowerCase().contains(nomeRazao.toLowerCase().trim()))) {
-                passaFiltros = false;
-            }
-            
-            // Filtro por CNPJ/CPF (se já não foi aplicado)
-            if (passaFiltros && cnpjCpf != null && !cnpjCpf.trim().isEmpty() &&
-                (associado.getCnpjCpf() == null || 
-                 !associado.getCnpjCpf().contains(cnpjCpf.trim()))) {
-                passaFiltros = false;
-            }
-            
-            // Filtro por status (se já não foi aplicado)
-            if (passaFiltros && status != null && !status.trim().isEmpty() &&
-                (associado.getStatus() == null || 
-                 !associado.getStatus().equals(status.trim()))) {
-                passaFiltros = false;
-            }
-            
-            if (passaFiltros) {
-                dtos.add(toResumoDTO(associado));
-            }
-        }
-        
-        logger.info("Encontrados {} associados", dtos.size());
-        
-        // Criar uma página com os resultados filtrados
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), dtos.size());
-        
-        if (start > dtos.size()) {
-            return new PageImpl<>(new ArrayList<>(), pageable, 0);
-        }
-        
-        List<AssociadoResumoDTO> paginaDTOs = dtos.subList(start, end);
-        return new PageImpl<>(paginaDTOs, pageable, dtos.size());
-    }
+	@Autowired
+	private TelefoneRepository telefoneRepository;
 
-    // Buscar por ID
-    @Transactional(readOnly = true)
-    public AssociadoDTO buscarPorId(Long id) {
-        logger.info("Buscando associado por ID: {}", id);
-        
-        Associado associado = associadoRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.error("Associado não encontrado com ID: {}", id);
-                    return new EntityNotFoundException("Associado não encontrado com ID: " + id);
-                });
-        
-        logger.info("Associado encontrado: {} - {}", associado.getId(), associado.getNomeRazao());
-        return toDTO(associado);
-    }
+	@Autowired
+	private EmailRepository emailRepository;
 
-    // Criar novo associado
-    @Transactional
-    public AssociadoDTO criar(AssociadoDTO associadoDTO) {
-        logger.info("Criando novo associado: {}", associadoDTO.getNomeRazao());
-        
-        // Validar dados obrigatórios
-        if (associadoDTO.getCnpjCpf() == null || associadoDTO.getCnpjCpf().trim().isEmpty()) {
-            throw new IllegalArgumentException("CNPJ/CPF é obrigatório");
-        }
-        
-        if (associadoDTO.getNomeRazao() == null || associadoDTO.getNomeRazao().trim().isEmpty()) {
-            throw new IllegalArgumentException("Nome/Razão Social é obrigatório");
-        }
-        
-        Associado associado = new Associado();
-        updateEntityFromDTO(associado, associadoDTO);
-        
-        Associado saved = associadoRepository.save(associado);
-        logger.info("Associado criado com ID: {}", saved.getId());
-        
-        return toDTO(saved);
-    }
+	@Autowired
+	private SistemaLogService sistemaLogService;
 
-    // Atualizar associado
-    @Transactional
-    public AssociadoDTO atualizar(Long id, AssociadoDTO associadoDTO) {
-        logger.info("Atualizando associado ID: {}", id);
-        
-        Associado associado = associadoRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.error("Associado não encontrado com ID: {}", id);
-                    return new EntityNotFoundException("Associado não encontrado com ID: " + id);
-                });
-        
-        updateEntityFromDTO(associado, associadoDTO);
-        
-        Associado updated = associadoRepository.save(associado);
-        logger.info("Associado atualizado: {} - {}", updated.getId(), updated.getNomeRazao());
-        
-        return toDTO(updated);
-    }
+	// ========== MÉTODOS DO CONTROLLER ==========
 
-    // Excluir associado
-    @Transactional
-    public void excluir(Long id) {
-        logger.info("Excluindo associado ID: {}", id);
-        
-        if (!associadoRepository.existsById(id)) {
-            logger.error("Associado não encontrado para exclusão: {}", id);
-            throw new EntityNotFoundException("Associado não encontrado com ID: " + id);
-        }
-        
-        associadoRepository.deleteById(id);
-        logger.info("Associado excluído: {}", id);
-    }
+	@Transactional(readOnly = true)
+	public Page<AssociadoResumoDTO> listarComFiltros(Pageable pageable, String codigoSpc, String nome, String cnpjCpf,
+			String status) {
+		logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
+				cnpjCpf, status, codigoSpc);
 
-    // Atualizar entidade a partir do DTO
-    private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
-        logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
-        
-        try {
-            // 🟢 1. DADOS BÁSICOS DO ASSOCIADO
-            // Campos opcionais - garante string vazia se null
-            associado.setCodigoSpc(dto.getCodigoSpc() != null ? dto.getCodigoSpc() : "");
-            associado.setCodigoRm(dto.getCodigoRm() != null ? dto.getCodigoRm() : "");
-            associado.setNomeFantasia(dto.getNomeFantasia() != null ? dto.getNomeFantasia() : "");
-            
-            // Campos obrigatórios - validação
-            if (dto.getCnpjCpf() == null || dto.getCnpjCpf().trim().isEmpty()) {
-                throw new IllegalArgumentException("CNPJ/CPF é obrigatório");
-            }
-            associado.setCnpjCpf(dto.getCnpjCpf().trim());
-            
-            if (dto.getNomeRazao() == null || dto.getNomeRazao().trim().isEmpty()) {
-                throw new IllegalArgumentException("Nome/Razão Social é obrigatório");
-            }
-            associado.setNomeRazao(dto.getNomeRazao().trim());
-            
-            if (dto.getTipoPessoa() == null) {
-                throw new IllegalArgumentException("Tipo Pessoa é obrigatório");
-            }
-            associado.setTipoPessoa(dto.getTipoPessoa());
-            
-            // Status - padrão "A" (Ativo) se não informado
-            associado.setStatus(
-                (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) 
-                    ? dto.getStatus().trim() 
-                    : "A"
-            );
-            
-            // 🟢 2. DATA CADASTRO - CONVERSÃO SEGURA (LocalDateTime → LocalDate)
-            if (dto.getDataCadastro() != null) {
-                // Converte LocalDateTime para LocalDate (pega apenas a data)
-                //associado.setDataCadastro(dto.getDataCadastro().toLocalDate());
-            	associado.setDataCadastro(LocalDateTime.now());
-            } else {
-                //associado.setDataCadastro(LocalDate.now());
-            	associado.setDataCadastro(LocalDateTime.now());
-            }
-            
-            // 🟢 3. FATURAMENTO MÍNIMO - PODE SER NULL
-            // Converte BigDecimal para Double se necessário
-            if (dto.getFaturamentoMinimo() != null) {
-                associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
-            } else {
-                associado.setFaturamentoMinimo(null);
-            }
-            
-            // 🟢 4. RELACIONAMENTOS (vendedor, plano, categoria)
-            // Vendedor - só seta se ID > 0
-            if (dto.getVendedorId() != null && dto.getVendedorId() > 0) {
-                Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
-                        .orElseThrow(() -> {
-                            logger.error("Vendedor não encontrado com ID: {}", dto.getVendedorId());
-                            return new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId());
-                        });
-                associado.setVendedor(vendedor);
-            } else {
-                associado.setVendedor(null);
-            }
-            
-            // Plano - só seta se ID > 0
-            if (dto.getPlanoId() != null && dto.getPlanoId() > 0) {
-                Planos plano = planosRepository.findById(dto.getPlanoId())
-                        .orElseThrow(() -> {
-                            logger.error("Plano não encontrado com ID: {}", dto.getPlanoId());
-                            return new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId());
-                        });
-                associado.setPlano(plano);
-            } else {
-                associado.setPlano(null);
-            }
-            
-            // Categoria - só seta se ID > 0
-            if (dto.getCategoriaId() != null && dto.getCategoriaId() > 0) {
-                Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-                        .orElseThrow(() -> {
-                            logger.error("Categoria não encontrada com ID: {}", dto.getCategoriaId());
-                            return new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId());
-                        });
-                associado.setCategoria(categoria);
-            } else {
-                associado.setCategoria(null);
-            }
-            
-            // 🟢 5. INICIALIZAR LISTAS SE NECESSÁRIO
-            if (associado.getEnderecos() == null) {
-                associado.setEnderecos(new java.util.ArrayList<>());
-            }
-            if (associado.getEmails() == null) {
-                associado.setEmails(new java.util.ArrayList<>());
-            }
-            if (associado.getTelefones() == null) {
-                associado.setTelefones(new java.util.ArrayList<>());
-            }
-            
-            // Limpar listas existentes antes de adicionar novos
-            associado.getEnderecos().clear();
-            associado.getEmails().clear();
-            associado.getTelefones().clear();
-            
-            // 🟢 6. ENDEREÇOS - TRATAMENTO SEGURO
-            if (dto.getEnderecos() != null) {
-                for (EnderecoDTO enderecoDTO : dto.getEnderecos()) {
-                    if (enderecoDTO == null) continue;
-                    
-                    Endereco endereco = new Endereco();
-                    endereco.setAssociado(associado);
-                    
-                    // Todos os campos com valores padrão seguros
-                    endereco.setTipoLogradouro(
-                        enderecoDTO.getTipoLogradouro() != null ? 
-                        enderecoDTO.getTipoLogradouro().trim() : "Rua"
-                    );
-                    
-                    endereco.setLogradouro(
-                        enderecoDTO.getLogradouro() != null ? 
-                        enderecoDTO.getLogradouro().trim() : ""
-                    );
-                    
-                    endereco.setNumero(
-                        enderecoDTO.getNumero() != null ? 
-                        enderecoDTO.getNumero().trim() : ""
-                    );
-                    
-                    endereco.setComplemento(
-                        enderecoDTO.getComplemento() != null ? 
-                        enderecoDTO.getComplemento().trim() : ""
-                    );
-                    
-                    endereco.setBairro(
-                        enderecoDTO.getBairro() != null ? 
-                        enderecoDTO.getBairro().trim() : ""
-                    );
-                    
-                    endereco.setCidade(
-                        enderecoDTO.getCidade() != null ? 
-                        enderecoDTO.getCidade().trim() : ""
-                    );
-                    
-                    endereco.setCep(
-                        enderecoDTO.getCep() != null ? 
-                        enderecoDTO.getCep().trim().replaceAll("[^0-9]", "") : ""
-                    );
-                    
-                    endereco.setEstado(
-                        enderecoDTO.getEstado() != null ? 
-                        enderecoDTO.getEstado().trim() : ""
-                    );
-                    
-                    endereco.setTipoEndereco(
-                        enderecoDTO.getTipoEndereco() != null ? 
-                        enderecoDTO.getTipoEndereco().trim() : "COMERCIAL"
-                    );
-                    
-                    associado.getEnderecos().add(endereco);
-                }
-            }
-            
-            // 🟢 7. EMAILS - TRATAMENTO SEGURO
-            if (dto.getEmails() != null) {
-                for (EmailDTO emailDTO : dto.getEmails()) {
-                    if (emailDTO == null) continue;
-                    
-                    // Valida email básico
-                    if (emailDTO.getEmail() == null || emailDTO.getEmail().trim().isEmpty()) {
-                        continue; // Pula emails vazios
-                    }
-                    
-                    Email email = new Email();
-                    email.setAssociado(associado);
-                    email.setEmail(emailDTO.getEmail().trim().toLowerCase());
-                    email.setTipoEmail(
-                        emailDTO.getTipoEmail() != null ? 
-                        emailDTO.getTipoEmail().trim() : "COMERCIAL"
-                    );
-                    email.setAtivo(emailDTO.getAtivo() != null ? emailDTO.getAtivo() : true);
-                    
-                    associado.getEmails().add(email);
-                }
-            }
-            
-            // 🟢 8. TELEFONES - TRATAMENTO SEGURO
-            if (dto.getTelefones() != null) {
-                for (TelefoneDTO telefoneDTO : dto.getTelefones()) {
-                    if (telefoneDTO == null) continue;
-                    
-                    // Valida telefone básico
-                    if ((telefoneDTO.getDdd() == null || telefoneDTO.getDdd().trim().isEmpty()) ||
-                        (telefoneDTO.getNumero() == null || telefoneDTO.getNumero().trim().isEmpty())) {
-                        continue; // Pula telefones inválidos
-                    }
-                    
-                    Telefone telefone = new Telefone();
-                    telefone.setAssociado(associado);
-                    telefone.setDdd(telefoneDTO.getDdd().trim().replaceAll("[^0-9]", ""));
-                    telefone.setNumero(telefoneDTO.getNumero().trim().replaceAll("[^0-9]", ""));
-                    telefone.setTipoTelefone(
-                        telefoneDTO.getTipoTelefone() != null ? 
-                        telefoneDTO.getTipoTelefone().trim() : "CELULAR"
-                    );
-                    telefone.setWhatsapp(telefoneDTO.getWhatsapp() != null ? telefoneDTO.getWhatsapp() : false);
-                    telefone.setAtivo(telefoneDTO.getAtivo() != null ? telefoneDTO.getAtivo() : true);
-                    
-                    associado.getTelefones().add(telefone);
-                }
-            }
-            
-            logger.info("✅ Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
-            
-        } catch (IllegalArgumentException e) {
-            logger.error("❌ Erro de validação: {}", e.getMessage());
-            throw e;
-        } catch (EntityNotFoundException e) {
-            logger.error("❌ Recurso não encontrado: {}", e.getMessage());
-            throw e;
-        } catch (Exception e) {
-            logger.error("❌ Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
-            throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
-        }
-    }
-    
-    // Métodos para estatísticas
-    @Transactional(readOnly = true)
-    public Long countAssociadosAtivos() {
-        Long count = associadoRepository.countAssociadosAtivos();
-        logger.info("Total de associados ativos: {}", count);
-        return count;
-    }
+		// Use o método existente no repository
+		Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
+				pageable);
 
-    @Transactional(readOnly = true)
-    public Long countTotalAssociados() {
-        Long count = associadoRepository.countAllAssociados();
-        logger.info("Total de associados: {}", count);
-        return count;
-    }
+		return associados.map(this::toResumoDTO);
+	}
 
-    // Buscar por CNPJ/CPF
-    @Transactional(readOnly = true)
-    public AssociadoDTO buscarPorCnpjCpf(String cnpjCpf) {
-        logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
-        
-        return associadoRepository.findAllByCnpjCpfContaining(cnpjCpf, PageRequest.of(0, 1))
-                .stream()
-                .findFirst()
-                .map(this::toDTO)
-                .orElseThrow(() -> {
-                    logger.error("Associado não encontrado com CNPJ/CPF: {}", cnpjCpf);
-                    return new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf);
-                });
-    }
+	@Transactional(readOnly = true)
+	public AssociadoDTO buscarPorId(Long id) {
+		logger.info("Buscando associado por ID: {}", id);
 
-    // Buscar todos os vendedores para dropdown
-    @Transactional(readOnly = true)
-    public List<Vendedor> buscarTodosVendedores() {
-        return vendedorRepository.findAll();
-    }
+		Associado associado = associadoRepository.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
 
-    // Buscar todos os planos para dropdown
-    @Transactional(readOnly = true)
-    public List<Planos> buscarTodosPlanos() {
-        return planosRepository.findAll();
-    }
+		return toDTO(associado);
+	}
 
-    // Buscar todas as categorias para dropdown
-    @Transactional(readOnly = true)
-    public List<Categoria> buscarTodasCategorias() {
-        return categoriaRepository.findAll();
-    }
+	@Transactional(readOnly = true)
+	public AssociadoDTO buscarPorCnpjCpf(String cnpjCpf) {
+		logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
 
+		Optional<Associado> associado = associadoRepository.findByCnpjCpf(cnpjCpf);
+
+		return associado.map(this::toDTO)
+				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf));
+	}
+
+	@Transactional
+	public void excluir(Long id) {
+		logger.info("Excluindo associado ID: {}", id);
+
+		Associado associado = associadoRepository.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
+
+		associadoRepository.delete(associado);
+
+		try {
+			sistemaLogService.logExclusao("Associado", id.toString(),
+					"Excluído associado: " + associado.getNomeRazao());
+		} catch (Exception e) {
+			logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+		}
+
+		logger.info("Associado excluído: {} - {}", id, associado.getNomeRazao());
+	}
+
+	@Transactional(readOnly = true)
+	public List<Vendedor> buscarTodosVendedores() {
+		logger.info("Buscando todos os vendedores");
+		return vendedorRepository.findAll();
+	}
+
+	@Transactional(readOnly = true)
+	public List<Planos> buscarTodosPlanos() {
+		logger.info("Buscando todos os planos");
+		return planosRepository.findAll();
+	}
+
+	@Transactional(readOnly = true)
+	public List<Categoria> buscarTodasCategorias() {
+		logger.info("Buscando todas as categorias");
+		return categoriaRepository.findAll();
+	}
+
+	@Transactional(readOnly = true)
+	public Long countTotalAssociados() {
+		logger.info("Contando total de associados");
+		return associadoRepository.count();
+	}
+
+	@Transactional(readOnly = true)
+	public Long countAssociadosAtivos() {
+		logger.info("Contando associados ativos");
+		return associadoRepository.countByStatus("A");
+	}
+
+	// ========== CONVERSORES DTO ==========
+
+	private AssociadoResumoDTO toResumoDTO(Associado associado) {
+		if (associado == null)
+			return null;
+
+		AssociadoResumoDTO dto = new AssociadoResumoDTO();
+		dto.setId(associado.getId());
+		dto.setCodigoSpc(associado.getCodigoSpc());
+		dto.setCodigoRm(associado.getCodigoRm());
+		dto.setCnpjCpf(associado.getCnpjCpf());
+		dto.setNomeRazao(associado.getNomeRazao());
+		dto.setNomeFantasia(associado.getNomeFantasia());
+		dto.setTipoPessoa(associado.getTipoPessoa());
+		dto.setStatus(associado.getStatus());
+		dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
+		dto.setDataFiliacao(associado.getDataFiliacao());
+		dto.setDataCadastro(associado.getDataCadastro());
+
+		// NOVOS CAMPOS
+		dto.setDataInativacao(associado.getDataInativacao());
+		dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
+		dto.setDataFimSuspensao(associado.getDataFimSuspensao());
+		dto.setMotivoInativacao(associado.getMotivoInativacao());
+		dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+
+		// Vendedor
+		if (associado.getVendedor() != null) {
+			dto.setVendedorId(associado.getVendedor().getId());
+			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+		}
+
+		// Vendedor Externo - CORREÇÃO: Verifica se é Vendedor primeiro
+		Object vendedorExternoObj = associado.getVendedorExterno();
+		if (vendedorExternoObj != null) {
+			// Verifica se o objeto é uma instância de Vendedor
+			if (vendedorExternoObj instanceof Vendedor) {
+				Vendedor vendedorExterno = (Vendedor) vendedorExternoObj;
+				dto.setVendedorExternoId(vendedorExterno.getId());
+				dto.setVendedorExternoNome(vendedorExterno.getNomeRazao());
+			} else {
+				// Se não for Vendedor, tenta extrair um ID de alguma forma
+				logger.debug("Vendedor externo não é instância de Vendedor: {}", vendedorExternoObj.getClass());
+				// Pode ser que seja apenas um ID numérico armazenado
+				// Neste caso, você precisa saber como seu modelo armazena isso
+				// Vou deixar vazio por enquanto
+			}
+		}
+
+		// Plano
+		if (associado.getPlano() != null) {
+			dto.setPlanoId(associado.getPlano().getId());
+			dto.setPlanoTitulo(associado.getPlano().getPlano());
+		}
+
+		// Categoria
+		if (associado.getCategoria() != null) {
+			dto.setCategoriaId(associado.getCategoria().getId());
+			dto.setCategoriaNome(associado.getCategoria().getDescricao());
+		}
+
+		return dto;
+	}
+
+	// Converter Entity para DTO completo
+	private AssociadoDTO toDTO(Associado associado) {
+		if (associado == null)
+			return null;
+
+		AssociadoDTO dto = new AssociadoDTO();
+		dto.setId(associado.getId());
+		dto.setCodigoSpc(associado.getCodigoSpc());
+		dto.setCodigoRm(associado.getCodigoRm());
+		dto.setCnpjCpf(associado.getCnpjCpf());
+		dto.setNomeRazao(associado.getNomeRazao());
+		dto.setNomeFantasia(associado.getNomeFantasia());
+		dto.setTipoPessoa(associado.getTipoPessoa());
+		dto.setStatus(associado.getStatus());
+		dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
+		dto.setDataFiliacao(associado.getDataFiliacao());
+		dto.setDataCadastro(associado.getDataCadastro());
+
+		// NOVOS CAMPOS
+		dto.setDataInativacao(associado.getDataInativacao());
+		dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
+		dto.setDataFimSuspensao(associado.getDataFimSuspensao());
+		dto.setMotivoInativacao(associado.getMotivoInativacao());
+		dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+
+		// Vendedor
+		if (associado.getVendedor() != null) {
+			dto.setVendedorId(associado.getVendedor().getId());
+			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+		}
+
+		// Vendedor Externo - CORREÇÃO: Verifica se é Vendedor
+		Object vendedorExternoObj = associado.getVendedorExterno();
+		if (vendedorExternoObj != null) {
+			if (vendedorExternoObj instanceof Vendedor) {
+				Vendedor vendedorExterno = (Vendedor) vendedorExternoObj;
+				dto.setVendedorExternoId(vendedorExterno.getId().intValue());
+				dto.setVendedorExternoNome(vendedorExterno.getNomeRazao());
+			} else {
+				logger.debug("Vendedor externo no DTO não é instância de Vendedor: {}", vendedorExternoObj.getClass());
+				// Se não for Vendedor, não preenche os campos
+			}
+		}
+
+		// Plano e Categoria
+		if (associado.getPlano() != null) {
+			dto.setPlanoId(associado.getPlano().getId());
+		}
+
+		if (associado.getCategoria() != null) {
+			dto.setCategoriaId(associado.getCategoria().getId());
+		}
+
+		// Sub-entidades
+		List<EnderecoDTO> enderecosDTO = new ArrayList<>();
+		if (associado.getEnderecos() != null) {
+			for (Endereco endereco : associado.getEnderecos()) {
+				enderecosDTO.add(toEnderecoDTO(endereco));
+			}
+		}
+		dto.setEnderecos(enderecosDTO);
+
+		List<EmailDTO> emailsDTO = new ArrayList<>();
+		if (associado.getEmails() != null) {
+			for (Email email : associado.getEmails()) {
+				emailsDTO.add(toEmailDTO(email));
+			}
+		}
+		dto.setEmails(emailsDTO);
+
+		List<TelefoneDTO> telefonesDTO = new ArrayList<>();
+		if (associado.getTelefones() != null) {
+			for (Telefone telefone : associado.getTelefones()) {
+				telefonesDTO.add(toTelefoneDTO(telefone));
+			}
+		}
+		dto.setTelefones(telefonesDTO);
+
+		return dto;
+	}
+
+	// ========== MÉTODOS DE CONVERSÃO PARA SUB-ENTIDADES ==========
+
+	private EnderecoDTO toEnderecoDTO(Endereco endereco) {
+		if (endereco == null)
+			return null;
+
+		EnderecoDTO dto = new EnderecoDTO();
+		dto.setId(endereco.getId());
+		dto.setCep(endereco.getCep());
+		dto.setLogradouro(endereco.getLogradouro());
+		dto.setNumero(endereco.getNumero());
+		dto.setComplemento(endereco.getComplemento());
+		dto.setBairro(endereco.getBairro());
+		dto.setCidade(endereco.getCidade());
+		dto.setEstado(endereco.getEstado());
+		dto.setTipoEndereco(endereco.getTipoEndereco());
+
+		return dto;
+	}
+
+	private EmailDTO toEmailDTO(Email email) {
+		if (email == null)
+			return null;
+
+		EmailDTO dto = new EmailDTO();
+		dto.setId(email.getId());
+		dto.setEmail(email.getEmail());
+		dto.setTipoEmail(email.getTipoEmail());
+
+		return dto;
+	}
+
+	private TelefoneDTO toTelefoneDTO(Telefone telefone) {
+		if (telefone == null)
+			return null;
+
+		TelefoneDTO dto = new TelefoneDTO();
+		dto.setId(telefone.getId());
+		dto.setDdd(telefone.getDdd());
+		dto.setNumero(telefone.getNumero());
+		dto.setTipoTelefone(telefone.getTipoTelefone());
+
+		return dto;
+	}
+
+	// ========== VALIDAÇÕES ==========
+
+	private void validarDadosBasicos(AssociadoDTO dto) {
+		if (dto.getNomeRazao() == null || dto.getNomeRazao().trim().isEmpty()) {
+			throw new IllegalArgumentException("Nome/Razão Social é obrigatório");
+		}
+
+		if (dto.getCnpjCpf() == null || dto.getCnpjCpf().trim().isEmpty()) {
+			throw new IllegalArgumentException("CNPJ/CPF é obrigatório");
+		}
+
+		if (dto.getTipoPessoa() == null || dto.getTipoPessoa().trim().isEmpty()) {
+			throw new IllegalArgumentException("Tipo de Pessoa é obrigatório");
+		}
+
+		// Verificar se CNPJ/CPF já existe (apenas para criação)
+		if (dto.getId() == null) {
+			Optional<Associado> associadoExistente = associadoRepository.findByCnpjCpf(dto.getCnpjCpf());
+			if (associadoExistente.isPresent()) {
+				throw new IllegalArgumentException("Já existe um associado com este CNPJ/CPF: " + dto.getCnpjCpf());
+			}
+		}
+	}
+
+	// ========== MÉTODOS PRINCIPAIS ==========
+
+	@Transactional
+	public AssociadoDTO atualizar(Long id, AssociadoDTO associadoDTO) {
+		logger.info("Atualizando associado ID: {}", id);
+
+		Associado associado = associadoRepository.findById(id).orElseThrow(() -> {
+			logger.error("Associado não encontrado com ID: {}", id);
+			return new EntityNotFoundException("Associado não encontrado com ID: " + id);
+		});
+
+		// Salvar status anterior
+		String statusAnterior = associado.getStatus();
+		String novoStatus = associadoDTO.getStatus();
+
+		// Validar mudança de status
+		if (novoStatus != null && !novoStatus.equals(statusAnterior)) {
+			validarMudancaStatus(associado, novoStatus);
+		}
+
+		updateEntityFromDTO(associado, associadoDTO);
+
+		// Aplicar regras de status
+		aplicarRegrasStatus(associado);
+
+		Associado updated = associadoRepository.save(associado);
+		logger.info("Associado atualizado: {} - {}", updated.getId(), updated.getNomeRazao());
+
+		// REGISTRA LOG
+		try {
+			String mensagem = "Atualizado associado: " + updated.getNomeRazao();
+			if (statusAnterior != null && !statusAnterior.equals(novoStatus)) {
+				mensagem += " (Status alterado: " + statusAnterior + " → " + novoStatus + ")";
+			}
+			sistemaLogService.logAtualizacao("Associado", updated.getId().toString(), mensagem);
+		} catch (Exception e) {
+			logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+		}
+
+		return toDTO(updated);
+	}
+
+	@Transactional
+	public AssociadoDTO criar(AssociadoDTO associadoDTO) {
+		logger.info("Criando novo associado: {}", associadoDTO.getNomeRazao());
+
+		validarDadosBasicos(associadoDTO);
+
+		Associado associado = new Associado();
+		updateEntityFromDTO(associado, associadoDTO);
+
+		aplicarRegrasStatus(associado);
+
+		Associado saved = associadoRepository.save(associado);
+		logger.info("Associado criado com ID: {}", saved.getId());
+
+		// REGISTRA LOG
+		try {
+			sistemaLogService.logCriacao("Associado", saved.getId().toString(),
+					"Criado associado: " + saved.getNomeRazao() + " (Status: " + saved.getStatus() + ")");
+		} catch (Exception e) {
+			logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+		}
+
+		return toDTO(saved);
+	}
+
+	// ========== VALIDAÇÕES DE STATUS ==========
+
+	private void validarMudancaStatus(Associado associado, String novoStatus) {
+		String statusAtual = associado.getStatus();
+
+		if ("I".equals(statusAtual) && !"A".equals(novoStatus)) {
+			throw new IllegalStateException("Associado inativo só pode ser reativado para 'Ativo'");
+		}
+
+		if ("S".equals(statusAtual) && "I".equals(novoStatus)) {
+			throw new IllegalStateException("Associado suspenso não pode ser inativado diretamente. Reative primeiro.");
+		}
+
+		if ("I".equals(novoStatus)) {
+			validarInativacao(associado);
+		} else if ("S".equals(novoStatus)) {
+			validarSuspensao(associado);
+		}
+	}
+
+	private void validarInativacao(Associado associado) {
+		if (associado.getDataInativacao() == null) {
+			associado.setDataInativacao(LocalDate.now());
+		}
+
+		if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
+			throw new IllegalArgumentException("Motivo da inativação é obrigatório");
+		}
+
+		// Limpar suspensão
+		associado.setDataInicioSuspensao(null);
+		associado.setDataFimSuspensao(null);
+		associado.setMotivoSuspensao(null);
+	}
+
+	private void validarSuspensao(Associado associado) {
+		if (associado.getDataInicioSuspensao() == null) {
+			associado.setDataInicioSuspensao(LocalDate.now());
+		}
+
+		if (associado.getDataFimSuspensao() == null) {
+			associado.setDataFimSuspensao(associado.getDataInicioSuspensao().plusMonths(1));
+		}
+
+		if (associado.getDataFimSuspensao().isBefore(associado.getDataInicioSuspensao())) {
+			throw new IllegalArgumentException("Data de fim da suspensão deve ser após a data de início");
+		}
+
+		if (associado.getMotivoSuspensao() == null || associado.getMotivoSuspensao().trim().isEmpty()) {
+			throw new IllegalArgumentException("Motivo da suspensão é obrigatório");
+		}
+
+		// Limpar inativação
+		associado.setDataInativacao(null);
+		associado.setMotivoInativacao(null);
+	}
+
+	private void aplicarRegrasStatus(Associado associado) {
+		// Validação básica
+		if ("A".equals(associado.getStatus())) {
+			// Verificar suspensão expirada
+			if (associado.getDataFimSuspensao() != null && associado.getDataFimSuspensao().isBefore(LocalDate.now())) {
+				logger.info("Suspensão expirada para associado {}", associado.getId());
+				// Limpar suspensão
+				associado.setDataInicioSuspensao(null);
+				associado.setDataFimSuspensao(null);
+				associado.setMotivoSuspensao(null);
+			}
+		}
+	}
+
+	// ========== MÉTODO updateEntityFromDTO CORRIGIDO ==========
+
+	private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
+		logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
+
+		try {
+			// 1. DADOS BÁSICOS
+			associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+			associado.setCodigoRm(limparString(dto.getCodigoRm()));
+			associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
+			associado.setCnpjCpf(dto.getCnpjCpf().trim());
+			associado.setNomeRazao(dto.getNomeRazao().trim());
+			associado.setTipoPessoa(dto.getTipoPessoa());
+
+			// Status
+			associado.setStatus(
+					(dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) ? dto.getStatus().trim() : "A");
+
+			// 2. DATAS
+			if (dto.getDataCadastro() != null) {
+				associado.setDataCadastro(dto.getDataCadastro());
+			} else {
+				associado.setDataCadastro(LocalDateTime.now());
+			}
+
+			associado.setDataFiliacao(dto.getDataFiliacao());
+
+			// NOVOS CAMPOS DE DATAS
+			associado.setDataInativacao(dto.getDataInativacao());
+			associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
+			associado.setDataFimSuspensao(dto.getDataFimSuspensao());
+			associado.setMotivoInativacao(dto.getMotivoInativacao());
+			associado.setMotivoSuspensao(dto.getMotivoSuspensao());
+
+			// 3. FATURAMENTO MÍNIMO
+			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+
+			// 4. RELACIONAMENTOS
+			if (dto.getVendedorId() != null) {
+				Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId()).orElseThrow(
+						() -> new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId()));
+				associado.setVendedor(vendedor);
+			} else {
+				associado.setVendedor(null);
+			}
+
+			// Vendedor Externo - CORREÇÃO: Busca pelo ID fornecido
+			if (dto.getVendedorExternoId() != null) {
+				try {
+					// Tenta buscar como Vendedor
+					Optional<Vendedor> vendedorExternoOpt = vendedorRepository
+							.findById(dto.getVendedorExternoId().longValue());
+					if (vendedorExternoOpt.isPresent()) {
+						associado.setVendedorExterno(vendedorExternoOpt.get());
+					} else {
+						// Se não encontrar vendedor com esse ID, limpa o campo
+						logger.warn("Vendedor externo não encontrado com ID {}, limpando campo",
+								dto.getVendedorExternoId());
+						associado.setVendedorExterno(null);
+					}
+				} catch (Exception e) {
+					logger.error("Erro ao processar vendedor externo: {}", e.getMessage());
+					associado.setVendedorExterno(null);
+				}
+			} else {
+				associado.setVendedorExterno(null);
+			}
+
+			if (dto.getPlanoId() != null) {
+				Planos plano = planosRepository.findById(dto.getPlanoId()).orElseThrow(
+						() -> new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId()));
+				associado.setPlano(plano);
+			} else {
+				associado.setPlano(null);
+			}
+
+			if (dto.getCategoriaId() != null) {
+				Categoria categoria = categoriaRepository.findById(dto.getCategoriaId()).orElseThrow(
+						() -> new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId()));
+				associado.setCategoria(categoria);
+			} else {
+				associado.setCategoria(null);
+			}
+
+			// 5. SUB-ENTIDADES
+			// Endereços
+			if (dto.getEnderecos() != null) {
+				associado.getEnderecos().clear();
+				for (EnderecoDTO enderecoDTO : dto.getEnderecos()) {
+					Endereco endereco = new Endereco();
+					endereco.setCep(enderecoDTO.getCep());
+					endereco.setLogradouro(enderecoDTO.getLogradouro());
+					endereco.setNumero(enderecoDTO.getNumero());
+					endereco.setComplemento(enderecoDTO.getComplemento());
+					endereco.setBairro(enderecoDTO.getBairro());
+					endereco.setCidade(enderecoDTO.getCidade());
+					endereco.setEstado(enderecoDTO.getEstado());
+					endereco.setTipoEndereco(enderecoDTO.getTipoEndereco());
+					endereco.setAssociado(associado);
+					associado.getEnderecos().add(endereco);
+				}
+			}
+
+			// Emails
+			if (dto.getEmails() != null) {
+				associado.getEmails().clear();
+				for (EmailDTO emailDTO : dto.getEmails()) {
+					Email email = new Email();
+					email.setEmail(emailDTO.getEmail());
+					email.setTipoEmail(emailDTO.getTipoEmail());
+					email.setAssociado(associado);
+					associado.getEmails().add(email);
+				}
+			}
+
+			// Telefones
+			if (dto.getTelefones() != null) {
+				associado.getTelefones().clear();
+				for (TelefoneDTO telefoneDTO : dto.getTelefones()) {
+					Telefone telefone = new Telefone();
+					telefone.setDdd(telefoneDTO.getDdd());
+					telefone.setNumero(telefoneDTO.getNumero());
+					telefone.setTipoTelefone(telefoneDTO.getTipoTelefone());
+					telefone.setAssociado(associado);
+					associado.getTelefones().add(telefone);
+				}
+			}
+
+			logger.info("Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
+
+		} catch (IllegalArgumentException | EntityNotFoundException e) {
+			logger.error("Erro de validação: {}", e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			logger.error("Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
+			throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
+		}
+	}
+
+	// ========== MÉTODOS ADICIONAIS ==========
+
+	@Transactional
+	public AssociadoDTO reativarAssociado(Long id, String motivo) {
+		logger.info("Reativando associado ID: {}", id);
+
+		Associado associado = associadoRepository.findById(id)
+				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
+
+		if (!"I".equals(associado.getStatus())) {
+			throw new IllegalStateException("Só é possível reativar associados inativos");
+		}
+
+		associado.setStatus("A");
+		associado.setDataInativacao(null);
+		associado.setMotivoInativacao(null);
+
+		Associado reativado = associadoRepository.save(associado);
+		logger.info("Associado reativado: {} - {}", reativado.getId(), reativado.getNomeRazao());
+
+		try {
+			sistemaLogService.logAtualizacao("Associado", reativado.getId().toString(), "Associado reativado: "
+					+ reativado.getNomeRazao() + (motivo != null ? " (Motivo: " + motivo + ")" : ""));
+		} catch (Exception e) {
+			logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+		}
+
+		return toDTO(reativado);
+	}
+
+	@Transactional
+	public void verificarSuspensoesExpiradas() {
+		logger.info("Verificando suspensões expiradas...");
+
+		List<Associado> suspensos = associadoRepository.findByStatus("S");
+		int reativados = 0;
+
+		for (Associado associado : suspensos) {
+			if (associado.getDataFimSuspensao() != null && associado.getDataFimSuspensao().isBefore(LocalDate.now())) {
+
+				logger.info("Suspensão expirada para associado {}: {}", associado.getId(), associado.getNomeRazao());
+
+				associado.setStatus("A");
+				associado.setDataInicioSuspensao(null);
+				associado.setDataFimSuspensao(null);
+				associado.setMotivoSuspensao("Suspensão expirada automaticamente");
+
+				associadoRepository.save(associado);
+				reativados++;
+
+				try {
+					sistemaLogService.logAtualizacao("Associado", associado.getId().toString(),
+							"Reativação automática por expiração de suspensão: " + associado.getNomeRazao());
+				} catch (Exception e) {
+					logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+				}
+			}
+		}
+
+		logger.info("Reativados {} associados com suspensão expirada", reativados);
+	}
+
+	@Transactional(readOnly = true)
+	public List<AssociadoDTO> findByStatus(String status) {
+		logger.info("Buscando associados por status: {}", status);
+
+		List<Associado> associados = associadoRepository.findByStatus(status);
+
+		return associados.stream().map(this::toDTO).collect(Collectors.toList());
+	}
+
+	// ========== MÉTODOS AUXILIARES ==========
+
+	private String limparString(String valor) {
+		return valor != null ? valor.trim() : "";
+	}
+	
+	@Transactional
+	public List<EnderecoDTO> atualizarEnderecos(Long associadoId, List<EnderecoDTO> enderecosDTO) {
+	    logger.info("Atualizando endereços para associado ID: {}", associadoId);
+	    
+	    Associado associado = associadoRepository.findById(associadoId)
+	        .orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + associadoId));
+	    
+	    // 🔴 CORREÇÃO: Primeiro deletar todos os endereços existentes
+	    enderecoRepository.deleteByAssociadoId(associadoId);
+	    
+	    List<Endereco> novosEnderecos = new ArrayList<>();
+	    
+	    for (EnderecoDTO dto : enderecosDTO) {
+	        if (dto.getLogradouro() != null || dto.getCep() != null || dto.getCidade() != null) {
+	            Endereco endereco = new Endereco();
+	            endereco.setCep(dto.getCep());
+	            endereco.setLogradouro(dto.getLogradouro());
+	            endereco.setNumero(dto.getNumero());
+	            endereco.setComplemento(dto.getComplemento());
+	            endereco.setBairro(dto.getBairro());
+	            endereco.setCidade(dto.getCidade());
+	            endereco.setEstado(dto.getEstado());
+	            endereco.setTipoEndereco(dto.getTipoEndereco());
+	            endereco.setAssociado(associado);
+	            
+	            novosEnderecos.add(endereco);
+	        }
+	    }
+	    
+	    List<Endereco> enderecosSalvos = enderecoRepository.saveAll(novosEnderecos);
+	    
+	    logger.info("Endereços atualizados: {} registros para associado ID: {}", 
+	        enderecosSalvos.size(), associadoId);
+	    
+	    return enderecosSalvos.stream()
+	        .map(this::toEnderecoDTO)
+	        .collect(Collectors.toList());
+	}
+	
+	@Transactional
+	public List<TelefoneDTO> atualizarTelefones(Long associadoId, List<TelefoneDTO> telefonesDTO) {
+	    logger.info("Atualizando telefones para associado ID: {}", associadoId);
+	    
+	    Associado associado = associadoRepository.findById(associadoId)
+	        .orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + associadoId));
+	    
+	    // 🔴 CORREÇÃO: Primeiro deletar todos os telefones existentes
+	    telefoneRepository.deleteByAssociadoId(associadoId);
+	    
+	    List<Telefone> novosTelefones = new ArrayList<>();
+	    
+	    for (TelefoneDTO dto : telefonesDTO) {
+	        if (dto.getNumero() != null || dto.getDdd() != null) {
+	            Telefone telefone = new Telefone();
+	            telefone.setDdd(dto.getDdd());
+	            telefone.setNumero(dto.getNumero());
+	            telefone.setTipoTelefone(dto.getTipoTelefone());
+	            telefone.setWhatsapp(dto.getWhatsapp() != null ? dto.getWhatsapp() : false);
+	            telefone.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
+	            telefone.setAssociado(associado);
+	            
+	            novosTelefones.add(telefone);
+	        }
+	    }
+	    
+	    List<Telefone> telefonesSalvos = telefoneRepository.saveAll(novosTelefones);
+	    
+	    logger.info("Telefones atualizados: {} registros para associado ID: {}", 
+	        telefonesSalvos.size(), associadoId);
+	    
+	    return telefonesSalvos.stream()
+	        .map(this::toTelefoneDTO)
+	        .collect(Collectors.toList());
+	}
+
+	@Transactional
+	public List<EmailDTO> atualizarEmails(Long associadoId, List<EmailDTO> emailsDTO) {
+	    logger.info("Atualizando emails para associado ID: {}", associadoId);
+	    
+	    Associado associado = associadoRepository.findById(associadoId)
+	        .orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + associadoId));
+	    
+	    // 🔴 CORREÇÃO: Primeiro deletar todos os emails existentes
+	    emailRepository.deleteByAssociadoId(associadoId);
+	    
+	    List<Email> novosEmails = new ArrayList<>();
+	    
+	    for (EmailDTO dto : emailsDTO) {
+	        if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+	            Email email = new Email();
+	            email.setEmail(dto.getEmail().trim());
+	            email.setTipoEmail(dto.getTipoEmail());
+	            email.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
+	            email.setAssociado(associado);
+	            
+	            novosEmails.add(email);
+	        }
+	    }
+	    
+	    List<Email> emailsSalvos = emailRepository.saveAll(novosEmails);
+	    
+	    logger.info("Emails atualizados: {} registros para associado ID: {}", 
+	        emailsSalvos.size(), associadoId);
+	    
+	    return emailsSalvos.stream()
+	        .map(this::toEmailDTO)
+	        .collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
+	public List<EnderecoDTO> buscarEnderecosPorAssociadoId(Long associadoId) {
+	    List<Endereco> enderecos = enderecoRepository.findByAssociadoId(associadoId);
+	    return enderecos.stream()
+	        .map(this::toEnderecoDTO)
+	        .collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
+	public List<TelefoneDTO> buscarTelefonesPorAssociadoId(Long associadoId) {
+	    List<Telefone> telefones = telefoneRepository.findByAssociadoId(associadoId);
+	    return telefones.stream()
+	        .map(this::toTelefoneDTO)
+	        .collect(Collectors.toList());
+	}
+
+	@Transactional(readOnly = true)
+	public List<EmailDTO> buscarEmailsPorAssociadoId(Long associadoId) {
+	    List<Email> emails = emailRepository.findByAssociadoId(associadoId);
+	    return emails.stream()
+	        .map(this::toEmailDTO)
+	        .collect(Collectors.toList());
+	}
+	
+	
+	
 }

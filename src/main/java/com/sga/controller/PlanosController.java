@@ -93,4 +93,5 @@ public class PlanosController {
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("PlanosController está funcionando!");
     }
+    
 }

@@ -1,12 +1,11 @@
-// src/main/java/com/sga/dto/AssociadoResumoDTO.java
 package com.sga.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
-@Data
 public class AssociadoResumoDTO {
 	private Long id;
 	private String codigoSpc;
@@ -14,23 +13,42 @@ public class AssociadoResumoDTO {
 	private String cnpjCpf;
 	private String nomeRazao;
 	private String nomeFantasia;
-	private String tipoPessoa; // "F" ou "J"
-	private String status; // "A", "I", "S"
-	private BigDecimal faturamentoMinimo;
+	private String tipoPessoa;
+	private String status;
+	private BigDecimal faturamentoMinimo; // Adicionado
+
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime dataCadastro;
 
-	// Relacionamentos (apenas nomes para resumo)
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private LocalDate dataFiliacao;
+
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private LocalDate dataInativacao;
+
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private LocalDate dataInicioSuspensao;
+
+	@JsonFormat(pattern = "yyyy-MM-dd")
+	private LocalDate dataFimSuspensao;
+
+	private String motivoInativacao;
+	private String motivoSuspensao;
+
+	// Campos de relacionamento ADICIONADOS
 	private Long vendedorId;
 	private String vendedorNome;
+	
+	private Long vendedorExternoId;
+	private String vendedorExternoNome;
+	
 	private Long planoId;
-	private String planoNome;
+	private String planoTitulo; // Alterado para corresponder ao seu modelo
+	
 	private Long categoriaId;
 	private String categoriaNome;
 
-	public AssociadoResumoDTO() {
-
-	}
-
+	// Getters e Setters existentes (mantenha os que já tem)
 	public Long getId() {
 		return id;
 	}
@@ -111,6 +129,55 @@ public class AssociadoResumoDTO {
 		this.dataCadastro = dataCadastro;
 	}
 
+	public LocalDate getDataFiliacao() {
+		return dataFiliacao;
+	}
+
+	public void setDataFiliacao(LocalDate dataFiliacao) {
+		this.dataFiliacao = dataFiliacao;
+	}
+
+	public LocalDate getDataInativacao() {
+		return dataInativacao;
+	}
+
+	public void setDataInativacao(LocalDate dataInativacao) {
+		this.dataInativacao = dataInativacao;
+	}
+
+	public LocalDate getDataInicioSuspensao() {
+		return dataInicioSuspensao;
+	}
+
+	public void setDataInicioSuspensao(LocalDate dataInicioSuspensao) {
+		this.dataInicioSuspensao = dataInicioSuspensao;
+	}
+
+	public LocalDate getDataFimSuspensao() {
+		return dataFimSuspensao;
+	}
+
+	public void setDataFimSuspensao(LocalDate dataFimSuspensao) {
+		this.dataFimSuspensao = dataFimSuspensao;
+	}
+
+	public String getMotivoInativacao() {
+		return motivoInativacao;
+	}
+
+	public void setMotivoInativacao(String motivoInativacao) {
+		this.motivoInativacao = motivoInativacao;
+	}
+
+	public String getMotivoSuspensao() {
+		return motivoSuspensao;
+	}
+
+	public void setMotivoSuspensao(String motivoSuspensao) {
+		this.motivoSuspensao = motivoSuspensao;
+	}
+
+	// NOVOS Getters e Setters para relacionamentos
 	public Long getVendedorId() {
 		return vendedorId;
 	}
@@ -127,6 +194,22 @@ public class AssociadoResumoDTO {
 		this.vendedorNome = vendedorNome;
 	}
 
+	public Long getVendedorExternoId() {
+		return vendedorExternoId;
+	}
+
+	public void setVendedorExternoId(Long vendedorExternoId) {
+		this.vendedorExternoId = vendedorExternoId;
+	}
+
+	public String getVendedorExternoNome() {
+		return vendedorExternoNome;
+	}
+
+	public void setVendedorExternoNome(String vendedorExternoNome) {
+		this.vendedorExternoNome = vendedorExternoNome;
+	}
+
 	public Long getPlanoId() {
 		return planoId;
 	}
@@ -135,12 +218,12 @@ public class AssociadoResumoDTO {
 		this.planoId = planoId;
 	}
 
-	public String getPlanoNome() {
-		return planoNome;
+	public String getPlanoTitulo() {
+		return planoTitulo;
 	}
 
-	public void setPlanoNome(String planoNome) {
-		this.planoNome = planoNome;
+	public void setPlanoTitulo(String planoTitulo) {
+		this.planoTitulo = planoTitulo;
 	}
 
 	public Long getCategoriaId() {
@@ -158,5 +241,4 @@ public class AssociadoResumoDTO {
 	public void setCategoriaNome(String categoriaNome) {
 		this.categoriaNome = categoriaNome;
 	}
-
 }

@@ -14,6 +14,13 @@ public class CategoriaResumoDTO {
 
 	}
 
+	public CategoriaResumoDTO(String descricao, String tipo, String status, LocalDateTime dataCadastro) {
+		this.descricao = descricao;
+		this.tipo = tipo;
+		this.status = status;
+		this.dataCadastro = dataCadastro;
+	}
+
 	public Long getId() {
 		return id;
 	}
