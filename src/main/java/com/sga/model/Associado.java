@@ -3,6 +3,7 @@ package com.sga.model;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -113,7 +114,7 @@ public class Associado {
 	private List<AssociadoDefNotificacao> definicoesNotificacao;
 
 	@OneToMany(mappedBy = "associado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<AssociadoDefFaturamento> definicoesFaturamento;
+	private List<AssociadoDefFaturamento> definicoesFaturamento = new ArrayList<>();
 
 	// Campos transientes para controle
 	@Transient
@@ -205,6 +206,17 @@ public class Associado {
 		if (isSuspenso())
 			return "Suspenso";
 		return "Desconhecido";
+	}
+	
+	// Métodos utilitários
+	public void addDefinicaoFaturamento(AssociadoDefFaturamento definicao) {
+	    definicoesFaturamento.add(definicao);
+	    definicao.setAssociado(this);
+	}
+
+	public void removeDefinicaoFaturamento(AssociadoDefFaturamento definicao) {
+	    definicoesFaturamento.remove(definicao);
+	    definicao.setAssociado(null);
 	}
 
 	public Associado(Long id) {

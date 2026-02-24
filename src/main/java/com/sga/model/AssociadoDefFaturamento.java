@@ -46,8 +46,20 @@ public class AssociadoDefFaturamento {
 	@Column(name = "OBSERVACAO")
 	private String observacao;
 
-	public AssociadoDefFaturamento(Long id) {
+	public AssociadoDefFaturamento(Long id, Associado associado, Planos plano, BigDecimal valorDef, Integer diaEmissao,
+			Integer diaVencimento, String observacao) {
 		super();
+		this.id = id;
+		this.associado = associado;
+		this.plano = plano;
+		this.valorDef = valorDef;
+		this.diaEmissao = diaEmissao;
+		this.diaVencimento = diaVencimento;
+		this.observacao = observacao;
+	}
+
+	public AssociadoDefFaturamento() {
+
 	}
 
 	public Long getId() {

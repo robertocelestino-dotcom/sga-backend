@@ -508,142 +508,234 @@ public class AssociadoService {
 	// ========== MÉTODO updateEntityFromDTO CORRIGIDO ==========
 
 	private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
-		logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
+	    logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
 
-		try {
-			// 1. DADOS BÁSICOS
-			associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
-			associado.setCodigoRm(limparString(dto.getCodigoRm()));
-			associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
-			associado.setCnpjCpf(dto.getCnpjCpf().trim());
-			associado.setNomeRazao(dto.getNomeRazao().trim());
-			associado.setTipoPessoa(dto.getTipoPessoa());
+	    try {
+	        // 1. DADOS BÁSICOS - COM TRATAMENTO DE NULL
+	        associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+	        associado.setCodigoRm(limparString(dto.getCodigoRm()));
+	        associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
+	        
+	        // Campos obrigatórios
+	        if (dto.getCnpjCpf() != null) {
+	            associado.setCnpjCpf(dto.getCnpjCpf().trim());
+	        }
+	        
+	        if (dto.getNomeRazao() != null) {
+	            associado.setNomeRazao(dto.getNomeRazao().trim());
+	        }
+	        
+	        if (dto.getTipoPessoa() != null) {
+	            associado.setTipoPessoa(dto.getTipoPessoa());
+	        }
 
-			// Status
-			associado.setStatus(
-					(dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) ? dto.getStatus().trim() : "A");
+	        // Status - com valor padrão seguro
+	        associado.setStatus((dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) ? dto.getStatus().trim() : "A");
 
-			// 2. DATAS
-			if (dto.getDataCadastro() != null) {
-				associado.setDataCadastro(dto.getDataCadastro());
-			} else {
-				associado.setDataCadastro(LocalDateTime.now());
-			}
+	        // 2. DATAS - COM TRATAMENTO DE NULL
+	        if (dto.getDataCadastro() != null) {
+	            associado.setDataCadastro(dto.getDataCadastro());
+	        } else if (associado.getDataCadastro() == null) {
+	            // Só define data atual se não existir data anterior
+	            associado.setDataCadastro(LocalDateTime.now());
+	        }
 
-			associado.setDataFiliacao(dto.getDataFiliacao());
+	        // Datas opcionais - podem ser null
+	        associado.setDataFiliacao(dto.getDataFiliacao());
+	        associado.setDataInativacao(dto.getDataInativacao());
+	        associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
+	        associado.setDataFimSuspensao(dto.getDataFimSuspensao());
 
-			// NOVOS CAMPOS DE DATAS
-			associado.setDataInativacao(dto.getDataInativacao());
-			associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
-			associado.setDataFimSuspensao(dto.getDataFimSuspensao());
-			associado.setMotivoInativacao(dto.getMotivoInativacao());
-			associado.setMotivoSuspensao(dto.getMotivoSuspensao());
+	        // 3. TEXTOS OPCIONAIS - podem ser null
+	        associado.setMotivoInativacao(dto.getMotivoInativacao());
+	        associado.setMotivoSuspensao(dto.getMotivoSuspensao());
 
-			// 3. FATURAMENTO MÍNIMO
-			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+	        // 4. FATURAMENTO MÍNIMO
+	        associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
 
-			// 4. RELACIONAMENTOS
-			if (dto.getVendedorId() != null) {
-				Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId()).orElseThrow(
-						() -> new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId()));
-				associado.setVendedor(vendedor);
-			} else {
-				associado.setVendedor(null);
-			}
+	        // 5. RELACIONAMENTOS - TODOS COM VERIFICAÇÃO DE NULL
+	        try {
+	            // Vendedor Interno
+	            if (dto.getVendedorId() != null) {
+	                Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
+	                        .orElseThrow(() -> new EntityNotFoundException("Vendedor não encontrado com ID: " + dto.getVendedorId()));
+	                associado.setVendedor(vendedor);
+	            } else {
+	                associado.setVendedor(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("Erro ao processar vendedor interno: {}", e.getMessage());
+	            associado.setVendedor(null);
+	        }
 
-			// Vendedor Externo - CORREÇÃO: Busca pelo ID fornecido
-			if (dto.getVendedorExternoId() != null) {
-				try {
-					// Tenta buscar como Vendedor
-					Optional<Vendedor> vendedorExternoOpt = vendedorRepository
-							.findById(dto.getVendedorExternoId().longValue());
-					if (vendedorExternoOpt.isPresent()) {
-						associado.setVendedorExterno(vendedorExternoOpt.get());
-					} else {
-						// Se não encontrar vendedor com esse ID, limpa o campo
-						logger.warn("Vendedor externo não encontrado com ID {}, limpando campo",
-								dto.getVendedorExternoId());
-						associado.setVendedorExterno(null);
-					}
-				} catch (Exception e) {
-					logger.error("Erro ao processar vendedor externo: {}", e.getMessage());
-					associado.setVendedorExterno(null);
-				}
-			} else {
-				associado.setVendedorExterno(null);
-			}
+	        // Vendedor Externo - COM TRATAMENTO ROBUSTO
+	        try {
+	            if (dto.getVendedorExternoId() != null) {
+	                // Tenta buscar como Vendedor (convertendo Long se necessário)
+	                Long vendedorExternoId;
+	                if (dto.getVendedorExternoId() instanceof Number) {
+	                    vendedorExternoId = ((Number) dto.getVendedorExternoId()).longValue();
+	                } else {
+	                    vendedorExternoId = Long.parseLong(dto.getVendedorExternoId().toString());
+	                }
+	                
+	                Optional<Vendedor> vendedorExternoOpt = vendedorRepository.findById(vendedorExternoId);
+	                if (vendedorExternoOpt.isPresent()) {
+	                    associado.setVendedorExterno(vendedorExternoOpt.get());
+	                } else {
+	                    logger.warn("Vendedor externo não encontrado com ID {}, limpando campo", vendedorExternoId);
+	                    associado.setVendedorExterno(null);
+	                }
+	            } else {
+	                associado.setVendedorExterno(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("Erro ao processar vendedor externo: {}", e.getMessage());
+	            associado.setVendedorExterno(null);
+	        }
 
-			if (dto.getPlanoId() != null) {
-				Planos plano = planosRepository.findById(dto.getPlanoId()).orElseThrow(
-						() -> new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId()));
-				associado.setPlano(plano);
-			} else {
-				associado.setPlano(null);
-			}
+	        // Plano
+	        try {
+	            if (dto.getPlanoId() != null) {
+	                Planos plano = planosRepository.findById(dto.getPlanoId())
+	                        .orElseThrow(() -> new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId()));
+	                associado.setPlano(plano);
+	            } else {
+	                associado.setPlano(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("Erro ao processar plano: {}", e.getMessage());
+	            associado.setPlano(null);
+	        }
 
-			if (dto.getCategoriaId() != null) {
-				Categoria categoria = categoriaRepository.findById(dto.getCategoriaId()).orElseThrow(
-						() -> new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId()));
-				associado.setCategoria(categoria);
-			} else {
-				associado.setCategoria(null);
-			}
+	        // Categoria
+	        try {
+	            if (dto.getCategoriaId() != null) {
+	                Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+	                        .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada com ID: " + dto.getCategoriaId()));
+	                associado.setCategoria(categoria);
+	            } else {
+	                associado.setCategoria(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("Erro ao processar categoria: {}", e.getMessage());
+	            associado.setCategoria(null);
+	        }
 
-			// 5. SUB-ENTIDADES
-			// Endereços
-			if (dto.getEnderecos() != null) {
-				associado.getEnderecos().clear();
-				for (EnderecoDTO enderecoDTO : dto.getEnderecos()) {
-					Endereco endereco = new Endereco();
-					endereco.setCep(enderecoDTO.getCep());
-					endereco.setLogradouro(enderecoDTO.getLogradouro());
-					endereco.setNumero(enderecoDTO.getNumero());
-					endereco.setComplemento(enderecoDTO.getComplemento());
-					endereco.setBairro(enderecoDTO.getBairro());
-					endereco.setCidade(enderecoDTO.getCidade());
-					endereco.setEstado(enderecoDTO.getEstado());
-					endereco.setTipoEndereco(enderecoDTO.getTipoEndereco());
-					endereco.setAssociado(associado);
-					associado.getEnderecos().add(endereco);
-				}
-			}
+	        // 6. SUB-ENTIDADES - COM LIMPEZA APROPRIADA
+	        atualizarEnderecos(associado, dto.getEnderecos());
+	        atualizarTelefones(associado, dto.getTelefones());
+	        atualizarEmails(associado, dto.getEmails());
 
-			// Emails
-			if (dto.getEmails() != null) {
-				associado.getEmails().clear();
-				for (EmailDTO emailDTO : dto.getEmails()) {
-					Email email = new Email();
-					email.setEmail(emailDTO.getEmail());
-					email.setTipoEmail(emailDTO.getTipoEmail());
-					email.setAssociado(associado);
-					associado.getEmails().add(email);
-				}
-			}
+	        logger.info("Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
 
-			// Telefones
-			if (dto.getTelefones() != null) {
-				associado.getTelefones().clear();
-				for (TelefoneDTO telefoneDTO : dto.getTelefones()) {
-					Telefone telefone = new Telefone();
-					telefone.setDdd(telefoneDTO.getDdd());
-					telefone.setNumero(telefoneDTO.getNumero());
-					telefone.setTipoTelefone(telefoneDTO.getTipoTelefone());
-					telefone.setAssociado(associado);
-					associado.getTelefones().add(telefone);
-				}
-			}
-
-			logger.info("Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
-
-		} catch (IllegalArgumentException | EntityNotFoundException e) {
-			logger.error("Erro de validação: {}", e.getMessage());
-			throw e;
-		} catch (Exception e) {
-			logger.error("Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
-			throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
-		}
+	    } catch (IllegalArgumentException | EntityNotFoundException e) {
+	        logger.error("Erro de validação: {}", e.getMessage());
+	        throw e;
+	    } catch (Exception e) {
+	        logger.error("Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
+	        throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
+	    }
 	}
 
+	// ========== MÉTODOS AUXILIARES PARA ATUALIZAR SUB-ENTIDADES ==========
+
+	private void atualizarEnderecos(Associado associado, List<EnderecoDTO> enderecosDTO) {
+	    if (enderecosDTO == null) {
+	        return;
+	    }
+	    
+	    // Limpar lista existente
+	    if (associado.getEnderecos() != null) {
+	        associado.getEnderecos().clear();
+	    } else {
+	        associado.setEnderecos(new ArrayList<>());
+	    }
+	    
+	    // Adicionar novos endereços
+	    for (EnderecoDTO enderecoDTO : enderecosDTO) {
+	        if (enderecoDTO != null && temDadosMinimos(enderecoDTO)) {
+	            Endereco endereco = new Endereco();
+	            endereco.setCep(limparString(enderecoDTO.getCep()));
+	            endereco.setLogradouro(limparString(enderecoDTO.getLogradouro()));
+	            endereco.setNumero(limparString(enderecoDTO.getNumero()));
+	            endereco.setComplemento(limparString(enderecoDTO.getComplemento()));
+	            endereco.setBairro(limparString(enderecoDTO.getBairro()));
+	            endereco.setCidade(limparString(enderecoDTO.getCidade()));
+	            endereco.setEstado(limparString(enderecoDTO.getEstado()));
+	            endereco.setTipoEndereco(enderecoDTO.getTipoEndereco() != null ? enderecoDTO.getTipoEndereco() : "COMERCIAL");
+	            endereco.setAssociado(associado);
+	            associado.getEnderecos().add(endereco);
+	        }
+	    }
+	}
+
+	private void atualizarTelefones(Associado associado, List<TelefoneDTO> telefonesDTO) {
+	    if (telefonesDTO == null) {
+	        return;
+	    }
+	    
+	    // Limpar lista existente
+	    if (associado.getTelefones() != null) {
+	        associado.getTelefones().clear();
+	    } else {
+	        associado.setTelefones(new ArrayList<>());
+	    }
+	    
+	    // Adicionar novos telefones
+	    for (TelefoneDTO telefoneDTO : telefonesDTO) {
+	        if (telefoneDTO != null && temDadosMinimos(telefoneDTO)) {
+	            Telefone telefone = new Telefone();
+	            telefone.setDdd(limparString(telefoneDTO.getDdd()));
+	            telefone.setNumero(limparString(telefoneDTO.getNumero()));
+	            telefone.setTipoTelefone(telefoneDTO.getTipoTelefone() != null ? telefoneDTO.getTipoTelefone() : "CELULAR");
+	            telefone.setWhatsapp(telefoneDTO.getWhatsapp() != null ? telefoneDTO.getWhatsapp() : false);
+	            telefone.setAtivo(telefoneDTO.getAtivo() != null ? telefoneDTO.getAtivo() : true);
+	            telefone.setAssociado(associado);
+	            associado.getTelefones().add(telefone);
+	        }
+	    }
+	}
+
+	private void atualizarEmails(Associado associado, List<EmailDTO> emailsDTO) {
+	    if (emailsDTO == null) {
+	        return;
+	    }
+	    
+	    // Limpar lista existente
+	    if (associado.getEmails() != null) {
+	        associado.getEmails().clear();
+	    } else {
+	        associado.setEmails(new ArrayList<>());
+	    }
+	    
+	    // Adicionar novos emails
+	    for (EmailDTO emailDTO : emailsDTO) {
+	        if (emailDTO != null && emailDTO.getEmail() != null && !emailDTO.getEmail().trim().isEmpty()) {
+	            Email email = new Email();
+	            email.setEmail(emailDTO.getEmail().trim());
+	            email.setTipoEmail(emailDTO.getTipoEmail() != null ? emailDTO.getTipoEmail() : "COMERCIAL");
+	            email.setAtivo(emailDTO.getAtivo() != null ? emailDTO.getAtivo() : true);
+	            email.setAssociado(associado);
+	            associado.getEmails().add(email);
+	        }
+	    }
+	}
+
+	// ========== MÉTODOS AUXILIARES DE VALIDAÇÃO ==========
+
+	private boolean temDadosMinimos(EnderecoDTO endereco) {
+	    return (endereco.getCep() != null && !endereco.getCep().trim().isEmpty()) ||
+	           (endereco.getLogradouro() != null && !endereco.getLogradouro().trim().isEmpty()) ||
+	           (endereco.getCidade() != null && !endereco.getCidade().trim().isEmpty());
+	}
+
+	private boolean temDadosMinimos(TelefoneDTO telefone) {
+	    return (telefone.getDdd() != null && !telefone.getDdd().trim().isEmpty()) &&
+	           (telefone.getNumero() != null && !telefone.getNumero().trim().isEmpty());
+	}
+
+	
 	// ========== MÉTODOS ADICIONAIS ==========
 
 	@Transactional
@@ -718,7 +810,8 @@ public class AssociadoService {
 	// ========== MÉTODOS AUXILIARES ==========
 
 	private String limparString(String valor) {
-		return valor != null ? valor.trim() : "";
+		//return valor != null ? valor.trim() : "";
+		return valor != null && !valor.trim().isEmpty() ? valor.trim() : null;
 	}
 	
 	@Transactional
