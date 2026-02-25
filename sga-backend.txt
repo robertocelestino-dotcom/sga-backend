@@ -5,8 +5,8 @@
 
 18/12/2025  08:46    <DIR>          .
 11/11/2025  15:12    <DIR>          ..
-06/02/2026  16:53             2.035 .classpath
-06/02/2026  16:53               288 .factorypath
+24/02/2026  08:06             2.035 .classpath
+24/02/2026  08:06               288 .factorypath
 10/11/2025  14:19                38 .gitattributes
 10/11/2025  14:19               394 .gitignore
 10/11/2025  14:19    <DIR>          .mvn
@@ -19,12 +19,1803 @@
 10/11/2025  14:19             8.292 mvnw.cmd
 28/01/2026  10:41             4.392 pom.xml
 18/12/2025  08:46               217 README.md
-09/02/2026  16:46                 0 sga-backend.txt
+24/02/2026  17:01                 0 sga-backend.txt
 10/11/2025  14:19    <DIR>          src
-06/02/2026  16:53    <DIR>          target
+24/02/2026  08:06    <DIR>          target
               13 arquivo(s)         60.854 bytes
 
-Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git
+
+18/12/2025  08:46    <DIR>          ..
+24/02/2026  09:51                80 COMMIT_EDITMSG
+18/12/2025  08:44               409 config
+18/11/2025  11:33                73 description
+18/12/2025  08:46               106 FETCH_HEAD
+18/11/2025  11:45                21 HEAD
+18/11/2025  11:33    <DIR>          hooks
+24/02/2026  09:51            15.727 index
+18/11/2025  11:33    <DIR>          info
+18/11/2025  11:36    <DIR>          logs
+24/02/2026  09:51    <DIR>          objects
+18/12/2025  08:46                41 ORIG_HEAD
+18/11/2025  13:13    <DIR>          refs
+               7 arquivo(s)         16.457 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\hooks
+
+18/11/2025  11:33    <DIR>          .
+18/11/2025  11:33               478 applypatch-msg.sample
+18/11/2025  11:33               896 commit-msg.sample
+18/11/2025  11:33             4.655 fsmonitor-watchman.sample
+18/11/2025  11:33               189 post-update.sample
+18/11/2025  11:33               424 pre-applypatch.sample
+18/11/2025  11:33             1.643 pre-commit.sample
+18/11/2025  11:33               416 pre-merge-commit.sample
+18/11/2025  11:33             1.374 pre-push.sample
+18/11/2025  11:33             4.898 pre-rebase.sample
+18/11/2025  11:33               544 pre-receive.sample
+18/11/2025  11:33             1.492 prepare-commit-msg.sample
+18/11/2025  11:33             2.783 push-to-checkout.sample
+18/11/2025  11:33             3.650 update.sample
+              13 arquivo(s)         23.442 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\info
+
+18/11/2025  11:33    <DIR>          .
+18/11/2025  11:33               240 exclude
+               1 arquivo(s)            240 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\logs
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51             2.621 HEAD
+18/11/2025  13:13    <DIR>          refs
+               1 arquivo(s)          2.621 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\logs\refs
+
+18/11/2025  13:13    <DIR>          .
+18/11/2025  11:36    <DIR>          ..
+18/11/2025  11:45    <DIR>          heads
+18/11/2025  13:13    <DIR>          remotes
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\logs\refs\heads
+
+18/11/2025  11:45    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+24/02/2026  09:51             2.421 main
+               1 arquivo(s)          2.421 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\logs\refs\remotes
+
+18/11/2025  13:13    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+18/11/2025  13:13    <DIR>          origin
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\logs\refs\remotes\origin
+
+18/11/2025  13:13    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+24/02/2026  09:52             1.392 main
+               1 arquivo(s)          1.392 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects
+
+24/02/2026  09:51    <DIR>          .
+06/02/2026  16:52    <DIR>          00
+06/01/2026  16:49    <DIR>          02
+06/02/2026  16:51    <DIR>          06
+18/12/2025  08:03    <DIR>          07
+22/12/2025  09:23    <DIR>          08
+22/12/2025  08:05    <DIR>          09
+24/02/2026  09:49    <DIR>          0a
+06/02/2026  16:51    <DIR>          0b
+24/02/2026  09:51    <DIR>          0c
+06/01/2026  16:48    <DIR>          0d
+18/12/2025  08:05    <DIR>          0e
+18/11/2025  11:34    <DIR>          0f
+24/02/2026  09:49    <DIR>          10
+18/11/2025  11:34    <DIR>          11
+18/11/2025  11:34    <DIR>          12
+24/02/2026  09:51    <DIR>          17
+22/12/2025  08:05    <DIR>          18
+18/11/2025  11:34    <DIR>          19
+24/02/2026  09:51    <DIR>          1b
+27/11/2025  15:03    <DIR>          1c
+18/11/2025  11:34    <DIR>          1d
+06/01/2026  16:48    <DIR>          1e
+10/12/2025  08:13    <DIR>          1f
+22/12/2025  08:00    <DIR>          20
+18/11/2025  11:34    <DIR>          21
+22/12/2025  08:05    <DIR>          22
+22/12/2025  08:00    <DIR>          23
+27/11/2025  14:58    <DIR>          25
+24/02/2026  09:49    <DIR>          27
+06/01/2026  16:49    <DIR>          28
+24/02/2026  09:49    <DIR>          29
+22/12/2025  08:00    <DIR>          2a
+24/02/2026  09:49    <DIR>          2c
+06/01/2026  16:48    <DIR>          2d
+24/02/2026  09:49    <DIR>          2f
+18/11/2025  11:34    <DIR>          30
+06/02/2026  16:51    <DIR>          31
+06/02/2026  16:51    <DIR>          32
+06/01/2026  16:48    <DIR>          33
+06/02/2026  16:51    <DIR>          35
+22/12/2025  09:23    <DIR>          37
+18/11/2025  11:34    <DIR>          38
+18/12/2025  08:46    <DIR>          39
+22/12/2025  09:23    <DIR>          3a
+24/02/2026  09:49    <DIR>          3b
+06/01/2026  16:49    <DIR>          3c
+22/12/2025  09:23    <DIR>          3d
+18/12/2025  08:03    <DIR>          3f
+18/12/2025  08:03    <DIR>          40
+10/12/2025  08:14    <DIR>          41
+18/12/2025  08:05    <DIR>          42
+06/01/2026  16:48    <DIR>          43
+06/01/2026  16:48    <DIR>          44
+06/01/2026  16:48    <DIR>          45
+06/01/2026  16:49    <DIR>          46
+22/12/2025  09:23    <DIR>          49
+27/11/2025  14:58    <DIR>          4f
+06/02/2026  16:51    <DIR>          51
+22/12/2025  08:00    <DIR>          53
+22/12/2025  08:05    <DIR>          55
+18/11/2025  11:34    <DIR>          56
+06/02/2026  16:51    <DIR>          5a
+18/11/2025  11:36    <DIR>          5b
+18/12/2025  08:03    <DIR>          5d
+18/11/2025  11:36    <DIR>          5e
+18/11/2025  11:34    <DIR>          5f
+18/11/2025  11:34    <DIR>          61
+22/12/2025  08:00    <DIR>          62
+18/11/2025  11:34    <DIR>          65
+24/02/2026  09:49    <DIR>          66
+18/11/2025  11:36    <DIR>          67
+27/11/2025  14:58    <DIR>          68
+24/02/2026  09:51    <DIR>          69
+24/02/2026  09:49    <DIR>          6a
+18/12/2025  08:05    <DIR>          6b
+27/11/2025  14:58    <DIR>          6c
+18/12/2025  08:03    <DIR>          6d
+18/11/2025  11:36    <DIR>          6e
+06/02/2026  16:52    <DIR>          71
+18/12/2025  08:46    <DIR>          72
+06/01/2026  16:48    <DIR>          73
+24/02/2026  09:49    <DIR>          74
+06/02/2026  16:51    <DIR>          76
+27/11/2025  15:03    <DIR>          77
+06/02/2026  16:51    <DIR>          79
+06/02/2026  16:51    <DIR>          7a
+06/01/2026  16:48    <DIR>          7c
+06/02/2026  16:52    <DIR>          7d
+24/02/2026  09:49    <DIR>          7e
+24/02/2026  09:49    <DIR>          7f
+22/12/2025  09:23    <DIR>          80
+06/02/2026  16:52    <DIR>          81
+06/01/2026  16:48    <DIR>          83
+18/12/2025  08:03    <DIR>          85
+18/11/2025  11:36    <DIR>          86
+06/02/2026  16:51    <DIR>          87
+06/01/2026  16:49    <DIR>          88
+06/02/2026  16:52    <DIR>          89
+06/01/2026  16:48    <DIR>          8a
+06/01/2026  16:48    <DIR>          8b
+22/12/2025  09:23    <DIR>          8d
+06/02/2026  16:51    <DIR>          8e
+10/12/2025  08:14    <DIR>          8f
+27/11/2025  15:03    <DIR>          91
+22/12/2025  08:00    <DIR>          92
+22/12/2025  09:23    <DIR>          93
+18/11/2025  11:34    <DIR>          94
+06/01/2026  16:49    <DIR>          95
+18/12/2025  08:03    <DIR>          96
+22/12/2025  08:00    <DIR>          98
+10/12/2025  08:13    <DIR>          9a
+18/11/2025  11:34    <DIR>          9b
+06/01/2026  16:49    <DIR>          9e
+22/12/2025  09:23    <DIR>          9f
+06/01/2026  16:48    <DIR>          a0
+24/02/2026  09:49    <DIR>          a1
+06/02/2026  16:51    <DIR>          a4
+22/12/2025  08:00    <DIR>          a5
+06/01/2026  16:48    <DIR>          a6
+18/11/2025  11:34    <DIR>          a7
+06/02/2026  16:51    <DIR>          a8
+18/12/2025  08:05    <DIR>          a9
+24/02/2026  09:51    <DIR>          aa
+24/02/2026  09:51    <DIR>          ab
+22/12/2025  08:05    <DIR>          ac
+06/01/2026  16:48    <DIR>          ae
+06/01/2026  16:48    <DIR>          af
+24/02/2026  09:49    <DIR>          b0
+22/12/2025  09:23    <DIR>          b1
+18/12/2025  08:03    <DIR>          b2
+06/01/2026  16:48    <DIR>          b6
+24/02/2026  09:51    <DIR>          b8
+06/01/2026  16:48    <DIR>          b9
+18/11/2025  11:34    <DIR>          ba
+06/02/2026  16:51    <DIR>          bb
+06/02/2026  16:52    <DIR>          bc
+06/02/2026  16:52    <DIR>          bd
+24/02/2026  09:49    <DIR>          be
+18/11/2025  11:34    <DIR>          c0
+24/02/2026  09:51    <DIR>          c1
+22/12/2025  08:05    <DIR>          c2
+27/11/2025  14:58    <DIR>          c3
+22/12/2025  08:00    <DIR>          c4
+24/02/2026  09:49    <DIR>          c5
+06/02/2026  16:51    <DIR>          c6
+27/11/2025  14:58    <DIR>          c7
+18/12/2025  08:03    <DIR>          c8
+22/12/2025  09:23    <DIR>          c9
+18/12/2025  08:03    <DIR>          ca
+24/02/2026  09:49    <DIR>          cb
+24/02/2026  09:49    <DIR>          cc
+22/12/2025  09:23    <DIR>          cd
+18/11/2025  11:34    <DIR>          ce
+18/11/2025  11:34    <DIR>          d0
+18/11/2025  11:34    <DIR>          d1
+06/02/2026  16:51    <DIR>          d4
+06/02/2026  16:51    <DIR>          d5
+06/02/2026  16:52    <DIR>          d6
+22/12/2025  09:23    <DIR>          d8
+27/11/2025  15:03    <DIR>          d9
+24/02/2026  09:51    <DIR>          da
+18/12/2025  08:03    <DIR>          dc
+10/12/2025  08:14    <DIR>          dd
+10/12/2025  08:13    <DIR>          de
+22/12/2025  08:00    <DIR>          e0
+24/02/2026  09:51    <DIR>          e1
+10/12/2025  08:14    <DIR>          e2
+06/01/2026  16:48    <DIR>          e3
+10/12/2025  08:14    <DIR>          e5
+06/02/2026  16:51    <DIR>          e7
+18/12/2025  08:05    <DIR>          e8
+22/12/2025  08:00    <DIR>          e9
+06/02/2026  16:52    <DIR>          ea
+06/02/2026  16:52    <DIR>          eb
+22/12/2025  08:05    <DIR>          ec
+06/02/2026  16:52    <DIR>          ed
+06/02/2026  16:52    <DIR>          ee
+06/02/2026  16:51    <DIR>          ef
+24/02/2026  09:51    <DIR>          f1
+06/01/2026  16:49    <DIR>          f3
+24/02/2026  09:51    <DIR>          f4
+22/12/2025  08:05    <DIR>          f5
+22/12/2025  08:00    <DIR>          f6
+24/02/2026  09:49    <DIR>          f8
+24/02/2026  09:51    <DIR>          f9
+22/12/2025  08:00    <DIR>          fc
+18/11/2025  11:34    <DIR>          fd
+18/11/2025  11:33    <DIR>          info
+18/11/2025  11:33    <DIR>          pack
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\00
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36               345 584a552be6255210932a6eb9f2b56db66a69c8
+27/11/2025  15:03               662 62b884239db333115be26de6f7a1cb46cdaed2
+06/02/2026  16:52                80 8f8330fc26c132ab15d6158e932c308ce8f635
+18/12/2025  08:05               271 ab5d450d7d2078a8df9ed9a0ef5771ed7b2ec6
+               4 arquivo(s)          1.358 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\02
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49                79 5a0538a594433565b69ed0d9ebd6cea720bee1
+18/12/2025  08:05                80 62329fd38c95152b1c3241905d85c1d40c1e22
+               2 arquivo(s)            159 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\06
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             2.040 194ec93b090efb5d9332e99d150d0196e64520
+               1 arquivo(s)          2.040 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\07
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               490 aa209c897f20dcfd69579c33f9413fbe8858db
+               1 arquivo(s)            490 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\08
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23                45 973f5630a8318f31ee2828355622e58cb122e0
+18/12/2025  08:05                45 a97f46c4a5509d72d8adf3e1eebd7e87794029
+               2 arquivo(s)             90 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\09
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05               279 17dd29ab3dccb83e0a30656885f82f6f1cf6a5
+               1 arquivo(s)            279 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0a
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             4.641 defd133fb978e8818f91fd2a0207b391d062c6
+               1 arquivo(s)          4.641 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0b
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.602 40ee21920b5a9f40771dbad8be8839b1f315e7
+               1 arquivo(s)          1.602 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0c
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51               786 0894daf28e5f56e4320f21300b3fe0df5f9382
+               1 arquivo(s)            786 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0d
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               558 a71a44398ba2a5c26be67e03011308e0004129
+18/12/2025  08:03               530 ae60d1acf298da59e862e35a962039aa56e73d
+               2 arquivo(s)          1.088 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0e
+
+18/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05               662 7570477b499753c0912cec7973dcc8e7a45a0c
+               1 arquivo(s)            662 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\0f
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               281 0008322ac923fb3b0eea6f051fe3577a4b0ac7
+               1 arquivo(s)            281 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\10
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49               378 22e7c59a3201ff93b975b93cff5030b0379425
+10/12/2025  08:14               365 46c1f905a03829a9d62a4b5958532205846905
+24/02/2026  09:49               695 8e27774297e51e6f966152f045d10aba2e7bb8
+06/01/2026  16:49               434 c4075ce1f88b08308e75104e635b88e662c35a
+18/12/2025  08:03               214 e2a6921e9463bc8329dc6f1a415ecd6d2f2c5c
+               5 arquivo(s)          2.086 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\11
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               603 fc003b4c84bfeece49f2a0276835e3931532d4
+               1 arquivo(s)            603 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\12
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               162 bcf7b0a127c4d674498ae6a5eecbc4b0ed999c
+               1 arquivo(s)            162 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\17
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51                74 59cca9643f94e48942e96f16cecd7277c890ad
+27/11/2025  15:03                79 9c72112a44822914a834f3446a79115b655ded
+18/11/2025  11:34             1.230 edd40903da780c325ec11e41fbbaf82b6fb218
+               3 arquivo(s)          1.383 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\18
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05               777 322997906cd67f394ce136f319415d77614332
+               1 arquivo(s)            777 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\19
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             2.230 c7ad7e7c26dc2cd52d102dbfb469e59438fdbb
+               1 arquivo(s)          2.230 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\1b
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51               339 fbf6ea84d260cc8a0e8f6f538b85d717f3e2da
+               1 arquivo(s)            339 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\1c
+
+27/11/2025  15:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  15:03                45 85d144750836d6a22b9e84629907ee65644aa8
+18/11/2025  11:36                67 b16b1a8eee75b75c2df7dccf6f2129a44f959b
+               2 arquivo(s)            112 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\1d
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               651 845496882c7375bc6573beb8ca6e182dcba5f7
+               1 arquivo(s)            651 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\1e
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               277 a786b601f42a615f971deb692d714410ed2634
+               1 arquivo(s)            277 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\1f
+
+10/12/2025  08:13    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:13               226 4e23c82e13e43ed226636e12742812bc34750c
+               1 arquivo(s)            226 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\20
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00             1.191 1dbf856bff0d30d2e54807fc535c7b5baefaa4
+22/12/2025  08:00               551 1e188d1e2583b3a6947a24f92a4f4ab9ce7c1b
+22/12/2025  08:00             1.449 ead48c46dbc26d7d0574efc7b02a71afa207fa
+               3 arquivo(s)          3.191 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\21
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             3.202 3a4a1fda189bc486a4ef92951102aa26787d22
+               1 arquivo(s)          3.202 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\22
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               208 8927608863165631fc75674d12f443bff17171
+22/12/2025  08:05               372 d2f1370cb066d788c1546d334507f50c8fae9a
+               2 arquivo(s)            580 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\23
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00             4.380 b21823ed35d6b658169712817b5f8a07f53a8a
+10/12/2025  08:13             6.896 d0c61505cde82207eb03a78725e8d1f63fe1f1
+               2 arquivo(s)         11.276 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\25
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               763 7a002be99c9b77a8f399e02dcf0cab0d093dbb
+27/11/2025  14:58               220 9f6938ad7d860b6e6d8328ef5e557f21dbb2e7
+               2 arquivo(s)            983 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\27
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             1.533 8758390cd7a70ecb712abbb18a4be795bb7364
+               1 arquivo(s)          1.533 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\28
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49                75 395faf408c571e9c9ce498e0def2d6c9c54d47
+               1 arquivo(s)             75 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\29
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49               632 10a35867952024eeb9c3fc27456b1ec5349ec5
+24/02/2026  09:49               156 9aab8d9b3291edc060ba7bd1b50f17cff796b4
+24/02/2026  09:49             2.612 e69a3694c7485121e4b66dfc59896e284aee2d
+               3 arquivo(s)          3.400 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\2a
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               670 6114196a84839a545b4eab3eec324eb4d76b52
+22/12/2025  08:00               749 9ad4e3f2cb1c9b79c89766b153b7ae55e56a8c
+               2 arquivo(s)          1.419 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\2c
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49               861 6cee2c5d77810aea658241a3ff31006279d5c5
+06/02/2026  16:52               465 ce8ed3f5fae09bb2368f4a8793f240b1bbeca2
+18/12/2025  08:05                45 eed8fe67d8ead5fd53ef6dd509aefc3ce7522f
+               3 arquivo(s)          1.371 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\2d
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               443 29911cba334802bd46e770e5c22402b3645424
+22/12/2025  08:00             1.991 490930fd0d79c134ba147e51c125238ae40fdd
+               2 arquivo(s)          2.434 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\2f
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05               230 0ca56183483c83150f656106615cd2ee1b9a2f
+24/02/2026  09:49               928 c4a0b18986b82340c13a0a737662cd7e6bf28f
+               2 arquivo(s)          1.158 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\30
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               970 e06e412c8f016340b4265fe811d82991ac1049
+               1 arquivo(s)            970 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\31
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51               751 d83f4540c36b58e9b770ce2edfd844965961ac
+               1 arquivo(s)            751 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\32
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51               228 3b5c8aebcfd5fa148957722bf01ad2c566774d
+27/11/2025  15:03               138 7928176c79ae01ae1ea1060a402a56428268a5
+               2 arquivo(s)            366 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\33
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00             1.459 0df5f8f0d7bfcbdf7760bd3aec78515ef164ad
+22/12/2025  09:23               280 4d9b1ad479b9c3d85222555bc4613dc5033b97
+06/01/2026  16:48               571 d28865ddc4a7d71017030ae350679ac9169adf
+22/12/2025  08:05               364 fd51423c61f719b8d90c7c988f80969914b806
+               4 arquivo(s)          2.674 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\35
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               289 07e789706ce770c6cf1ab2ae2c06a8e6d73289
+18/12/2025  08:05               280 246b31ad2a2575372fc74729ea3723290d5bdf
+06/02/2026  16:51             5.720 9ac08859fa6165e77faf9845cfaee6669b4a3c
+               3 arquivo(s)          6.289 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\37
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23               777 4da43895fa6185d01d3c9506b995f635c0d5a8
+27/11/2025  14:58               276 5f504937b94890d7913ec73697cef9a396a8b8
+               2 arquivo(s)          1.053 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\38
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               168 605cebccb70c161f92666a411aaf7518d8be2f
+               1 arquivo(s)            168 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\39
+
+18/12/2025  08:46    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:46               174 fa083d261b023d975ad7bb4f7e2122bba1c096
+               1 arquivo(s)            174 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\3a
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23               206 aaba41163c0bec3ec3e8d0096b0c50450d4912
+               1 arquivo(s)            206 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\3b
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               427 2ea708f7613f2c6b5f11fe49e6037b9bf1c302
+24/02/2026  09:49               570 3cfbb2b6c7e59ab4a8f9bfb6b0b465f5b0dc14
+18/11/2025  11:34                44 41682ac579fafb665abb4dfcdaa6aaaa712184
+18/11/2025  11:34             5.147 f7dd3bdfcdfe7f99436d0f493b9212ee82dd09
+               4 arquivo(s)          6.188 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\3c
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49               429 3ad44764f751b726bcf2183e420a04bbee7c25
+               1 arquivo(s)            429 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\3d
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23               379 af95f99b95e290693cc44f5a25b43e3c8dc84f
+               1 arquivo(s)            379 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\3f
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               803 340de0ad79a23b16df2cb4368ac7cd038423f5
+               1 arquivo(s)            803 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\40
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               963 46ca0ec4deb3d25c5c110360ab5c02b2647937
+18/12/2025  08:03               511 fdec756713771f3505b603b5add430b618fd79
+               2 arquivo(s)          1.474 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\41
+
+10/12/2025  08:14    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14                79 058cd8931a46ef25e1768f6c047522407a5a7c
+18/11/2025  11:36                49 2c87b3283ea6477eb208c1763c68f7d8e071fb
+               2 arquivo(s)            128 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\42
+
+18/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05               364 10f7345333478ed1d29ce4c95dfb9d3e8a60e4
+               1 arquivo(s)            364 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\43
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               390 351ac535ce4f68b82c2354f2e43d1a5d914119
+               1 arquivo(s)            390 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\44
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               579 00095a619b658585d0c992ce77a099178292b3
+18/11/2025  11:34             1.213 4d374e4f392e152328caaa61ed3b925515095b
+               2 arquivo(s)          1.792 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\45
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48             1.764 e67b07414534aadf2571727966341e6f70a996
+22/12/2025  08:05               463 f55c9b101984bce6b8b722932f7b5fc062ece7
+               2 arquivo(s)          2.227 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\46
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49               692 7ede571f84f4ce449886b3780124b9cdc18d7a
+06/01/2026  16:48             1.502 f1a916a3dd03128fc9876cad88174fb85912b4
+               2 arquivo(s)          2.194 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\49
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23                79 26e3d2c4a7fea8887a7eacd8ddbf65f2dcf44a
+22/12/2025  08:00               588 ebbb76733308d618d60543c90dc12f556222f5
+               2 arquivo(s)            667 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\4f
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58             5.425 6c211393292ce06a7fe9e07c3a9c79e0a75793
+               1 arquivo(s)          5.425 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\51
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03             1.275 0106fbfec9a9db879c9fdbd7e55aa226d5734b
+06/02/2026  16:51               362 add33c74b724a39b2c022ded96b29f8c561748
+               2 arquivo(s)          1.637 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\53
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               420 88c713c0182c2da9d937c35575e372f68563a5
+               1 arquivo(s)            420 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\55
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05                45 0c82b39b77ec14068a825d4c9299b4b9d4baf6
+               1 arquivo(s)             45 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\56
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               163 026ddbbeb16d579e3c323e5145243b0ca0e72d
+               1 arquivo(s)            163 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\5a
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.573 7e028fa642165c50e8f6e4901124fbd2004623
+               1 arquivo(s)          1.573 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\5b
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36               167 f7ce1e1e47d629479211ca5fcb964f6c3220bf
+               1 arquivo(s)            167 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\5d
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               730 42f3aba2483f652f449c26310ecda503879447
+18/11/2025  11:34               214 440b3d9c0bccd746c186045ed60b83feb09bb6
+               2 arquivo(s)            944 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\5e
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                46 dc5375784e78beb2e59c2a50c548668ea0ede2
+               1 arquivo(s)             46 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\5f
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             1.537 60cb165bf61801ef92c02e76d396b2e1000f92
+               1 arquivo(s)          1.537 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\61
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               828 99116adaa44830fc2955a6ddc320cb20187930
+               1 arquivo(s)            828 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\62
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00             1.480 7b3f6b569941e975c9d8f6ff51377ee01baf5c
+               1 arquivo(s)          1.480 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\65
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               809 691f4b499c7b16c87eb111734be91dff33920e
+               1 arquivo(s)            809 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\66
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49               361 2849a326272865afa31943019bfd26a1e00e96
+18/11/2025  11:34               248 7aaef0c891a18c6177b09b53418bf59c6ab91f
+               2 arquivo(s)            609 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\67
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                45 86a8788cff7182bc7743c1dd52cd6a1f2a980a
+               1 arquivo(s)             45 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\68
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58             1.209 68c080e5fe59fa15389c1c0b1932be00588d76
+18/11/2025  11:34               236 8bd09c5834a91499f9ab43569ae217564be4b6
+               2 arquivo(s)          1.445 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\69
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52                74 468e58dadad1e3d7e70062bb0628f5e71f6050
+24/02/2026  09:51                45 4fd3280858bd176cdd5daef7ecec49e7bd1236
+06/01/2026  16:48               580 7e45b4866b271d40cc3f25346984856771d483
+22/12/2025  08:00               474 7f7804bf6bbadc8f1195fe28b45771e930aa91
+               4 arquivo(s)          1.173 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\6a
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             2.374 de528da278998d323593117554359c03e51169
+18/12/2025  08:05               426 f4beac4480530002eaa81ae64566e049009166
+               2 arquivo(s)          2.800 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\6b
+
+18/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05               345 5e065776f16bf669a437fd94e0544d26f96c78
+               1 arquivo(s)            345 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\6c
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58             1.201 5af7d842b3d4f0415ae376b69f74a1adf6a451
+               1 arquivo(s)          1.201 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\6d
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03             2.480 50ab89f519ccb992fd2461694455feebb613c8
+               1 arquivo(s)          2.480 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\6e
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                69 e2ea1bedacf87bb71f3747bf5c38a277531632
+               1 arquivo(s)             69 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\71
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               259 9c6ad2574e1771750b9ac1c233bb7394695f96
+18/12/2025  08:03             1.571 d82abc40db15aba7ab6ce22fa77f344b55f774
+               2 arquivo(s)          1.830 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\72
+
+18/12/2025  08:46    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:46               225 97f76e454b0d42c6d1ec7664488f37dcb1c82f
+               1 arquivo(s)            225 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\73
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               902 8a2e37778919a32de28b82a5cfa2cff0f1a942
+               1 arquivo(s)            902 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\74
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51               228 69ac9635eca5fc51866d3b0a7ccff76dbdb799
+24/02/2026  09:49               526 a9f5cf83aa52c193257640eb19052bd2534f50
+06/01/2026  16:49                45 dca8404e01f72ffe82c17cecc8eb525b7f4443
+22/12/2025  08:05               287 e208d1649de39a1b9617fa72ffb574497df871
+               4 arquivo(s)          1.086 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\76
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.179 aac5dc2095f28544bff0ebd61a38d959bae7f4
+06/01/2026  16:48               881 fa9c2d5d589fb2602891ef4f275aff174b8804
+               2 arquivo(s)          2.060 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\77
+
+27/11/2025  15:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             5.142 10a109f173198880b854e241fe745d218c6bea
+27/11/2025  15:03                45 405a06555c1f858afd22a5b25de76daa3ae015
+27/11/2025  15:03               345 85432728955bfc85c5a1dd454693127c933802
+               3 arquivo(s)          5.532 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\79
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             6.996 f1844b6e1067a33e99e58fe4e75c49dad2b477
+               1 arquivo(s)          6.996 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\7a
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.121 9a2a2d0b573c53fef41eba0322434f8e86f82b
+               1 arquivo(s)          1.121 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\7c
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                45 7345479c515235da76b3105c2388125d75c69b
+18/12/2025  08:03            10.311 d2402e73fc7d0c955f89326610a75cf9311445
+06/01/2026  16:48               271 e4b7c8aa2d47fa8e2fd3e7869c413b81c28ec1
+               3 arquivo(s)         10.627 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\7d
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               620 70ad2566a24dc3f28c8dafb5dc7b08c8592b05
+               1 arquivo(s)            620 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\7e
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             7.922 e300247fd41ffdae569c842205103f5210869b
+               1 arquivo(s)          7.922 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\7f
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49               578 5cd9b741abf9f9b2a8ee4ae169f78cf4f911d6
+18/11/2025  11:36                45 e1855a327a283c3d1a5ac10f04197a65eb93e4
+               2 arquivo(s)            623 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\80
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             1.153 1793e5087f98401a46e16a41fc8e2d4969910b
+18/11/2025  11:34               162 85d6a8cd77f4ad9fc20389e0d202c729f9c1f8
+22/12/2025  09:23               479 f130a6e071858970fa0dd76614cd99f6c185cb
+               3 arquivo(s)          1.794 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\81
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               801 2ec729ba52135fca0f561b428f60a08cbbac6c
+18/11/2025  11:34               708 9692a3ac0159495d25487138060f22ab05933c
+22/12/2025  08:00               911 daef3f39a641f85afa579df975d3fd79012485
+               3 arquivo(s)          2.420 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\83
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48            15.960 49372e0542ccd9cf7ce09c44a4832a30958c7d
+10/12/2025  08:13             4.644 671a851390ddc8c05b2ed94377b7afca5b1421
+27/11/2025  14:58             6.493 ca7e1711d253cbefc8500a0ca8f1f7b49769b4
+               3 arquivo(s)         27.097 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\85
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               294 ecb2d1002ccbeb087aea8781b158c1c8428011
+               1 arquivo(s)            294 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\86
+
+18/11/2025  11:36    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               841 5d87f3266bc03d0df6c3540e9f3739875ab11a
+18/11/2025  11:36               139 c1acf4e4ea528f292abb61ef85a5aee9455c06
+18/11/2025  11:36               280 de206edd88928d15ffa069d7e1248730b4b926
+               3 arquivo(s)          1.260 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\87
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               641 1ae70413ff97d312d72297db42bec3be56ce59
+18/11/2025  11:34               430 3b7abfb09a786bf0159cc068f3d1656c88d769
+18/12/2025  08:46               377 66b7077e77f26c7b9fa6088e05f84fc56d2430
+18/11/2025  11:34               724 a7406f03a753873dcd7fd2626274a6f12c5e62
+06/02/2026  16:51            17.700 c02f27a0f41267348a094f481df6d224b5ab74
+               5 arquivo(s)         19.872 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\88
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:49                45 01718aef2d0daf6d1374f6e6f2bf20e347fcaa
+10/12/2025  08:14                46 0c46dae8253b5681cccf252e28dcee216cb7fa
+               2 arquivo(s)             91 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\89
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               727 26857f2ca94975c1297969c185698a3f886dad
+               1 arquivo(s)            727 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\8a
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14               346 5b57fc11e1d1991cd5520ee90fd083d066ed7c
+06/01/2026  16:48             3.043 8ec14cd2f49a1d1c50ca82c54edb93fd634460
+22/12/2025  08:00               703 add127c3b4c049d9fa9facf6d04e87c30b5b60
+               3 arquivo(s)          4.092 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\8b
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               315 863e5930bc3f1361272961c741fd12df491863
+               1 arquivo(s)            315 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\8d
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23               402 d544b6d25ba6f94baac3b7f2965f20c9a87427
+               1 arquivo(s)            402 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\8e
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  15:03               364 3b733d146a647b45bfb77f59ca1db462c1cef3
+06/02/2026  16:51               260 9a0c4ec8357234bdecba8149ecfea647cd8c2a
+               2 arquivo(s)            624 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\8f
+
+10/12/2025  08:14    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14               139 3319f6d1156db1809adafcf15521e5e2b475a7
+               1 arquivo(s)            139 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\91
+
+27/11/2025  15:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  15:03                74 5a474abc8751715f40e27883e7e312a56e1405
+               1 arquivo(s)             74 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\92
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             3.202 450f93273470af42eeee491874afb2039b700a
+22/12/2025  08:00               396 765fc0daec63d91bd8266808c10eb2a24611d1
+               2 arquivo(s)          3.598 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\93
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23               491 82d58e67097fff63ea9a2f3eba28ace6f37ff0
+               1 arquivo(s)            491 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\94
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             1.045 1fd8da66e40485465b62e1465dfa320fe64ba6
+18/11/2025  11:34               333 4c431972f5827d1f009cb5aa25e049adaa5f21
+               2 arquivo(s)          1.378 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\95
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               592 4bb923beb7d34f07a68470f6c16f2edac23ad6
+06/01/2026  16:49               279 51a48ec1c3f26c093dd31303c2df580d73b0cc
+               2 arquivo(s)            871 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\96
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36               112 3028e5c08f360c5ca72765f583e9a91a3a1d50
+18/12/2025  08:03             1.664 f25f0fbb89de88c7aaee605fa27197c437149c
+               2 arquivo(s)          1.776 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\98
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               325 78e144b08942dce16f81c573528da160835ff8
+               1 arquivo(s)            325 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\9a
+
+10/12/2025  08:13    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:13             1.505 553fbcb9d7efafd260d1b1db962c7ff857707b
+               1 arquivo(s)          1.505 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\9b
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               580 0c2fc95d98024aeff90b64120253db6c522a9d
+18/11/2025  11:34               636 e407ca782bea0a41a78c439d0856dab9b3ec8e
+               2 arquivo(s)          1.216 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\9e
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36               105 3304e62fd9aaa5efa88ba890d8767da3d26563
+06/01/2026  16:49               493 3d4b1d949514abf59c39cac6dd401d391ab082
+18/12/2025  08:03               495 df319318751721400311e3047fbd8f9515c506
+               3 arquivo(s)          1.093 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\9f
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23                45 8ee669ec3c51d63de69438a4900f0dbc484764
+               1 arquivo(s)             45 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a0
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               755 48053ec5b6385d8ccf1c602d92f52d108d2059
+18/12/2025  08:03             5.246 e88478fc5fa0116ab8a3afb2a81ab324b9335f
+               2 arquivo(s)          6.001 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a1
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                45 68306077e842e4b0539249eb56d3bfe2257428
+24/02/2026  09:49               778 c3cee7c568cb96d51f03747705681559f6fa00
+               2 arquivo(s)            823 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a4
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.211 5c062e22a8233be793a1922ad105dc96757568
+               1 arquivo(s)          1.211 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a5
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14               207 cd798c6d21690812723316f6f1b86d42a3631b
+22/12/2025  08:00               969 ef51e9651478b6f51fb416d9b1f57f4827271e
+18/11/2025  11:34               680 f0d9317894a2787153a5f460c54571f5523af4
+               3 arquivo(s)          1.856 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a6
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48             1.525 236b526bd081e29ae1f4be3559e206679c69c6
+22/12/2025  08:05               663 7f833b5ff8866e7e318190fc562225257246a2
+27/11/2025  15:03               149 824ae55c582f6e008b2721c41c98b930d45d6d
+               3 arquivo(s)          2.337 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a7
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             1.558 1095a949b397e206e538d2f1a36129b35790ef
+               1 arquivo(s)          1.558 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a8
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51               227 6cf4a01f0930a267e22a4a2bb60f88493ed7a2
+               1 arquivo(s)            227 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\a9
+
+18/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05                74 10a21fe9856154720954db5e0b322368c58e6a
+               1 arquivo(s)             74 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\aa
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               815 087efc8a5eda676170f602abac7ee107ceff73
+24/02/2026  09:51               562 6acf563bf484692a11c9b3d5facd87f592591e
+18/12/2025  08:03               594 6b60aa052e5bcd36a1cce0f0632f251864898e
+18/11/2025  11:36               364 a2525fa715230189a1f8157b3996cf655845d4
+18/11/2025  11:34               746 ff3f19a9e4c91075cbd6675786ee1f93741d27
+               5 arquivo(s)          3.081 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ab
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               868 0cd43cb2b509ef11fceff9234fe7ea489a85f5
+22/12/2025  08:00               415 3420f1860c33779328da4a8b0019051e74f3c0
+24/02/2026  09:51               523 d4f0df3c23faa9e3325e88caefc9801d8d7633
+               3 arquivo(s)          1.806 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ac
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05               379 6e7085093ef5ef89a170f05a17f99790f55407
+               1 arquivo(s)            379 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ae
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:36                74 45d3630082ac8bc99f733266791361c65a25a1
+06/01/2026  16:48             1.454 4745aa64a38739e3b3a58ad82383a737320b03
+               2 arquivo(s)          1.528 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\af
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48             5.561 03ad12d8bd94349d0e9d43cff9fc5a1c67b159
+22/12/2025  09:23               464 117aef344807215a54f20da35a38a15e0a0f12
+18/11/2025  11:34             1.445 53bdea425d9f272cd9194e1a677f7a11f4b02a
+               3 arquivo(s)          7.470 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b0
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             1.231 05609a17ba5dbf4b64b26a7db18378c93edc88
+18/11/2025  11:36                68 6f77bda628ae1b8c7c09018dfdc540d51b5513
+               2 arquivo(s)          1.299 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b1
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23             1.936 014732f656e50dbe48b2365a84f92ec2cd538d
+10/12/2025  08:14               178 4117b455d461268969f8faaf6adb0ca4afe983
+18/11/2025  11:36                79 439b135bfc7c2580f3b368c00baa1e37da49a3
+22/12/2025  08:00               829 7da7543b2936a172eeeac29d3d0d2051eced06
+18/11/2025  11:36               663 cd6e2a1374d41299509061baf24aa4bdd85c45
+               5 arquivo(s)          3.685 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b2
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03             2.115 f2189d114b2ef0258ce45d08946940db9b4c60
+               1 arquivo(s)          2.115 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b6
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48               554 106fffb327718dc1c347a20c35a92f00e274c5
+               1 arquivo(s)            554 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b8
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48             2.058 244aac176ee6dd3b572cb7f814effa36c97715
+24/02/2026  09:51               220 4c6e51e54d769dc03fb270d64495987a5983c5
+18/11/2025  11:34               618 e23988794797094416fdad41ad371583c7c1dd
+               3 arquivo(s)          2.896 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\b9
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03            14.745 350b257fd0ce8e8176281edb932d3ee06a0f0c
+06/01/2026  16:48               949 94d9ffc78ea1aa5e33edc913a2b5d7c6f204d0
+               2 arquivo(s)         15.694 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ba
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               511 65a8664b96ebd49cf198a3044e29525b65767e
+18/11/2025  11:34               507 97c0b7d8f2496ad2f0c18da3df9c3e64bf8e4e
+               2 arquivo(s)          1.018 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\bb
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             3.232 c268e0d4ead1d93951a8d64d9c4ca60507c8b4
+               1 arquivo(s)          3.232 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\bc
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52                66 df5cf7e40e460b32d0116a7deefd9a92b6b018
+               1 arquivo(s)             66 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\bd
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52                45 5591838056ed15dfe585f19e631540c328285c
+18/11/2025  11:34             4.441 8896bf2217b46faa0291585e01ac1a3441a958
+               2 arquivo(s)          4.486 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\be
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49               463 218af2afbbc13df56799a43ee8e59dd8689a93
+               1 arquivo(s)            463 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c0
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               175 1ea24230bc4145f3c1c1562ba3de9454d6a592
+18/11/2025  11:34             1.091 a4480bb1a61dde27b82b0cc853b035fb318d7c
+18/11/2025  11:34               128 bcafe984fe33005eacbcfabe8b188e0f75afcd
+               3 arquivo(s)          1.394 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c1
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51                45 a9dd0086cf63434e49f724bcd79b21af877b26
+               1 arquivo(s)             45 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c2
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05                80 679ccc389790271e761b2ea9bc0b23d716bfc7
+               1 arquivo(s)             80 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c3
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58             3.668 f066f18486f3614dd180ba1ec62f1d42146bdd
+               1 arquivo(s)          3.668 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c4
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               773 22b3c2a5c77f12b4a375d357133c57a0310dc0
+18/11/2025  11:34             5.381 c8f5d3822c99f592de77a02fe44c423c8ee4b4
+               2 arquivo(s)          6.154 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c5
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58               560 0ffb5c09eeeb23c0131580777c456be3aa14fe
+18/12/2025  08:03             1.059 22d1675fdfb49df438181c18b1feb2456f9e89
+18/11/2025  11:36               180 2aeaae69780aaf910c763965b1be3cbf810d03
+27/11/2025  15:03               189 62ccbe4752b9c174eaa1210d603751d1d6e2e6
+10/12/2025  08:13               570 9e49d1d4deea4d3502e529cd3f45e2b22483e1
+24/02/2026  09:49             1.750 fa999aecf4d00d4c6e16eb98e2537cef7087e9
+               6 arquivo(s)          4.308 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c6
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               605 0ea24151eec99207d26b254d2bfe6c3ba2b335
+06/02/2026  16:51             1.294 2158f2411c36e31b4c07487d3871e21a6e7528
+22/12/2025  09:23               364 d5100bed1cf4a631d88897f9bf93a9d23b521d
+               3 arquivo(s)          2.263 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c7
+
+27/11/2025  14:58    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58               548 7d61168fc01967e2b3e251d496fa68f05bda00
+               1 arquivo(s)            548 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c8
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03             1.379 c6ae0bda7968569d3d116430fb09dae65f822b
+               1 arquivo(s)          1.379 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\c9
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23             4.140 3f803bc9ca6037e093f427f5e6cc9af0dd64ec
+               1 arquivo(s)          4.140 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ca
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               780 000de8eb12187c63cbf2e8d41851616f515920
+               1 arquivo(s)            780 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\cb
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               700 16ceab571f357640a9c16657dbd93414bdf27e
+24/02/2026  09:49             1.096 4e38771757b01cede6b06fab0a5de0bc21b30d
+               2 arquivo(s)          1.796 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\cc
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:49             1.445 500ed6cf3f0827b70b500e159195b0c8fac9ae
+               1 arquivo(s)          1.445 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\cd
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:13               583 a322eca5544b211e6331d47b1db12e2cbaaa01
+22/12/2025  09:23               423 ad1f0ed9cdfc2d2f189639f5fc23a440d86cd7
+               2 arquivo(s)          1.006 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ce
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               560 60ec68e66d9c61631534169aba5767e5b3ec29
+               1 arquivo(s)            560 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d0
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               331 f6abf07c826647dae0a4b75a71e9ddc97decc8
+               1 arquivo(s)            331 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d1
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             3.866 dda99357e86b10b85b9e16c4f2534d9cdcd917
+               1 arquivo(s)          3.866 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d4
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51               884 63bfd61c8ee2d73e6ca39ff792b700fff4bd29
+               1 arquivo(s)            884 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d5
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             2.328 48d90ae80bbd541159154e59ec6a8f01232cc8
+               1 arquivo(s)          2.328 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d6
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               378 7654fc9d4cc60bce2d945f33cc37d6920bdd01
+               1 arquivo(s)            378 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d8
+
+22/12/2025  09:23    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  09:23                75 e5f663522cc7db1ea86c7979ff32bbd05559d4
+               1 arquivo(s)             75 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\d9
+
+27/11/2025  15:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  15:03               279 b2ff7b739b78567eff63fe990775eb8f033279
+               1 arquivo(s)            279 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\da
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51               709 007b7aeafbbbc79e4ef95e58c74945df3935b4
+               1 arquivo(s)            709 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\dc
+
+18/12/2025  08:03    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03               521 2097b465bc8048f0066ea11800024e54297a06
+               1 arquivo(s)            521 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\dd
+
+10/12/2025  08:14    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14                74 ea9f9cd9527812cb8dd404952eca9f462ac7ab
+               1 arquivo(s)             74 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\de
+
+10/12/2025  08:13    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:13               953 2ab5f20ffeefbb6b244dac9e9740fae724a276
+               1 arquivo(s)            953 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e0
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00             4.141 86f3f69c8d9f60acfea8717dcd0d4f931c5584
+               1 arquivo(s)          4.141 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e1
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:03             3.114 071cbfb53594e6fc3b23bffe4b331b2b8d4051
+24/02/2026  09:51               379 725853960b406c49444db2af7edadf02443e0a
+06/01/2026  16:49               392 8a4ec73a9fdb5e712cb6ba0f8e3654ca635ff7
+               3 arquivo(s)          3.885 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e2
+
+10/12/2025  08:14    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14               281 a66da3e585d99df6dbbdd463bb42c534a0257c
+               1 arquivo(s)            281 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e3
+
+06/01/2026  16:48    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/01/2026  16:48             1.154 2c379c15404d03f4c501abe3d5b5cb7519a17a
+27/11/2025  14:58               777 3d07feb2b07f307eb7a9bed84caabd4b166ff5
+               2 arquivo(s)          1.931 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e5
+
+10/12/2025  08:14    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+10/12/2025  08:14               183 b6e9226b43782869605dddf75ca34e2915eaaf
+               1 arquivo(s)            183 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e7
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:51             1.346 65fdbb5a1782d7d817e9ce9d1ede7c37f3fb91
+18/12/2025  08:03             4.382 d95888062a9833186120aa5e5f2c0a5c5ea902
+               2 arquivo(s)          5.728 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e8
+
+18/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:05               197 6d0dfd1615c95282d449ba71b3cff2b777bbb3
+               1 arquivo(s)            197 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\e9
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               773 605cfd8b7d8b67f4a89d58979cbec0ee25692f
+22/12/2025  08:00               347 7e774d1dc973bef1ebf7f7df3e076e164bebe0
+               2 arquivo(s)          1.120 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ea
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52                45 448e99d518ed721e9f8bea3eee11c7f2782e7d
+               1 arquivo(s)             45 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\eb
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               307 67130cc32aa91a331c80571aef5b0dd227cc6a
+18/11/2025  11:34               876 e69c5e345695245bb6b05ed05ea266373a5f9a
+               2 arquivo(s)          1.183 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ec
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:05                74 a78085894fb6e95f6078d1cf529da86cd2a9b1
+27/11/2025  15:03               177 c970f8d73e2540bcd824230b88637e1d542305
+               2 arquivo(s)            251 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ed
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52                66 b3e589b965578ab00bed94c3df4fa36d8bb2f8
+               1 arquivo(s)             66 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ee
+
+06/02/2026  16:52    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+06/02/2026  16:52               205 36838ba76423cf61afc86a3ebe684633ec9ff3
+18/12/2025  08:03             2.998 7925389c6592bca04e1f129e7705b0fb3f1066
+22/12/2025  08:00               507 83f4f1917a2e3a292eda81ec93876aa5d87fd0
+               3 arquivo(s)          3.710 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\ef
+
+06/02/2026  16:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               473 3e2f5844bf870452c61516f26b02035620e6ad
+10/12/2025  08:14                45 4a4b0dfc1b3dfbd1749e8fb8132e7167bf7a38
+06/02/2026  16:51             1.324 ab70cf50519631a78acd2156697e1fe9dd288e
+               3 arquivo(s)          1.842 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f1
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+24/02/2026  09:51                80 3e7e62361ed4051fe503b24143d7bd7f653370
+24/02/2026  09:49               613 a60825cac1ea455160cb10d75368cd7dc28b03
+18/11/2025  11:36               229 b24a3a8e230e0677fa9066d9e95d21dc6afe86
+               3 arquivo(s)            922 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f3
+
+06/01/2026  16:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34             1.300 6cacf83d9a8188163ee1e95a93f9b6a9c667ac
+06/01/2026  16:49               803 c7d60d1a64e97cfb92e1a38fbd3ce0573e47eb
+               2 arquivo(s)          2.103 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f4
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               692 0dd890f9d995243f8896ad73795ef23c0cfc72
+24/02/2026  09:51                75 7b8a4e71a911d539b0a0d15c05776a2d625557
+06/01/2026  16:48               447 d8d0cb5468617cf8adde47686815da8e4b462f
+               3 arquivo(s)          1.214 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f5
+
+22/12/2025  08:05    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+27/11/2025  14:58               516 3c4ccaf823964680009a4a2b89a9e2b60e4dcb
+22/12/2025  08:05                45 fbebd568f779b07d4fd6aee0b375b6e916156e
+               2 arquivo(s)            561 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f6
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00               395 1c35d66140065d256901a403a925b23612d887
+18/11/2025  11:34               158 3a228ecfd8ebd2ca0766da8d39c5be1e11a42a
+               2 arquivo(s)            553 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f8
+
+24/02/2026  09:49    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:46               377 7167bb02054038105debfa1743d04602323c82
+24/02/2026  09:49             3.349 fde4c84950653ef54e9ba222948a35bf3814be
+               2 arquivo(s)          3.726 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\f9
+
+24/02/2026  09:51    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/12/2025  08:46               836 190a5117851f0ba0cb7a03d77a6715df8b84a0
+24/02/2026  09:51               968 7e67e7fa2a0067aaed2ba797203a6a523ac0ac
+               2 arquivo(s)          1.804 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\fc
+
+22/12/2025  08:00    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+22/12/2025  08:00            13.197 575df8a4df854356f4a1b24d596ecbb04f239b
+               1 arquivo(s)         13.197 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\fd
+
+18/11/2025  11:34    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+18/11/2025  11:34               706 549f3431e25af0ac46d95fcb971c2c4e095b6e
+               1 arquivo(s)            706 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\info
+
+18/11/2025  11:33    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\objects\pack
+
+18/11/2025  11:33    <DIR>          .
+24/02/2026  09:51    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\refs
+
+18/11/2025  13:13    <DIR>          .
+24/02/2026  09:51    <DIR>          heads
+18/11/2025  13:13    <DIR>          remotes
+18/11/2025  11:33    <DIR>          tags
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\refs\heads
+
+24/02/2026  09:51    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+24/02/2026  09:51                41 main
+               1 arquivo(s)             41 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\refs\remotes
+
+18/11/2025  13:13    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+24/02/2026  09:52    <DIR>          origin
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\refs\remotes\origin
+
+24/02/2026  09:52    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+24/02/2026  09:52                41 main
+               1 arquivo(s)             41 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.git\refs\tags
+
+18/11/2025  11:33    <DIR>          .
+18/11/2025  13:13    <DIR>          ..
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.mvn
+
+10/11/2025  14:19    <DIR>          .
+18/12/2025  08:46    <DIR>          ..
+10/11/2025  14:19    <DIR>          wrapper
+               0 arquivo(s)              0 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.mvn\wrapper
+
+10/11/2025  14:19    <DIR>          .
+10/11/2025  14:19    <DIR>          ..
+10/11/2025  14:19               168 maven-wrapper.properties
+               1 arquivo(s)            168 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\.settings
+
+10/11/2025  14:19    <DIR>          .
+18/12/2025  08:46    <DIR>          ..
+10/11/2025  15:55               191 org.eclipse.core.resources.prefs
+24/02/2026  08:06               218 org.eclipse.jdt.apt.core.prefs
+24/02/2026  08:06               549 org.eclipse.jdt.core.prefs
+10/11/2025  14:19                97 org.eclipse.m2e.core.prefs
+10/11/2025  14:19                65 org.springframework.ide.eclipse.prefs
+               5 arquivo(s)          1.120 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 
 10/11/2025  14:19    <DIR>          .
 18/12/2025  08:46    <DIR>          ..
@@ -51,35 +1842,36 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 
 10/11/2025  14:19    <DIR>          .
 10/11/2025  14:19    <DIR>          ..
-28/01/2026  08:02    <DIR>          sga
+23/02/2026  11:11    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga
 
-28/01/2026  08:02    <DIR>          .
+23/02/2026  11:11    <DIR>          .
 10/11/2025  14:19    <DIR>          ..
 28/01/2026  08:02    <DIR>          aop
 28/01/2026  08:03    <DIR>          config
-28/01/2026  08:03    <DIR>          controller
-23/12/2025  17:39    <DIR>          dto
-28/01/2026  07:59    <DIR>          model
-05/02/2026  15:01    <DIR>          repository
+23/02/2026  17:31    <DIR>          controller
+23/02/2026  17:29    <DIR>          dto
+23/02/2026  11:11    <DIR>          exception
+23/02/2026  11:05    <DIR>          model
+23/02/2026  17:30    <DIR>          repository
 10/11/2025  14:28    <DIR>          security
-28/01/2026  08:00    <DIR>          service
+23/02/2026  17:30    <DIR>          service
 10/11/2025  14:19               294 SgaApplication.java
                1 arquivo(s)            294 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\aop
 
 28/01/2026  08:02    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  11:11    <DIR>          ..
 28/01/2026  08:02             7.736 SistemaLogAspect.java
                1 arquivo(s)          7.736 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\config
 
 28/01/2026  08:03    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  11:11    <DIR>          ..
 10/11/2025  17:22               660 AppProperties.java
 28/01/2026  08:03               523 AsyncConfig.java
 18/11/2025  08:55             1.504 CorsConfig.java
@@ -91,9 +1883,11 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\controller
 
-28/01/2026  08:03    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  17:31    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
 05/02/2026  15:05             9.264 AssociadoController.java
+23/02/2026  17:32             7.569 AssociadoDefFaturamentoController.java
+23/02/2026  15:34             6.459 AssociadoProdutoController.java
 18/11/2025  09:14             5.930 AuthController.java
 22/12/2025  15:48             3.240 CategoriaController.java
 13/11/2025  17:29             5.379 EstatisticasImportacaoController.java
@@ -103,17 +1897,22 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 03/02/2026  10:19             3.316 PlanosController.java
 17/12/2025  13:03            17.112 ProdutoController.java
 28/01/2026  17:08             6.195 SistemaLogController.java
+23/02/2026  11:21             3.618 TipoEnvioController.java
 06/01/2026  16:31            13.416 VendedorController.java
 23/12/2025  17:41             7.221 VendedorTipoController.java
 15/12/2025  15:11            12.316 VerificacaoImportacaoController.java
-              13 arquivo(s)         97.509 bytes
+              16 arquivo(s)        115.155 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\dto
 
-23/12/2025  17:39    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  17:29    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
+23/02/2026  17:28             3.128 AssociadoDefFaturamentoDTO.java
+23/02/2026  17:29             2.379 AssociadoDefFaturamentoResumoDTO.java
 02/02/2026  17:03             5.564 AssociadoDTO.java
 18/12/2025  11:41             2.498 AssociadoFiltroDTO.java
+23/02/2026  11:15             3.484 AssociadoProdutoDTO.java
+23/02/2026  11:14             2.496 AssociadoProdutoResumoDTO.java
 02/02/2026  16:01             5.284 AssociadoResumoDTO.java
 22/12/2025  14:05             1.872 CategoriaDTO.java
 02/02/2026  15:52             1.156 CategoriaResumoDTO.java
@@ -131,21 +1930,31 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 16/12/2025  16:48               656 ProdutoFiltroDTO.java
 16/12/2025  16:57             2.631 ProdutoResumoDTO.java
 18/12/2025  13:28             1.135 TelefoneDTO.java
+23/02/2026  11:24             1.763 TipoEnvioDTO.java
+23/02/2026  11:39             1.037 TipoEnvioResumoDTO.java
 06/01/2026  16:31             2.232 VendedorDTO.java
 06/01/2026  16:31             1.746 VendedorResumoDTO.java
 23/12/2025  17:42               628 VendedorTipoDTO.java
 01/12/2025  10:32             2.661 VerificacaoAssociadosCompletoDTO.java
 02/12/2025  11:51             5.499 VerificacaoAssociadosDTO.java
 18/11/2025  17:17             2.326 VerificacaoResultadoDTO.java
-              25 arquivo(s)         61.426 bytes
+              31 arquivo(s)         75.713 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\exception
+
+23/02/2026  11:11    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
+23/02/2026  11:11               302 ResourceNotFoundException.java
+               1 arquivo(s)            302 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\model
 
-28/01/2026  07:59    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
-02/02/2026  13:56            12.681 Associado.java
-10/11/2025  17:40             2.563 AssociadoDefFaturamento.java
+23/02/2026  11:05    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
+23/02/2026  17:34            13.086 Associado.java
+23/02/2026  17:41             2.935 AssociadoDefFaturamento.java
 10/11/2025  17:39             4.439 AssociadoDefNotificacao.java
+23/02/2026  11:14             6.423 AssociadoProduto.java
 22/12/2025  15:45             1.292 Categoria.java
 10/11/2025  17:43             1.825 Email.java
 18/12/2025  10:18             3.461 Endereco.java
@@ -161,16 +1970,19 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 10/11/2025  15:28             3.002 ProdutoFaixa.java
 28/01/2026  07:59             4.933 SistemaLog.java
 10/11/2025  17:44             2.246 Telefone.java
+23/02/2026  11:19             2.147 TipoEnvio.java
 10/12/2025  15:42             1.761 TraillerSPC.java
 10/11/2025  15:15             2.343 Usuario.java
 22/01/2026  11:54             2.428 Vendedor.java
 23/12/2025  17:42               816 VendedorTipo.java
-              22 arquivo(s)         84.591 bytes
+              24 arquivo(s)         93.938 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\repository
 
-05/02/2026  15:01    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  17:30    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
+23/02/2026  17:30             1.871 AssociadoDefFaturamentoRepository.java
+23/02/2026  11:08             1.907 AssociadoProdutoRepository.java
 02/02/2026  17:02             4.467 AssociadoRepository.java
 22/12/2025  15:47               559 CategoriaRepository.java
 05/02/2026  15:02               453 EmailRepository.java
@@ -185,25 +1997,28 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 16/12/2025  17:00             5.581 ProdutoRepository.java
 29/01/2026  11:21             5.727 SistemaLogRepository.java
 05/02/2026  15:01               465 TelefoneRepository.java
+23/02/2026  11:08             1.105 TipoEnvioRepository.java
 11/11/2025  13:04               281 TraillerSPCRepository.java
 11/11/2025  09:43               469 UsuarioRepository.java
 06/01/2026  16:26             4.168 VendedorRepository.java
 23/12/2025  17:40             1.037 VendedorTipoRepository.java
-              18 arquivo(s)         36.304 bytes
+              21 arquivo(s)         41.187 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\security
 
 10/11/2025  14:28    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
+23/02/2026  11:11    <DIR>          ..
 14/11/2025  15:14             2.107 JwtAuthenticationFilter.java
 14/11/2025  14:07             2.569 JwtService.java
                2 arquivo(s)          4.676 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\java\com\sga\service
 
-28/01/2026  08:00    <DIR>          .
-28/01/2026  08:02    <DIR>          ..
-05/02/2026  15:04            30.496 AssociadoService.java
+23/02/2026  17:30    <DIR>          .
+23/02/2026  11:11    <DIR>          ..
+23/02/2026  17:35            11.738 AssociadoDefFaturamentoService.java
+23/02/2026  11:16            11.958 AssociadoProdutoService.java
+24/02/2026  13:51            39.033 AssociadoService.java
 22/12/2025  15:47             4.022 CategoriaService.java
 10/12/2025  15:43            17.021 ImportacaoSPService.java
 10/12/2025  11:14             2.790 NotaDebitoService.java
@@ -211,11 +2026,12 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 23/12/2025  08:53             5.314 PlanosService.java
 18/12/2025  10:10            21.451 ProdutoService.java
 29/01/2026  15:16            20.113 SistemaLogService.java
+23/02/2026  11:20             4.566 TipoEnvioService.java
 14/11/2025  15:15             2.061 UsuarioService.java
 06/01/2026  16:26            16.200 VendedorService.java
 23/12/2025  17:43             7.351 VendedorTipoService.java
 16/12/2025  17:02            61.856 VerificacaoImportacaoService.java
-              12 arquivo(s)        189.961 bytes
+              15 arquivo(s)        226.760 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src\main\resources
 
@@ -275,280 +2091,305 @@ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\src
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target
 
-06/02/2026  16:53    <DIR>          .
+24/02/2026  08:06    <DIR>          .
 18/12/2025  08:46    <DIR>          ..
-06/02/2026  16:53    <DIR>          classes
-06/02/2026  16:53    <DIR>          generated-sources
-06/02/2026  16:53    <DIR>          generated-test-sources
-06/02/2026  16:53    <DIR>          test-classes
+24/02/2026  08:06    <DIR>          classes
+24/02/2026  08:06    <DIR>          generated-sources
+24/02/2026  08:06    <DIR>          generated-test-sources
+24/02/2026  08:06    <DIR>          test-classes
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53                 0 application.properties
-06/02/2026  16:53    <DIR>          com
-06/02/2026  16:53    <DIR>          META-INF
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06                 0 application.properties
+24/02/2026  08:06    <DIR>          com
+24/02/2026  08:06    <DIR>          META-INF
                1 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          sga
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          aop
-06/02/2026  16:53    <DIR>          config
-06/02/2026  16:53    <DIR>          controller
-06/02/2026  16:53    <DIR>          dto
-06/02/2026  16:53    <DIR>          model
-06/02/2026  16:53    <DIR>          repository
-06/02/2026  16:53    <DIR>          security
-06/02/2026  16:53    <DIR>          service
-06/02/2026  16:53               712 SgaApplication.class
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          aop
+24/02/2026  08:06    <DIR>          config
+24/02/2026  08:06    <DIR>          controller
+24/02/2026  08:06    <DIR>          dto
+24/02/2026  08:06    <DIR>          exception
+24/02/2026  08:06    <DIR>          model
+24/02/2026  08:06    <DIR>          repository
+24/02/2026  08:06    <DIR>          security
+24/02/2026  08:06    <DIR>          service
+24/02/2026  08:06               712 SgaApplication.class
                1 arquivo(s)            712 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\aop
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53             1.771 SistemaLogAspect$1.class
-06/02/2026  16:53             7.102 SistemaLogAspect.class
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06             1.771 SistemaLogAspect$1.class
+24/02/2026  08:06             7.102 SistemaLogAspect.class
                2 arquivo(s)          8.873 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\config
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53               483 AppProperties$File.class
-06/02/2026  16:53               455 AppProperties$Jwt.class
-06/02/2026  16:53               888 AppProperties.class
-06/02/2026  16:53               596 AsyncConfig.class
-06/02/2026  16:53             2.083 CorsConfig.class
-06/02/2026  16:53               996 DataSourceConfig.class
-06/02/2026  16:53             1.097 JwtConfig.class
-06/02/2026  16:53             1.288 MultipartConfig.class
-06/02/2026  16:53             7.425 SecurityConfig.class
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06               483 AppProperties$File.class
+24/02/2026  08:06               455 AppProperties$Jwt.class
+24/02/2026  08:06               888 AppProperties.class
+24/02/2026  08:06               596 AsyncConfig.class
+24/02/2026  08:06             2.083 CorsConfig.class
+24/02/2026  08:06               996 DataSourceConfig.class
+24/02/2026  08:06             1.097 JwtConfig.class
+24/02/2026  08:06             1.288 MultipartConfig.class
+24/02/2026  08:06             7.425 SecurityConfig.class
                9 arquivo(s)         15.311 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\controller
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53             1.375 AssociadoController$HealthResponse.class
-06/02/2026  16:53            12.710 AssociadoController.class
-06/02/2026  16:53               964 AuthController$JwtResponse.class
-06/02/2026  16:53               932 AuthController$LoginRequest.class
-06/02/2026  16:53             1.550 AuthController$RegistrarRequest.class
-06/02/2026  16:53             5.918 AuthController.class
-06/02/2026  16:53             6.097 CategoriaController.class
-06/02/2026  16:53             8.372 EstatisticasImportacaoController.class
-06/02/2026  16:53             8.278 ImportacaoSPCController.class
-06/02/2026  16:53             3.565 NotaDebitoSPCController.class
-06/02/2026  16:53            11.194 NotasController.class
-06/02/2026  16:53             5.680 PlanosController.class
-06/02/2026  16:53            16.606 ProdutoController.class
-06/02/2026  16:53             9.171 SistemaLogController.class
-06/02/2026  16:53            12.864 VendedorController.class
-06/02/2026  16:53             8.470 VendedorTipoController.class
-06/02/2026  16:53            10.074 VerificacaoImportacaoController.class
-              17 arquivo(s)        123.820 bytes
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06             1.375 AssociadoController$HealthResponse.class
+24/02/2026  08:06            12.710 AssociadoController.class
+24/02/2026  08:06            10.333 AssociadoDefFaturamentoController.class
+24/02/2026  08:06             9.844 AssociadoProdutoController.class
+24/02/2026  08:06               964 AuthController$JwtResponse.class
+24/02/2026  08:06               932 AuthController$LoginRequest.class
+24/02/2026  08:06             1.550 AuthController$RegistrarRequest.class
+24/02/2026  08:06             5.918 AuthController.class
+24/02/2026  08:06             6.097 CategoriaController.class
+24/02/2026  08:06             8.372 EstatisticasImportacaoController.class
+24/02/2026  08:06             8.278 ImportacaoSPCController.class
+24/02/2026  08:06             3.565 NotaDebitoSPCController.class
+24/02/2026  08:06            11.194 NotasController.class
+24/02/2026  08:06             5.680 PlanosController.class
+24/02/2026  08:06            16.606 ProdutoController.class
+24/02/2026  08:06             9.171 SistemaLogController.class
+24/02/2026  08:06             6.878 TipoEnvioController.class
+24/02/2026  08:06            12.864 VendedorController.class
+24/02/2026  08:06             8.470 VendedorTipoController.class
+24/02/2026  08:06            10.074 VerificacaoImportacaoController.class
+              20 arquivo(s)        150.875 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\dto
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53             7.096 AssociadoDTO.class
-06/02/2026  16:53             3.388 AssociadoFiltroDTO.class
-06/02/2026  16:53             6.100 AssociadoResumoDTO.class
-06/02/2026  16:53             2.630 CategoriaDTO.class
-06/02/2026  16:53             1.799 CategoriaResumoDTO.class
-06/02/2026  16:53             1.364 EmailDTO.class
-06/02/2026  16:53             2.469 EnderecoDTO.class
-06/02/2026  16:53             5.342 ImportacaoResponseDTO.class
-06/02/2026  16:53             2.152 ImportacaoResumoDTO.class
-06/02/2026  16:53             2.505 NotaDebitoDetalheDTO.class
-06/02/2026  16:53             2.407 NotaDebitoResumoDTO.class
-06/02/2026  16:53             2.653 NotaDetalheDTO.class
-06/02/2026  16:53             2.384 NotaFaturamentoGridDTO.class
-06/02/2026  16:53             2.966 PlanoDTO.class
-06/02/2026  16:53             2.355 PlanoResumoDTO.class
-06/02/2026  16:53             7.461 ProdutoDTO.class
-06/02/2026  16:53               769 ProdutoFiltroDTO.class
-06/02/2026  16:53             3.778 ProdutoResumoDTO.class
-06/02/2026  16:53             1.792 TelefoneDTO.class
-06/02/2026  16:53             2.461 VendedorDTO.class
-06/02/2026  16:53             1.941 VendedorResumoDTO.class
-06/02/2026  16:53             1.000 VendedorTipoDTO.class
-06/02/2026  16:53               824 VerificacaoAssociadosCompletoDTO$DivergenciaAssociadoDTO.class
-06/02/2026  16:53               647 VerificacaoAssociadosCompletoDTO$NotaBasicaDTO.class
-06/02/2026  16:53             2.821 VerificacaoAssociadosCompletoDTO.class
-06/02/2026  16:53             3.613 VerificacaoAssociadosDTO$AssociadoDivergenteDTO.class
-06/02/2026  16:53             3.196 VerificacaoAssociadosDTO.class
-06/02/2026  16:53             3.131 VerificacaoResultadoDTO.class
-              28 arquivo(s)         81.044 bytes
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06             3.574 AssociadoDefFaturamentoDTO.class
+24/02/2026  08:06             2.980 AssociadoDefFaturamentoResumoDTO.class
+24/02/2026  08:06             7.096 AssociadoDTO.class
+24/02/2026  08:06             3.388 AssociadoFiltroDTO.class
+24/02/2026  08:06             4.478 AssociadoProdutoDTO.class
+24/02/2026  08:06             3.198 AssociadoProdutoResumoDTO.class
+24/02/2026  08:06             6.100 AssociadoResumoDTO.class
+24/02/2026  08:06             2.630 CategoriaDTO.class
+24/02/2026  08:06             1.799 CategoriaResumoDTO.class
+24/02/2026  08:06             1.364 EmailDTO.class
+24/02/2026  08:06             2.469 EnderecoDTO.class
+24/02/2026  08:06             5.342 ImportacaoResponseDTO.class
+24/02/2026  08:06             2.152 ImportacaoResumoDTO.class
+24/02/2026  08:06             2.505 NotaDebitoDetalheDTO.class
+24/02/2026  08:06             2.407 NotaDebitoResumoDTO.class
+24/02/2026  08:06             2.653 NotaDetalheDTO.class
+24/02/2026  08:06             2.384 NotaFaturamentoGridDTO.class
+24/02/2026  08:06             2.966 PlanoDTO.class
+24/02/2026  08:06             2.355 PlanoResumoDTO.class
+24/02/2026  08:06             7.461 ProdutoDTO.class
+24/02/2026  08:06               769 ProdutoFiltroDTO.class
+24/02/2026  08:06             3.778 ProdutoResumoDTO.class
+24/02/2026  08:06             1.792 TelefoneDTO.class
+24/02/2026  08:06             2.410 TipoEnvioDTO.class
+24/02/2026  08:06             1.631 TipoEnvioResumoDTO.class
+24/02/2026  08:06             2.461 VendedorDTO.class
+24/02/2026  08:06             1.941 VendedorResumoDTO.class
+24/02/2026  08:06             1.000 VendedorTipoDTO.class
+24/02/2026  08:06               824 VerificacaoAssociadosCompletoDTO$DivergenciaAssociadoDTO.class
+24/02/2026  08:06               647 VerificacaoAssociadosCompletoDTO$NotaBasicaDTO.class
+24/02/2026  08:06             2.821 VerificacaoAssociadosCompletoDTO.class
+24/02/2026  08:06             3.613 VerificacaoAssociadosDTO$AssociadoDivergenteDTO.class
+24/02/2026  08:06             3.196 VerificacaoAssociadosDTO.class
+24/02/2026  08:06             3.131 VerificacaoResultadoDTO.class
+              34 arquivo(s)         99.315 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\exception
+
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06               629 ResourceNotFoundException.class
+               1 arquivo(s)            629 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\model
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53            12.886 Associado.class
-06/02/2026  16:53             3.458 AssociadoDefFaturamento.class
-06/02/2026  16:53             5.420 AssociadoDefNotificacao.class
-06/02/2026  16:53             1.748 Categoria.class
-06/02/2026  16:53             2.687 Email.class
-06/02/2026  16:53             4.506 Endereco.class
-06/02/2026  16:53             2.917 Faturamento.class
-06/02/2026  16:53             5.910 HeaderSPC.class
-06/02/2026  16:53             4.066 ImportacaoSPC.class
-06/02/2026  16:53             5.986 ItemSPC.class
-06/02/2026  16:53             6.377 NotaDebitoSPC.class
-06/02/2026  16:53             4.666 ParametrosSPC.class
-06/02/2026  16:53             2.728 Planos.class
-06/02/2026  16:53             1.983 PlanosModelo.class
-06/02/2026  16:53            12.756 Produto.class
-06/02/2026  16:53             3.586 ProdutoFaixa.class
-06/02/2026  16:53             5.653 SistemaLog.class
-06/02/2026  16:53             3.174 Telefone.class
-06/02/2026  16:53             2.676 TraillerSPC.class
-06/02/2026  16:53             3.416 Usuario.class
-06/02/2026  16:53             3.088 Vendedor.class
-06/02/2026  16:53             1.303 VendedorTipo.class
-              22 arquivo(s)        100.990 bytes
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06            13.458 Associado.class
+24/02/2026  08:06             3.821 AssociadoDefFaturamento.class
+24/02/2026  08:06             5.420 AssociadoDefNotificacao.class
+24/02/2026  08:06             7.313 AssociadoProduto.class
+24/02/2026  08:06             1.748 Categoria.class
+24/02/2026  08:06             2.687 Email.class
+24/02/2026  08:06             4.506 Endereco.class
+24/02/2026  08:06             2.917 Faturamento.class
+24/02/2026  08:06             5.910 HeaderSPC.class
+24/02/2026  08:06             4.066 ImportacaoSPC.class
+24/02/2026  08:06             5.986 ItemSPC.class
+24/02/2026  08:06             6.377 NotaDebitoSPC.class
+24/02/2026  08:06             4.666 ParametrosSPC.class
+24/02/2026  08:06             2.728 Planos.class
+24/02/2026  08:06             1.983 PlanosModelo.class
+24/02/2026  08:06            12.756 Produto.class
+24/02/2026  08:06             3.586 ProdutoFaixa.class
+24/02/2026  08:06             5.653 SistemaLog.class
+24/02/2026  08:06             3.174 Telefone.class
+24/02/2026  08:06             3.045 TipoEnvio.class
+24/02/2026  08:06             2.676 TraillerSPC.class
+24/02/2026  08:06             3.416 Usuario.class
+24/02/2026  08:06             3.088 Vendedor.class
+24/02/2026  08:06             1.303 VendedorTipo.class
+              24 arquivo(s)        112.283 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\repository
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53             4.427 AssociadoRepository.class
-06/02/2026  16:53               884 CategoriaRepository.class
-06/02/2026  16:53               745 EmailRepository.class
-06/02/2026  16:53               757 EnderecoRepository.class
-06/02/2026  16:53             1.372 FaturamentoRepository.class
-06/02/2026  16:53               424 HeaderSPCRepository.class
-06/02/2026  16:53               562 ImportacaoSPCRepository.class
-06/02/2026  16:53             2.139 ItemSPCRepository.class
-06/02/2026  16:53             3.486 NotaDebitoSPCRepository.class
-06/02/2026  16:53               436 ParametrosSPCRepository.class
-06/02/2026  16:53             1.239 PlanosRepository.class
-06/02/2026  16:53             5.378 ProdutoRepository.class
-06/02/2026  16:53             6.227 SistemaLogRepository.class
-06/02/2026  16:53               757 TelefoneRepository.class
-06/02/2026  16:53               430 TraillerSPCRepository.class
-06/02/2026  16:53               732 UsuarioRepository.class
-06/02/2026  16:53             4.034 VendedorRepository.class
-06/02/2026  16:53             1.137 VendedorTipoRepository.class
-              18 arquivo(s)         35.166 bytes
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06             2.500 AssociadoDefFaturamentoRepository.class
+24/02/2026  08:06             2.211 AssociadoProdutoRepository.class
+24/02/2026  08:06             4.427 AssociadoRepository.class
+24/02/2026  08:06               884 CategoriaRepository.class
+24/02/2026  08:06               745 EmailRepository.class
+24/02/2026  08:06               757 EnderecoRepository.class
+24/02/2026  08:06             1.372 FaturamentoRepository.class
+24/02/2026  08:06               424 HeaderSPCRepository.class
+24/02/2026  08:06               562 ImportacaoSPCRepository.class
+24/02/2026  08:06             2.139 ItemSPCRepository.class
+24/02/2026  08:06             3.486 NotaDebitoSPCRepository.class
+24/02/2026  08:06               436 ParametrosSPCRepository.class
+24/02/2026  08:06             1.239 PlanosRepository.class
+24/02/2026  08:06             5.378 ProdutoRepository.class
+24/02/2026  08:06             6.227 SistemaLogRepository.class
+24/02/2026  08:06               757 TelefoneRepository.class
+24/02/2026  08:06             1.496 TipoEnvioRepository.class
+24/02/2026  08:06               430 TraillerSPCRepository.class
+24/02/2026  08:06               732 UsuarioRepository.class
+24/02/2026  08:06             4.034 VendedorRepository.class
+24/02/2026  08:06             1.137 VendedorTipoRepository.class
+              21 arquivo(s)         41.373 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\security
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53             3.364 JwtAuthenticationFilter.class
-06/02/2026  16:53             5.477 JwtService.class
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06             3.364 JwtAuthenticationFilter.class
+24/02/2026  08:06             5.477 JwtService.class
                2 arquivo(s)          8.841 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\com\sga\service
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53            29.774 AssociadoService.class
-06/02/2026  16:53             6.672 CategoriaService.class
-06/02/2026  16:53            16.885 ImportacaoSPService.class
-06/02/2026  16:53             7.355 NotaDebitoService.class
-06/02/2026  16:53             1.332 NotaDebitoSPCService.class
-06/02/2026  16:53             8.129 PlanosService.class
-06/02/2026  16:53            21.010 ProdutoService.class
-06/02/2026  16:53            24.779 SistemaLogService.class
-06/02/2026  16:53             4.324 UsuarioService.class
-06/02/2026  16:53            14.657 VendedorService.class
-06/02/2026  16:53             7.716 VendedorTipoService.class
-06/02/2026  16:53            55.625 VerificacaoImportacaoService.class
-              12 arquivo(s)        198.258 bytes
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06            14.085 AssociadoDefFaturamentoService.class
+24/02/2026  08:06            14.374 AssociadoProdutoService.class
+24/02/2026  13:51            33.769 AssociadoService.class
+24/02/2026  08:06             6.672 CategoriaService.class
+24/02/2026  08:06            16.885 ImportacaoSPService.class
+24/02/2026  08:06             7.355 NotaDebitoService.class
+24/02/2026  08:06             1.332 NotaDebitoSPCService.class
+24/02/2026  08:06             8.129 PlanosService.class
+24/02/2026  08:06            21.010 ProdutoService.class
+24/02/2026  08:06            24.779 SistemaLogService.class
+24/02/2026  08:06             7.666 TipoEnvioService.class
+24/02/2026  08:06             4.324 UsuarioService.class
+24/02/2026  08:06            14.657 VendedorService.class
+24/02/2026  08:06             7.716 VendedorTipoService.class
+24/02/2026  08:06            55.625 VerificacaoImportacaoService.class
+              15 arquivo(s)        238.378 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-09/02/2026  13:49               165 MANIFEST.MF
-06/02/2026  16:53    <DIR>          maven
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  13:51               165 MANIFEST.MF
+24/02/2026  08:06    <DIR>          maven
                1 arquivo(s)            165 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          com.sistema
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          com.sistema
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven\com.sistema
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-09/02/2026  13:49    <DIR>          faturamento-associados
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  13:51    <DIR>          faturamento-associados
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\classes\META-INF\maven\com.sistema\faturamento-associados
 
-09/02/2026  13:49    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-09/02/2026  13:49               247 pom.properties
-09/02/2026  13:49             4.392 pom.xml
+24/02/2026  13:51    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  13:51               247 pom.properties
+24/02/2026  13:51             4.392 pom.xml
                2 arquivo(s)          4.639 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-sources
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          annotations
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          annotations
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-sources\annotations
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-test-sources
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          test-annotations
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          test-annotations
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\generated-test-sources\test-annotations
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          com
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          com
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes\com
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53    <DIR>          sga
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga\target\test-classes\com\sga
 
-06/02/2026  16:53    <DIR>          .
-06/02/2026  16:53    <DIR>          ..
-06/02/2026  16:53               510 SgaApplicationTests.class
+24/02/2026  08:06    <DIR>          .
+24/02/2026  08:06    <DIR>          ..
+24/02/2026  08:06               510 SgaApplicationTests.class
                1 arquivo(s)            510 bytes
 
      Total de Arquivos na Lista:
-             555 arquivo(s)      1.509.660 bytes
-             715 pasta(s)   25.083.740.160 bytes dispon¡veis
+             626 arquivo(s)      1.739.331 bytes
+             751 pasta(s)   25.142.296.576 bytes dispon¡veis
