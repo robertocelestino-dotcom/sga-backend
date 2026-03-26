@@ -9,6 +9,7 @@ import lombok.Data;
 public class ProdutoResumoDTO {
 	private Long id;
 	private String codigo;
+	private String codigoRm;
 	private String nome;
 	private String nomeCompleto;
 	private BigDecimal valorUnitario;
@@ -33,6 +34,14 @@ public class ProdutoResumoDTO {
 
 	public void setCodigo(String codigo) {
 		this.codigo = codigo;
+	}
+
+	public String getCodigoRm() {
+		return codigoRm;
+	}
+
+	public void setCodigoRm(String codigoRm) {
+		this.codigoRm = codigoRm;
 	}
 
 	public String getNome() {

@@ -13,15 +13,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.tomcat.util.http.fileupload.ByteArrayOutputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -80,6 +76,13 @@ public class VerificacaoImportacaoService {
 
 	@Autowired
 	private ItemSPCRepository itemSPCRepository;
+
+	@Autowired
+	private PdfExportService pdfExportService;
+	
+	@Autowired
+	private RmExportService rmExportService;
+
 
 	/**
 	 * Entrada pública: gera relatório completo de verificação (map com chaves).
@@ -576,9 +579,9 @@ public class VerificacaoImportacaoService {
 		VerificacaoResultadoDTO resultado = new VerificacaoResultadoDTO("Notas de Débito");
 
 		try {
-			
+
 			// 1) total do arquivo (trailler)
-			//Long qtdTrailler = 0L;
+			// Long qtdTrailler = 0L;
 			Integer qtdTrailler = 0;
 
 			try {
@@ -592,7 +595,7 @@ public class VerificacaoImportacaoService {
 				}
 			} catch (Exception e) {
 				logger.warn("Falha ao ler trailler, usando notas do arquivo como fallback");
-				//qtdTrailler = (long) importacao.getNotasDebito().size();
+				// qtdTrailler = (long) importacao.getNotasDebito().size();
 				qtdTrailler = importacao.getNotasDebito().size();
 			}
 
@@ -836,36 +839,31 @@ public class VerificacaoImportacaoService {
 	}
 
 	private List<String> obterProdutosDoBanco() {
-	    try {
-	        
-	        try {
-	            // Opção 1: Método que retorna apenas códigos
-	            return produtoRepository.findAllCodigosAtivos();
-	        } catch (Exception e) {
-	            logger.debug("Método findAllCodigosAtivos não disponível: {}", e.getMessage());
-	            
-	            // Opção 2: Método que retorna objetos
-	            try {
-	                List<Object[]> resultados = produtoRepository.findAllAtivosComCodigo();
-	                return resultados.stream()
-	                    .map(obj -> (String) obj[1]) // Segundo elemento é o código
-	                    .filter(Objects::nonNull)
-	                    .collect(Collectors.toList());
-	            } catch (Exception e2) {
-	                logger.debug("Método findAllAtivosComCodigo também não disponível: {}", e2.getMessage());
-	                
-	                // Fallback: busca todos e filtra
-	                List<Produto> todos = produtoRepository.findAll();
-	                return todos.stream()
-	                    .map(Produto::getCodigo)
-	                    .filter(Objects::nonNull)
-	                    .collect(Collectors.toList());
-	            }
-	        }
-	    } catch (Exception e) {
-	        logger.warn("Erro ao obter produtos do banco: {}", e.getMessage());
-	        return Collections.emptyList();
-	    }
+		try {
+
+			try {
+				// Opção 1: Método que retorna apenas códigos
+				return produtoRepository.findAllCodigosAtivos();
+			} catch (Exception e) {
+				logger.debug("Método findAllCodigosAtivos não disponível: {}", e.getMessage());
+
+				// Opção 2: Método que retorna objetos
+				try {
+					List<Object[]> resultados = produtoRepository.findAllAtivosComCodigo();
+					return resultados.stream().map(obj -> (String) obj[1]) // Segundo elemento é o código
+							.filter(Objects::nonNull).collect(Collectors.toList());
+				} catch (Exception e2) {
+					logger.debug("Método findAllAtivosComCodigo também não disponível: {}", e2.getMessage());
+
+					// Fallback: busca todos e filtra
+					List<Produto> todos = produtoRepository.findAll();
+					return todos.stream().map(Produto::getCodigo).filter(Objects::nonNull).collect(Collectors.toList());
+				}
+			}
+		} catch (Exception e) {
+			logger.warn("Erro ao obter produtos do banco: {}", e.getMessage());
+			return Collections.emptyList();
+		}
 	}
 
 	@Async
@@ -985,90 +983,37 @@ public class VerificacaoImportacaoService {
 		return dto;
 	}
 
-	public byte[] exportarNotaPdf(Long importacaoId) {
-		// TODO: implementar geração real do PDF depois
-
-		// Temporário: só retorna um PDF vazio para não quebrar
-		try {
-			return "PDF ainda não implementado".getBytes("UTF-8");
-		} catch (Exception e) {
-			throw new RuntimeException("Erro ao gerar PDF: " + e.getMessage());
-		}
-	}
-
-	public byte[] exportarResumoCsv(Long importacaoId) {
-		try {
-			// TODO: gerar CSV real depois
-			String csv = "id;codigo_socio;nome;valor\n" + importacaoId + ";0001;Teste;100.00\n";
-
-			return csv.getBytes("UTF-8");
-		} catch (Exception e) {
-			throw new RuntimeException("Erro ao gerar CSV: " + e.getMessage());
-		}
+	public byte[] exportarNotaPdf(Long notaId) {
+		logger.info("📄 Exportando PDF da nota ID: {}", notaId);
+		return pdfExportService.gerarPdfNota(notaId);
 	}
 
 	public byte[] exportarResumoPdf(Long importacaoId) {
-		try {
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
+		logger.info("📄 Exportando PDF resumo da importação ID: {}", importacaoId);
 
-			PDDocument doc = new PDDocument();
-			PDPage page = new PDPage();
-			doc.addPage(page);
-
-			PDPageContentStream content = new PDPageContentStream(doc, page);
-
-			content.beginText();
-			content.setFont(PDType1Font.HELVETICA_BOLD, 18);
-			content.newLineAtOffset(50, 750);
-			content.showText("Resumo da Importação");
-			content.endText();
-
-			content.beginText();
-			content.setFont(PDType1Font.HELVETICA, 12);
-			content.newLineAtOffset(50, 720);
-			content.showText("ID da Importação: " + importacaoId);
-			content.endText();
-
-			// Finaliza o PDF
-			content.close();
-			doc.save(out);
-			doc.close();
-
-			return out.toByteArray();
-
-		} catch (Exception e) {
-			throw new RuntimeException("Erro ao gerar PDF (PDFBox): " + e.getMessage(), e);
-		}
+		Map<String, Object> resumo = obterResumo(importacaoId);
+		return pdfExportService.gerarPdfResumoImportacao(importacaoId, resumo);
 	}
 
 	public List<ImportacaoResumoDTO> listarImportacoes() {
-	    List<ImportacaoSPC> lista = importacaoSPCRepository
-	            .findAllByOrderByDataImportacaoDesc();
+		List<ImportacaoSPC> lista = importacaoSPCRepository.findAllByOrderByDataImportacaoDesc();
 
-	    return lista.stream().map(imp -> {
-	        // calcula quantidade de registros (qtde de notas)
-	        int qtdeRegistros = imp.getNotasDebito() != null
-	                ? imp.getNotasDebito().size()
-	                : 0;
+		return lista.stream().map(imp -> {
+			// calcula quantidade de registros (qtde de notas)
+			int qtdeRegistros = imp.getNotasDebito() != null ? imp.getNotasDebito().size() : 0;
 
-	        // calcula valor total como BigDecimal
-	        BigDecimal totalValor = BigDecimal.ZERO;
-	        if (imp.getNotasDebito() != null) {
-	            totalValor = imp.getNotasDebito().stream()
-	                    .map(n -> n.getValorNota() != null ? n.getValorNota() : BigDecimal.ZERO)
-	                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-	        }
+			// calcula valor total como BigDecimal
+			BigDecimal totalValor = BigDecimal.ZERO;
+			if (imp.getNotasDebito() != null) {
+				totalValor = imp.getNotasDebito().stream()
+						.map(n -> n.getValorNota() != null ? n.getValorNota() : BigDecimal.ZERO)
+						.reduce(BigDecimal.ZERO, BigDecimal::add);
+			}
 
-	        return new ImportacaoResumoDTO(
-	                imp.getId(),
-	                imp.getNomeArquivo(),
-	                imp.getStatus(),
-	                imp.getDataImportacao(),
-	                qtdeRegistros,
-	                totalValor.doubleValue()
-	        );
+			return new ImportacaoResumoDTO(imp.getId(), imp.getNomeArquivo(), imp.getStatus(), imp.getDataImportacao(),
+					qtdeRegistros, totalValor.doubleValue());
 
-	    }).collect(Collectors.toList());
+		}).collect(Collectors.toList());
 	}
 
 	public List<Map<String, Object>> listarNotas(Long importacaoId) {
@@ -1105,6 +1050,80 @@ public class VerificacaoImportacaoService {
 		}).collect(Collectors.toList());
 	}
 
+	/**
+	 * Método CORRIGIDO: Lista notas paginadas com filtro - Versão com BigDecimal
+	 */
+	public Page<NotaDebitoResumoDTO> listarNotasComFiltro(Long importacaoId, String filtro, Pageable pageable) {
+
+		logger.info("Listando notas com filtro - importacaoId: {}, filtro: {}, page: {}", importacaoId, filtro,
+				pageable.getPageNumber());
+
+		try {
+			Page<Object[]> page;
+
+			// Se tiver filtro, usa o método com filtro
+			if (filtro != null && !filtro.trim().isEmpty()) {
+				page = notaDebitoSPCRepository.listarNotasResumoComFiltro(importacaoId, filtro.trim(), pageable);
+			} else {
+				// Sem filtro, usa o método padrão
+				page = notaDebitoSPCRepository.listarNotasResumo(importacaoId, pageable);
+			}
+
+			return page.map(row -> {
+				NotaDebitoResumoDTO dto = new NotaDebitoResumoDTO();
+
+				// Índices baseados na ordem do SELECT
+				dto.setId(((Number) row[0]).longValue()); // id
+				dto.setNumeroNota((String) row[1]); // numeroNota
+				dto.setCodigoSocio((String) row[2]); // codigoSocio
+				dto.setNomeAssociado((String) row[3]); // nomeAssociado
+
+				// CORREÇÃO: Converter para BigDecimal primeiro, depois para Double
+				// Os valores vêm do banco como BigDecimal
+				Object objDebitos = row[4];
+				Object objCreditos = row[5];
+				Object objFaturado = row[6];
+
+				// Converter para BigDecimal e depois para Double
+				if (objDebitos != null) {
+					if (objDebitos instanceof BigDecimal) {
+						dto.setTotalDebitos((BigDecimal) objDebitos);
+					} else if (objDebitos instanceof Number) {
+						dto.setTotalDebitos(BigDecimal.valueOf(((Number) objDebitos).doubleValue()));
+					}
+				} else {
+					dto.setTotalDebitos(BigDecimal.ZERO);
+				}
+
+				if (objCreditos != null) {
+					if (objCreditos instanceof BigDecimal) {
+						dto.setTotalCreditos((BigDecimal) objCreditos);
+					} else if (objCreditos instanceof Number) {
+						dto.setTotalCreditos(BigDecimal.valueOf(((Number) objCreditos).doubleValue()));
+					}
+				} else {
+					dto.setTotalCreditos(BigDecimal.ZERO);
+				}
+
+				if (objFaturado != null) {
+					if (objFaturado instanceof BigDecimal) {
+						dto.setValorFaturado((BigDecimal) objFaturado);
+					} else if (objFaturado instanceof Number) {
+						dto.setValorFaturado(BigDecimal.valueOf(((Number) objFaturado).doubleValue()));
+					}
+				} else {
+					dto.setValorFaturado(BigDecimal.ZERO);
+				}
+
+				return dto;
+			});
+
+		} catch (Exception e) {
+			logger.error("Erro ao listar notas com filtro: {}", e.getMessage(), e);
+			throw new RuntimeException("Erro ao listar notas: " + e.getMessage());
+		}
+	}
+
 	public Map<String, Object> obterResumo(Long importacaoId) {
 		logger.info("Obtendo resumo da importação ID: {}", importacaoId);
 
@@ -1124,17 +1143,13 @@ public class VerificacaoImportacaoService {
 		resumo.put("totalNotas", totalNotas);
 
 		long totalItens = 0;
-		BigDecimal valorTotal = BigDecimal.ZERO;
+		BigDecimal valorTotalDebitos = BigDecimal.ZERO;
+		BigDecimal valorTotalCreditos = BigDecimal.ZERO;
 		Set<String> associadosUnicos = new HashSet<>();
 		Set<String> produtosUnicos = new HashSet<>();
 
 		if (importacao.getNotasDebito() != null) {
 			for (NotaDebitoSPC nota : importacao.getNotasDebito()) {
-				// Valor da nota
-				if (nota.getValorNota() != null) {
-					valorTotal = valorTotal.add(nota.getValorNota());
-				}
-
 				// Associados únicos
 				if (nota.getCodigoSocio() != null) {
 					associadosUnicos.add(nota.getCodigoSocio());
@@ -1149,80 +1164,135 @@ public class VerificacaoImportacaoService {
 						if (item.getCodigoProduto() != null) {
 							produtosUnicos.add(item.getCodigoProduto());
 						}
+
+						// Totais por tipo
+						if ("D".equalsIgnoreCase(item.getCreditoDebito())) {
+							valorTotalDebitos = valorTotalDebitos
+									.add(item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO);
+						} else if ("C".equalsIgnoreCase(item.getCreditoDebito())) {
+							valorTotalCreditos = valorTotalCreditos
+									.add(item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO);
+						}
 					}
 				}
 			}
 		}
 
 		resumo.put("totalItens", totalItens);
-		resumo.put("valorTotal", valorTotal);
+		resumo.put("valorTotalDebitos", valorTotalDebitos);
+		resumo.put("valorTotalCreditos", valorTotalCreditos);
+		resumo.put("valorCobrado", valorTotalDebitos.subtract(valorTotalCreditos));
 		resumo.put("associadosUnicos", associadosUnicos.size());
 		resumo.put("produtosUnicos", produtosUnicos.size());
 
-		// Parâmetros do arquivo (se existirem)
-		if (importacao.getParametros() != null && !importacao.getParametros().isEmpty()) {
-			ParametrosSPC parametros = importacao.getParametros().get(0);
-			Map<String, Object> params = new HashMap<>();
-			params.put("dataReferencia", parametros.getDataReferencia());
-			params.put("dataInicioPeriodoRef", parametros.getDataInicioPeriodoRef());
-			params.put("dataFimPeriodoRef", parametros.getDataFimPeriodoRef());
-			params.put("data1oVencimento", parametros.getData1oVencimento());
-			resumo.put("parametros", params);
-		}
-
-		// Trailler (se existir)
-		if (importacao.getTraillers() != null && !importacao.getTraillers().isEmpty()) {
-			TraillerSPC trailler = importacao.getTraillers().get(0);
-			Map<String, Object> trail = new HashMap<>();
-			trail.put("qtdeTotalBoletos", trailler.getQtdeTotalBoletos());
-			trail.put("qtdeTotalRegistros", trailler.getQtdeTotalRegistros());
-			trail.put("valorTotal", trailler.getValorTotalBoletos());
-			resumo.put("trailler", trail);
-		}
-
-		// Verificação de divergências (reutiliza verificação existente)
-		try {
-			Map<String, Object> verificacao = verificarImportacao(importacaoId);
-			resumo.put("possuiDivergencias", verificacao.get("possuiDivergencias"));
-			resumo.put("totalDivergencias", verificacao.get("totalDivergencias"));
-			resumo.put("scoreConfianca", verificacao.get("scoreConfianca"));
-		} catch (Exception e) {
-			logger.warn("Erro ao obter verificações: {}", e.getMessage());
-			resumo.put("possuiDivergencias", false);
-			resumo.put("totalDivergencias", 0);
-		}
-
 		return resumo;
 	}
-	
+
 	public Page<NotaDebitoResumoDTO> listarNotas(Long importacaoId, Pageable pageable) {
 
-	    Page<Object[]> page = notaDebitoSPCRepository.listarNotasResumo(importacaoId, pageable);
+		Page<Object[]> page = notaDebitoSPCRepository.listarNotasResumo(importacaoId, pageable);
 
-	    return page.map(row -> new NotaDebitoResumoDTO(
-	            ((Number) row[0]).longValue(),      // id
-	            (String) row[1],                    // numeroNota
-	            (String) row[2],                    // codigoSocio
-	            (String) row[3],                    // nomeAssociado
-	            (BigDecimal) row[4],                // totalDebitos
-	            (BigDecimal) row[5],                // totalCreditos
-	            (BigDecimal) row[6]                 // valorFaturado
-	    ));
+		return page.map(row -> new NotaDebitoResumoDTO(((Number) row[0]).longValue(), // id
+				(String) row[1], // numeroNota
+				(String) row[2], // codigoSocio
+				(String) row[3], // nomeAssociado
+				(BigDecimal) row[4], // totalDebitos
+				(BigDecimal) row[5], // totalCreditos
+				(BigDecimal) row[6] // valorFaturado
+		));
 	}
-	
-	public byte[] exportarNotasCsv(Long importacaoId) {
-		logger.info("Exportando notas CSV para importação ID: {}", importacaoId);
-		// Reutiliza o método existente exportarResumoCsv
-		return exportarResumoCsv(importacaoId);
-	}
-	
+
 	public byte[] exportarNotasExcel(Long importacaoId) {
 		logger.info("Exportando notas Excel para importação ID: {}", importacaoId);
 		// Por enquanto, usa CSV como fallback
 		// Em produção, implementar com Apache POI
 		return exportarResumoCsv(importacaoId);
 	}
-	
+
+	/**
+	 * Exporta resumo em CSV (usado pelo controller)
+	 */
+	public byte[] exportarResumoCsv(Long importacaoId) {
+		logger.info("📊 Exportando resumo CSV para importação ID: {}", importacaoId);
+
+		try {
+			ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
+					.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
+
+			StringBuilder csv = new StringBuilder();
+
+			// Cabeçalho
+			csv.append("Código;Nome;Total Débito;Total Crédito;Valor Cobrado\n");
+
+			// Dados das notas
+			if (importacao.getNotasDebito() != null) {
+				for (NotaDebitoSPC nota : importacao.getNotasDebito()) {
+					csv.append(nota.getCodigoSocio()).append(";").append("\"").append(nota.getNomeAssociado())
+							.append("\"").append(";").append(nota.getValorNota() != null ? nota.getValorNota() : 0)
+							.append(";").append("0").append(";") // Créditos (simplificado)
+							.append(nota.getValorNota() != null ? nota.getValorNota() : 0).append("\n");
+				}
+			}
+
+			return csv.toString().getBytes("UTF-8");
+
+		} catch (Exception e) {
+			logger.error("Erro ao exportar CSV: {}", e.getMessage());
+			throw new RuntimeException("Erro ao exportar CSV: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Exporta notas em CSV (versão detalhada)
+	 */
+	public byte[] exportarNotasCsv(Long importacaoId) {
+		logger.info("📊 Exportando notas CSV para importação ID: {}", importacaoId);
+
+		try {
+			ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
+					.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
+
+			StringBuilder csv = new StringBuilder();
+
+			// Cabeçalho detalhado
+			csv.append("ID Nota;Código;Nome;Débitos;Créditos;Valor Faturado;Data Vencimento\n");
+
+			// Dados das notas
+			if (importacao.getNotasDebito() != null) {
+				for (NotaDebitoSPC nota : importacao.getNotasDebito()) {
+					// Calcular débitos e créditos
+					BigDecimal debitos = BigDecimal.ZERO;
+					BigDecimal creditos = BigDecimal.ZERO;
+
+					if (nota.getItens() != null) {
+						for (ItemSPC item : nota.getItens()) {
+							if ("D".equalsIgnoreCase(item.getCreditoDebito())) {
+								debitos = debitos
+										.add(item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO);
+							} else {
+								creditos = creditos
+										.add(item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO);
+							}
+						}
+					}
+
+					BigDecimal valorFaturado = debitos.subtract(creditos);
+
+					csv.append(nota.getId()).append(";").append(nota.getCodigoSocio()).append(";").append("\"")
+							.append(nota.getNomeAssociado()).append("\"").append(";").append(debitos).append(";")
+							.append(creditos).append(";").append(valorFaturado).append(";")
+							.append(nota.getDataVencimento()).append("\n");
+				}
+			}
+
+			return csv.toString().getBytes("UTF-8");
+
+		} catch (Exception e) {
+			logger.error("Erro ao exportar notas CSV: {}", e.getMessage());
+			throw new RuntimeException("Erro ao exportar notas CSV: " + e.getMessage());
+		}
+	}
+
 	// =========================================================
 	// MÉTODOS FALTANTES PARA O CONTROLLER
 	// =========================================================
@@ -1231,146 +1301,138 @@ public class VerificacaoImportacaoService {
 	 * Método faltante: Listar importações paginadas
 	 */
 	public Page<ImportacaoResumoDTO> listarImportacoesPaginado(Pageable pageable) {
-	    logger.info("Listando importações paginadas...");
-	    
-	    try {
-	        Page<ImportacaoSPC> page = importacaoSPCRepository.findAll(pageable);
-	        
-	        List<ImportacaoResumoDTO> dtos = page.getContent().stream()
-	            .map(this::converterParaImportacaoResumoDTO)
-	            .collect(Collectors.toList());
-	        
-	        // CORREÇÃO: Especificar explicitamente os tipos genéricos
-	        return new PageImpl<ImportacaoResumoDTO>(dtos, pageable, page.getTotalElements());
-	        
-	    } catch (Exception e) {
-	        logger.error("Erro ao listar importações paginadas: {}", e.getMessage());
-	        throw new RuntimeException("Erro ao listar importações paginadas: " + e.getMessage());
-	    }
+		logger.info("Listando importações paginadas...");
+
+		try {
+			Page<ImportacaoSPC> page = importacaoSPCRepository.findAll(pageable);
+
+			List<ImportacaoResumoDTO> dtos = page.getContent().stream().map(this::converterParaImportacaoResumoDTO)
+					.collect(Collectors.toList());
+
+			// CORREÇÃO: Especificar explicitamente os tipos genéricos
+			return new PageImpl<ImportacaoResumoDTO>(dtos, pageable, page.getTotalElements());
+
+		} catch (Exception e) {
+			logger.error("Erro ao listar importações paginadas: {}", e.getMessage());
+			throw new RuntimeException("Erro ao listar importações paginadas: " + e.getMessage());
+		}
 	}
 
 	/**
 	 * Método faltante: Listar notas paginadas com filtro
 	 */
 	public Page<NotaFaturamentoGridDTO> listarNotasPaginadas(Long importacaoId, Pageable pageable, String filtro) {
-	    logger.info("Listando notas paginadas para importação ID: {}, filtro: {}", importacaoId, filtro);
-	    
-	    try {
-	        ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
-	                .orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
-	        
-	        List<NotaDebitoSPC> todasNotas = importacao.getNotasDebito();
-	        if (todasNotas == null) {
-	            todasNotas = new ArrayList<>();
-	        }
-	        
-	        // Aplicar filtro
-	        List<NotaDebitoSPC> notasFiltradas;
-	        if (filtro != null && !filtro.trim().isEmpty()) {
-	            String filtroLower = filtro.toLowerCase().trim();
-	            notasFiltradas = todasNotas.stream().filter(nota -> {
-	                boolean matchCodigo = nota.getCodigoSocio() != null
-	                        && nota.getCodigoSocio().toLowerCase().contains(filtroLower);
-	                boolean matchNome = nota.getNomeAssociado() != null
-	                        && nota.getNomeAssociado().toLowerCase().contains(filtroLower);
-	                boolean matchNota = nota.getNumeroNotaDebito() != null
-	                        && nota.getNumeroNotaDebito().toLowerCase().contains(filtroLower);
-	                return matchCodigo || matchNome || matchNota;
-	            }).collect(Collectors.toList());
-	        } else {
-	            notasFiltradas = todasNotas;
-	        }
-	        
-	        // Ordenar
-	        notasFiltradas.sort(Comparator.comparing(NotaDebitoSPC::getId));
-	        
-	        // Paginar
-	        int start = (int) pageable.getOffset();
-	        int end = Math.min((start + pageable.getPageSize()), notasFiltradas.size());
-	        
-	        if (start > notasFiltradas.size()) {
-	            // CORREÇÃO: Especificar explicitamente os tipos genéricos
-	            return new PageImpl<NotaFaturamentoGridDTO>(Collections.emptyList(), pageable, notasFiltradas.size());
-	        }
-	        
-	        List<NotaDebitoSPC> notasPagina = notasFiltradas.subList(start, end);
-	        
-	        // Converter para DTO
-	        List<NotaFaturamentoGridDTO> dtos = notasPagina.stream()
-	            .map(this::converterParaNotaFaturamentoGridDTO)
-	            .collect(Collectors.toList());
-	        
-	        // CORREÇÃO: Especificar explicitamente os tipos genéricos
-	        return new PageImpl<NotaFaturamentoGridDTO>(dtos, pageable, notasFiltradas.size());
-	        
-	    } catch (Exception e) {
-	        logger.error("Erro ao listar notas paginadas: {}", e.getMessage());
-	        throw new RuntimeException("Erro ao listar notas paginadas: " + e.getMessage());
-	    }
+		logger.info("Listando notas paginadas para importação ID: {}, filtro: {}", importacaoId, filtro);
+
+		try {
+			ImportacaoSPC importacao = importacaoSPCRepository.findById(importacaoId)
+					.orElseThrow(() -> new RuntimeException("Importação não encontrada: " + importacaoId));
+
+			List<NotaDebitoSPC> todasNotas = importacao.getNotasDebito();
+			if (todasNotas == null) {
+				todasNotas = new ArrayList<>();
+			}
+
+			// Aplicar filtro
+			List<NotaDebitoSPC> notasFiltradas;
+			if (filtro != null && !filtro.trim().isEmpty()) {
+				String filtroLower = filtro.toLowerCase().trim();
+				notasFiltradas = todasNotas.stream().filter(nota -> {
+					boolean matchCodigo = nota.getCodigoSocio() != null
+							&& nota.getCodigoSocio().toLowerCase().contains(filtroLower);
+					boolean matchNome = nota.getNomeAssociado() != null
+							&& nota.getNomeAssociado().toLowerCase().contains(filtroLower);
+					boolean matchNota = nota.getNumeroNotaDebito() != null
+							&& nota.getNumeroNotaDebito().toLowerCase().contains(filtroLower);
+					return matchCodigo || matchNome || matchNota;
+				}).collect(Collectors.toList());
+			} else {
+				notasFiltradas = todasNotas;
+			}
+
+			// Ordenar
+			notasFiltradas.sort(Comparator.comparing(NotaDebitoSPC::getId));
+
+			// Paginar
+			int start = (int) pageable.getOffset();
+			int end = Math.min((start + pageable.getPageSize()), notasFiltradas.size());
+
+			if (start > notasFiltradas.size()) {
+				// CORREÇÃO: Especificar explicitamente os tipos genéricos
+				return new PageImpl<NotaFaturamentoGridDTO>(Collections.emptyList(), pageable, notasFiltradas.size());
+			}
+
+			List<NotaDebitoSPC> notasPagina = notasFiltradas.subList(start, end);
+
+			// Converter para DTO
+			List<NotaFaturamentoGridDTO> dtos = notasPagina.stream().map(this::converterParaNotaFaturamentoGridDTO)
+					.collect(Collectors.toList());
+
+			// CORREÇÃO: Especificar explicitamente os tipos genéricos
+			return new PageImpl<NotaFaturamentoGridDTO>(dtos, pageable, notasFiltradas.size());
+
+		} catch (Exception e) {
+			logger.error("Erro ao listar notas paginadas: {}", e.getMessage());
+			throw new RuntimeException("Erro ao listar notas paginadas: " + e.getMessage());
+		}
 	}
 
 	/**
 	 * Método faltante: Obter detalhes de uma nota específica
 	 */
-	public Map<String, Object> obterDetalhesNota(Long notaId) {
-		logger.info("Obtendo detalhes da nota ID: {}", notaId);
-		
-		try {
-			NotaDebitoSPC nota = notaDebitoSPCRepository.findById(notaId)
-					.orElseThrow(() -> new RuntimeException("Nota não encontrada: " + notaId));
-			
-			List<ItemSPC> itens = nota.getItens();
-			if (itens == null) {
-				itens = new ArrayList<>();
-			}
-			
-			// Calcular totais
-			BigDecimal totalDebitos = calcularTotalPorTipo(itens, "D");
-			BigDecimal totalCredito = calcularTotalPorTipo(itens, "C");
-			BigDecimal valorFaturado = totalDebitos.subtract(totalCredito);
-			
-			// Preparar detalhes
-			Map<String, Object> detalhes = new LinkedHashMap<>();
-			detalhes.put("idNota", nota.getId());
-			detalhes.put("numeroNotaDebito", nota.getNumeroNotaDebito());
-			detalhes.put("codigoAssociado", nota.getCodigoSocio());
-			detalhes.put("nomeAssociado", nota.getNomeAssociado());
-			detalhes.put("cnpjCic", nota.getCnpjCic());
-			detalhes.put("endereco", nota.getEnderecoCobranca());
-			detalhes.put("cidade", nota.getCidadeCobranca());
-			detalhes.put("uf", nota.getUfCobranca());
-			detalhes.put("cep", nota.getCepCobranca());
-			detalhes.put("dataVencimento", nota.getDataVencimento());
-			detalhes.put("valorNota", nota.getValorNota() != null ? nota.getValorNota().doubleValue() : 0.0);
-			detalhes.put("totalDebitos", totalDebitos.doubleValue());
-			detalhes.put("totalCredito", totalCredito.doubleValue());
-			detalhes.put("valorFaturado", valorFaturado.doubleValue());
-			detalhes.put("dataImportacao", nota.getImportacao().getDataImportacao());
-			
-			// Itens detalhados
-			List<Map<String, Object>> itensDetalhados = itens.stream().map(item -> {
-				Map<String, Object> itemMap = new LinkedHashMap<>();
-				itemMap.put("id", item.getId());
-				itemMap.put("codigo", item.getCodigoProduto());
-				itemMap.put("descricao", item.getDescricaoServico());
-				itemMap.put("quantidade", item.getQuantidadeServicos() != null ? item.getQuantidadeServicos().doubleValue() : 0.0);
-				itemMap.put("valorUnitario", item.getValorUnitario() != null ? item.getValorUnitario().doubleValue() : 0.0);
-				itemMap.put("valorTotal", item.getValorTotal() != null ? item.getValorTotal().doubleValue() : 0.0);
-				itemMap.put("tipoLancamento", item.getCreditoDebito());
-				itemMap.put("tipoLancamentoDesc", "D".equalsIgnoreCase(item.getCreditoDebito()) ? "Débito" : "Crédito");
-				return itemMap;
-			}).collect(Collectors.toList());
-			
-			detalhes.put("itens", itensDetalhados);
-			detalhes.put("totalItens", itens.size());
-			
-			return detalhes;
-			
-		} catch (Exception e) {
-			logger.error("Erro ao obter detalhes da nota: {}", e.getMessage());
-			throw new RuntimeException("Erro ao obter detalhes da nota: " + e.getMessage());
-		}
-	}
+	/*
+	 * public Map<String, Object> obterDetalhesNota(Long notaId) {
+	 * logger.info("Obtendo detalhes da nota ID: {}", notaId);
+	 * 
+	 * try { NotaDebitoSPC nota = notaDebitoSPCRepository.findById(notaId)
+	 * .orElseThrow(() -> new RuntimeException("Nota não encontrada: " + notaId));
+	 * 
+	 * List<ItemSPC> itens = nota.getItens(); if (itens == null) { itens = new
+	 * ArrayList<>(); }
+	 * 
+	 * // Calcular totais BigDecimal totalDebitos = calcularTotalPorTipo(itens,
+	 * "D"); BigDecimal totalCredito = calcularTotalPorTipo(itens, "C"); BigDecimal
+	 * valorFaturado = totalDebitos.subtract(totalCredito);
+	 * 
+	 * // Preparar detalhes Map<String, Object> detalhes = new LinkedHashMap<>();
+	 * detalhes.put("idNota", nota.getId()); detalhes.put("numeroNotaDebito",
+	 * nota.getNumeroNotaDebito()); detalhes.put("codigoAssociado",
+	 * nota.getCodigoSocio()); detalhes.put("nomeAssociado",
+	 * nota.getNomeAssociado()); detalhes.put("cnpjCic", nota.getCnpjCic());
+	 * detalhes.put("endereco", nota.getEnderecoCobranca()); detalhes.put("cidade",
+	 * nota.getCidadeCobranca()); detalhes.put("uf", nota.getUfCobranca());
+	 * detalhes.put("cep", nota.getCepCobranca()); detalhes.put("dataVencimento",
+	 * nota.getDataVencimento()); detalhes.put("valorNota", nota.getValorNota() !=
+	 * null ? nota.getValorNota().doubleValue() : 0.0); detalhes.put("totalDebitos",
+	 * totalDebitos.doubleValue()); detalhes.put("totalCredito",
+	 * totalCredito.doubleValue()); detalhes.put("valorFaturado",
+	 * valorFaturado.doubleValue()); detalhes.put("dataImportacao",
+	 * nota.getImportacao().getDataImportacao());
+	 * 
+	 * // Itens detalhados List<Map<String, Object>> itensDetalhados =
+	 * itens.stream().map(item -> { Map<String, Object> itemMap = new
+	 * LinkedHashMap<>(); itemMap.put("id", item.getId()); itemMap.put("codigo",
+	 * item.getCodigoProduto()); itemMap.put("descricao",
+	 * item.getDescricaoServico()); itemMap.put("quantidade",
+	 * item.getQuantidadeServicos() != null ?
+	 * item.getQuantidadeServicos().doubleValue() : 0.0);
+	 * itemMap.put("valorUnitario", item.getValorUnitario() != null ?
+	 * item.getValorUnitario().doubleValue() : 0.0); itemMap.put("valorTotal",
+	 * item.getValorTotal() != null ? item.getValorTotal().doubleValue() : 0.0);
+	 * itemMap.put("tipoLancamento", item.getCreditoDebito());
+	 * itemMap.put("tipoLancamentoDesc",
+	 * "D".equalsIgnoreCase(item.getCreditoDebito()) ? "Débito" : "Crédito"); return
+	 * itemMap; }).collect(Collectors.toList());
+	 * 
+	 * detalhes.put("itens", itensDetalhados); detalhes.put("totalItens",
+	 * itens.size());
+	 * 
+	 * return detalhes;
+	 * 
+	 * } catch (Exception e) { logger.error("Erro ao obter detalhes da nota: {}",
+	 * e.getMessage()); throw new
+	 * RuntimeException("Erro ao obter detalhes da nota: " + e.getMessage()); } }
+	 */
 
 	/**
 	 * Método auxiliar: Escapar caracteres para CSV
@@ -1388,25 +1450,17 @@ public class VerificacaoImportacaoService {
 	 * Método auxiliar: Converter ImportacaoSPC para ImportacaoResumoDTO
 	 */
 	private ImportacaoResumoDTO converterParaImportacaoResumoDTO(ImportacaoSPC importacao) {
-	    int qtdeRegistros = importacao.getNotasDebito() != null
-	            ? importacao.getNotasDebito().size()
-	            : 0;
+		int qtdeRegistros = importacao.getNotasDebito() != null ? importacao.getNotasDebito().size() : 0;
 
-	    BigDecimal totalValor = BigDecimal.ZERO;
-	    if (importacao.getNotasDebito() != null) {
-	        totalValor = importacao.getNotasDebito().stream()
-	                .map(n -> n.getValorNota() != null ? n.getValorNota() : BigDecimal.ZERO)
-	                .reduce(BigDecimal.ZERO, BigDecimal::add);
-	    }
+		BigDecimal totalValor = BigDecimal.ZERO;
+		if (importacao.getNotasDebito() != null) {
+			totalValor = importacao.getNotasDebito().stream()
+					.map(n -> n.getValorNota() != null ? n.getValorNota() : BigDecimal.ZERO)
+					.reduce(BigDecimal.ZERO, BigDecimal::add);
+		}
 
-	    return new ImportacaoResumoDTO(
-	            importacao.getId(),
-	            importacao.getNomeArquivo(),
-	            importacao.getStatus(),
-	            importacao.getDataImportacao(),
-	            qtdeRegistros,
-	            totalValor.doubleValue()
-	    );
+		return new ImportacaoResumoDTO(importacao.getId(), importacao.getNomeArquivo(), importacao.getStatus(),
+				importacao.getDataImportacao(), qtdeRegistros, totalValor.doubleValue());
 	}
 
 	/**
@@ -1416,151 +1470,240 @@ public class VerificacaoImportacaoService {
 	 * Método auxiliar: Converter NotaDebitoSPC para NotaFaturamentoGridDTO
 	 */
 	private NotaFaturamentoGridDTO converterParaNotaFaturamentoGridDTO(NotaDebitoSPC nota) {
-	    List<ItemSPC> itens = nota.getItens();
-	    if (itens == null) {
-	        itens = new ArrayList<>();
-	    }
-	    
-	    BigDecimal totalDebitos = calcularTotalPorTipo(itens, "D");
-	    BigDecimal totalCredito = calcularTotalPorTipo(itens, "C");
-	    BigDecimal valorFaturado = totalDebitos.subtract(totalCredito);
-	    
-	    // CORREÇÃO: Usar setters em vez de construtor com parâmetros
-	    NotaFaturamentoGridDTO dto = new NotaFaturamentoGridDTO();
-	    dto.setIdNota(nota.getId());
-	    dto.setCodigoAssociado(nota.getCodigoSocio());
-	    dto.setNomeAssociado(nota.getNomeAssociado());
-	    dto.setTotalDebitos(totalDebitos);
-	    dto.setTotalCredito(totalCredito);
-	    dto.setValorFaturado(valorFaturado);
-	    dto.setDataImportacao(nota.getImportacao().getDataImportacao());
-	    // O status já é definido como "PROCESSADO" no construtor padrão
-	    
-	    return dto;
+		List<ItemSPC> itens = nota.getItens();
+		if (itens == null) {
+			itens = new ArrayList<>();
+		}
+
+		BigDecimal totalDebitos = calcularTotalPorTipo(itens, "D");
+		BigDecimal totalCredito = calcularTotalPorTipo(itens, "C");
+		BigDecimal valorFaturado = totalDebitos.subtract(totalCredito);
+
+		// CORREÇÃO: Usar setters em vez de construtor com parâmetros
+		NotaFaturamentoGridDTO dto = new NotaFaturamentoGridDTO();
+		dto.setIdNota(nota.getId());
+		dto.setCodigoAssociado(nota.getCodigoSocio());
+		dto.setNomeAssociado(nota.getNomeAssociado());
+		dto.setTotalDebitos(totalDebitos);
+		dto.setTotalCredito(totalCredito);
+		dto.setValorFaturado(valorFaturado);
+		dto.setDataImportacao(nota.getImportacao().getDataImportacao());
+		// O status já é definido como "PROCESSADO" no construtor padrão
+
+		return dto;
 	}
 
 	/**
 	 * Método auxiliar: Calcular total por tipo de lançamento
 	 */
 	private BigDecimal calcularTotalPorTipo(List<ItemSPC> itens, String tipo) {
-	    if (itens == null) {
-	        return BigDecimal.ZERO;
-	    }
-	    return itens.stream()
-	        .filter(item -> tipo.equalsIgnoreCase(item.getCreditoDebito()))
-	        .map(item -> item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO)
-	        .reduce(BigDecimal.ZERO, BigDecimal::add);
+		if (itens == null) {
+			return BigDecimal.ZERO;
+		}
+		return itens.stream().filter(item -> tipo.equalsIgnoreCase(item.getCreditoDebito()))
+				.map(item -> item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 	}
 
 	/**
 	 * Método para obter a última importação realizada
 	 */
 	public Map<String, Object> obterUltimaImportacao() {
-	    logger.info("Obtendo última importação...");
-	    
-	    try {
-	        // Busca a última importação por data de importação (mais recente)
-	        List<ImportacaoSPC> importacoes = importacaoSPCRepository.findAllByOrderByDataImportacaoDesc();
-	        
-	        if (importacoes.isEmpty()) {
-	            Map<String, Object> resultado = new HashMap<>();
-	            resultado.put("mensagem", "Nenhuma importação encontrada");
-	            resultado.put("existeImportacao", false);
-	            return resultado;
-	        }
-	        
-	        ImportacaoSPC ultimaImportacao = importacoes.get(0);
-	        
-	        // Calcula estatísticas básicas
-	        int totalNotas = ultimaImportacao.getNotasDebito() != null ? ultimaImportacao.getNotasDebito().size() : 0;
-	        BigDecimal valorTotal = BigDecimal.ZERO;
-	        int associadosUnicos = 0;
-	        
-	        if (ultimaImportacao.getNotasDebito() != null) {
-	            Set<String> codigosAssociados = new HashSet<>();
-	            
-	            for (NotaDebitoSPC nota : ultimaImportacao.getNotasDebito()) {
-	                // Valor total
-	                if (nota.getValorNota() != null) {
-	                    valorTotal = valorTotal.add(nota.getValorNota());
-	                }
-	                
-	                // Associados únicos
-	                if (nota.getCodigoSocio() != null) {
-	                    codigosAssociados.add(nota.getCodigoSocio());
-	                }
-	            }
-	            
-	            associadosUnicos = codigosAssociados.size();
-	        }
-	        
-	        // Prepara o resultado
-	        Map<String, Object> resultado = new LinkedHashMap<>();
-	        resultado.put("existeImportacao", true);
-	        resultado.put("id", ultimaImportacao.getId());
-	        resultado.put("nomeArquivo", ultimaImportacao.getNomeArquivo());
-	        resultado.put("dataImportacao", ultimaImportacao.getDataImportacao());
-	        resultado.put("status", ultimaImportacao.getStatus());
-	        resultado.put("totalNotas", totalNotas);
-	        resultado.put("valorTotal", valorTotal);
-	        resultado.put("associadosUnicos", associadosUnicos);
-	        
-	        // Adiciona informações de parâmetros se existirem
-	        if (ultimaImportacao.getParametros() != null && !ultimaImportacao.getParametros().isEmpty()) {
-	            ParametrosSPC parametros = ultimaImportacao.getParametros().get(0);
-	            Map<String, Object> params = new HashMap<>();
-	            params.put("dataReferencia", parametros.getDataReferencia());
-	            params.put("dataInicioPeriodoRef", parametros.getDataInicioPeriodoRef());
-	            params.put("dataFimPeriodoRef", parametros.getDataFimPeriodoRef());
-	            params.put("data1oVencimento", parametros.getData1oVencimento());
-	            resultado.put("parametros", params);
-	        }
-	        
-	        // Adiciona informações do trailler se existir
-	        if (ultimaImportacao.getTraillers() != null && !ultimaImportacao.getTraillers().isEmpty()) {
-	            TraillerSPC trailler = ultimaImportacao.getTraillers().get(0);
-	            Map<String, Object> trail = new HashMap<>();
-	            trail.put("qtdeTotalBoletos", trailler.getQtdeTotalBoletos());
-	            trail.put("qtdeTotalRegistros", trailler.getQtdeTotalRegistros());
-	            trail.put("valorTotal", trailler.getValorTotalBoletos());
-	            resultado.put("trailler", trail);
-	        }
-	        
-	        logger.info("Última importação encontrada: ID={}, arquivo={}, totalNotas={}", 
-	                    ultimaImportacao.getId(), ultimaImportacao.getNomeArquivo(), totalNotas);
-	        
-	        return resultado;
-	        
-	    } catch (Exception e) {
-	        logger.error("Erro ao obter última importação: {}", e.getMessage(), e);
-	        
-	        Map<String, Object> erro = new HashMap<>();
-	        erro.put("existeImportacao", false);
-	        erro.put("mensagem", "Erro ao buscar última importação: " + e.getMessage());
-	        erro.put("erro", true);
-	        
-	        return erro;
-	    }
+		logger.info("Obtendo última importação...");
+
+		try {
+			// Busca a última importação por data de importação (mais recente)
+			List<ImportacaoSPC> importacoes = importacaoSPCRepository.findAllByOrderByDataImportacaoDesc();
+
+			if (importacoes.isEmpty()) {
+				Map<String, Object> resultado = new HashMap<>();
+				resultado.put("mensagem", "Nenhuma importação encontrada");
+				resultado.put("existeImportacao", false);
+				return resultado;
+			}
+
+			ImportacaoSPC ultimaImportacao = importacoes.get(0);
+
+			// Calcula estatísticas básicas
+			int totalNotas = ultimaImportacao.getNotasDebito() != null ? ultimaImportacao.getNotasDebito().size() : 0;
+			BigDecimal valorTotal = BigDecimal.ZERO;
+			int associadosUnicos = 0;
+
+			if (ultimaImportacao.getNotasDebito() != null) {
+				Set<String> codigosAssociados = new HashSet<>();
+
+				for (NotaDebitoSPC nota : ultimaImportacao.getNotasDebito()) {
+					// Valor total
+					if (nota.getValorNota() != null) {
+						valorTotal = valorTotal.add(nota.getValorNota());
+					}
+
+					// Associados únicos
+					if (nota.getCodigoSocio() != null) {
+						codigosAssociados.add(nota.getCodigoSocio());
+					}
+				}
+
+				associadosUnicos = codigosAssociados.size();
+			}
+
+			// Prepara o resultado
+			Map<String, Object> resultado = new LinkedHashMap<>();
+			resultado.put("existeImportacao", true);
+			resultado.put("id", ultimaImportacao.getId());
+			resultado.put("nomeArquivo", ultimaImportacao.getNomeArquivo());
+			resultado.put("dataImportacao", ultimaImportacao.getDataImportacao());
+			resultado.put("status", ultimaImportacao.getStatus());
+			resultado.put("totalNotas", totalNotas);
+			resultado.put("valorTotal", valorTotal);
+			resultado.put("associadosUnicos", associadosUnicos);
+
+			// Adiciona informações de parâmetros se existirem
+			if (ultimaImportacao.getParametros() != null && !ultimaImportacao.getParametros().isEmpty()) {
+				ParametrosSPC parametros = ultimaImportacao.getParametros().get(0);
+				Map<String, Object> params = new HashMap<>();
+				params.put("dataReferencia", parametros.getDataReferencia());
+				params.put("dataInicioPeriodoRef", parametros.getDataInicioPeriodoRef());
+				params.put("dataFimPeriodoRef", parametros.getDataFimPeriodoRef());
+				params.put("data1oVencimento", parametros.getData1oVencimento());
+				resultado.put("parametros", params);
+			}
+
+			// Adiciona informações do trailler se existir
+			if (ultimaImportacao.getTraillers() != null && !ultimaImportacao.getTraillers().isEmpty()) {
+				TraillerSPC trailler = ultimaImportacao.getTraillers().get(0);
+				Map<String, Object> trail = new HashMap<>();
+				trail.put("qtdeTotalBoletos", trailler.getQtdeTotalBoletos());
+				trail.put("qtdeTotalRegistros", trailler.getQtdeTotalRegistros());
+				trail.put("valorTotal", trailler.getValorTotalBoletos());
+				resultado.put("trailler", trail);
+			}
+
+			logger.info("Última importação encontrada: ID={}, arquivo={}, totalNotas={}", ultimaImportacao.getId(),
+					ultimaImportacao.getNomeArquivo(), totalNotas);
+
+			return resultado;
+
+		} catch (Exception e) {
+			logger.error("Erro ao obter última importação: {}", e.getMessage(), e);
+
+			Map<String, Object> erro = new HashMap<>();
+			erro.put("existeImportacao", false);
+			erro.put("mensagem", "Erro ao buscar última importação: " + e.getMessage());
+			erro.put("erro", true);
+
+			return erro;
+		}
+	}
+
+	/*
+	 * public Page<NotaDebitoResumoDTO> listarNotas( Long importacaoId, String
+	 * filtro, Pageable pageable ) {
+	 * 
+	 * Page<Object[]> page = notaDebitoSPCRepository
+	 * .listarNotasPaginado(importacaoId, filtro, pageable);
+	 * 
+	 * return page.map(row -> new NotaDebitoResumoDTO( ((Number)
+	 * row[0]).longValue(), (String) row[1], (String) row[2], (String) row[3],
+	 * (BigDecimal) row[4], (BigDecimal) row[5], (BigDecimal) row[6] )); }
+	 */
+
+	/**
+	 * MÉTODO OTIMIZADO: Obter detalhes completos de uma nota usando queries
+	 * específicas
+	 */
+	public Map<String, Object> obterDetalhesNotaOtimizado(Long notaId) {
+		logger.info("🔍 Buscando detalhes otimizados da nota ID: {}", notaId);
+
+		try {
+			// Buscar dados básicos da nota
+			Optional<Map<String, Object>> notaOpt = notaDebitoSPCRepository.findDetalhesBasicosById(notaId);
+
+			if (notaOpt.isEmpty()) {
+				logger.error("Nota não encontrada: {}", notaId);
+				throw new RuntimeException("Nota não encontrada: " + notaId);
+			}
+
+			Map<String, Object> detalhes = new LinkedHashMap<>(notaOpt.get());
+
+			// Buscar itens da nota
+			List<Map<String, Object>> itens = notaDebitoSPCRepository.findItensByNotaId(notaId);
+
+			// Calcular totais
+			BigDecimal totalDebitos = BigDecimal.ZERO;
+			BigDecimal totalCreditos = BigDecimal.ZERO;
+
+			for (Map<String, Object> item : itens) {
+				String tipo = (String) item.get("tipoLancamento");
+				BigDecimal valor = (BigDecimal) item.get("valorTotal");
+
+				if (valor == null)
+					valor = BigDecimal.ZERO;
+
+				if ("D".equalsIgnoreCase(tipo)) {
+					totalDebitos = totalDebitos.add(valor);
+					item.put("tipoLancamentoDesc", "Débito");
+				} else {
+					totalCreditos = totalCreditos.add(valor);
+					item.put("tipoLancamentoDesc", "Crédito");
+				}
+
+				// Garantir que valores numéricos sejam Double para o frontend
+				item.put("quantidade",
+						item.get("quantidade") != null ? ((Number) item.get("quantidade")).doubleValue() : 0.0);
+				item.put("valorUnitario",
+						item.get("valorUnitario") != null ? ((Number) item.get("valorUnitario")).doubleValue() : 0.0);
+				item.put("valorTotal",
+						item.get("valorTotal") != null ? ((Number) item.get("valorTotal")).doubleValue() : 0.0);
+			}
+
+			BigDecimal valorFaturado = totalDebitos.subtract(totalCreditos);
+
+			// Adicionar campos calculados
+			detalhes.put("itens", itens);
+			detalhes.put("totalDebitos", totalDebitos);
+			detalhes.put("totalCreditos", totalCreditos);
+			detalhes.put("valorFaturado", valorFaturado);
+			detalhes.put("quantidadeItens", itens.size());
+
+			// Converter valores para Double (formato esperado pelo frontend)
+			detalhes.put("valorNota",
+					detalhes.get("valorNota") != null ? ((Number) detalhes.get("valorNota")).doubleValue() : 0.0);
+			detalhes.put("totalDebitos", totalDebitos.doubleValue());
+			detalhes.put("totalCreditos", totalCreditos.doubleValue());
+			detalhes.put("valorFaturado", valorFaturado.doubleValue());
+
+			// Buscar data de importação
+			if (detalhes.get("importacaoId") != null) {
+				Long importacaoId = ((Number) detalhes.get("importacaoId")).longValue();
+				importacaoSPCRepository.findById(importacaoId)
+						.ifPresent(imp -> detalhes.put("dataImportacao", imp.getDataImportacao()));
+			}
+
+			logger.info("✅ Detalhes da nota {} carregados com {} itens", notaId, itens.size());
+
+			return detalhes;
+
+		} catch (Exception e) {
+			logger.error("❌ Erro ao buscar detalhes da nota {}: {}", notaId, e.getMessage(), e);
+			throw new RuntimeException("Erro ao buscar detalhes da nota: " + e.getMessage());
+		}
+	}
+
+	/**
+	 * Manter o método antigo para compatibilidade, mas redirecionar para o novo
+	 */
+	public Map<String, Object> obterDetalhesNota(Long notaId) {
+		return obterDetalhesNotaOtimizado(notaId);
 	}
 	
-	/*public Page<NotaDebitoResumoDTO> listarNotas(
-	        Long importacaoId,
-	        String filtro,
-	        Pageable pageable
-	) {
-
-	    Page<Object[]> page = notaDebitoSPCRepository
-	            .listarNotasPaginado(importacaoId, filtro, pageable);
-
-	    return page.map(row -> new NotaDebitoResumoDTO(
-	            ((Number) row[0]).longValue(),
-	            (String) row[1],
-	            (String) row[2],
-	            (String) row[3],
-	            (BigDecimal) row[4],
-	            (BigDecimal) row[5],
-	            (BigDecimal) row[6]
-	    ));
-	}*/
+	/**
+	 * Exporta dados no formato RM
+	 */
+	public byte[] exportarParaRm(Long importacaoId) {
+	    logger.info("📤 Exportando para RM - Importação ID: {}", importacaoId);
+	    return rmExportService.exportarParaRm(importacaoId);
+	}
+	
 
 }

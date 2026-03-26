@@ -93,4 +93,6 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 
 	@Query("SELECT a FROM Associado a WHERE a.codigoSpc = :codigoSpc")
 	Optional<Associado> findByCodigoSpc(String codigoSpc);
+
+	
 }

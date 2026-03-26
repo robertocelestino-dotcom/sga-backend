@@ -86,6 +86,7 @@ public class ProdutoController {
         }
     }
     
+    // 🔥 CORRIGIDO: Adicionado parâmetro codigoRm e passando para o service
     @GetMapping
     public ResponseEntity<?> listarProdutosPaginados(
             @RequestParam(defaultValue = "0") int page,
@@ -93,6 +94,7 @@ public class ProdutoController {
             @RequestParam(defaultValue = "nome") String sort,
             @RequestParam(defaultValue = "asc") String direction,
             @RequestParam(required = false) String codigo,
+            @RequestParam(required = false) String codigoRm,
             @RequestParam(required = false) String nome,
             @RequestParam(required = false) String tipoProduto,
             @RequestParam(required = false) String categoria,
@@ -101,15 +103,17 @@ public class ProdutoController {
             @RequestParam(required = false) Boolean temFranquia) {
         
         try {
-            logger.info("Listando produtos - page: {}, size: {}, sort: {}", page, size, sort);
+            logger.info("Listando produtos - page: {}, size: {}, sort: {}, codigoRm: {}", 
+                       page, size, sort, codigoRm);
             
             Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) 
                     ? Sort.Direction.DESC : Sort.Direction.ASC;
             
             Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
             
+            // 🔥 IMPORTANTE: Passar codigoRm para o service
             Page<ProdutoResumoDTO> produtos = produtoService.listarProdutosPaginados(
-                    codigo, nome, tipoProduto, categoria, modalidade, status, temFranquia, pageable);
+                    codigo, codigoRm, nome, tipoProduto, categoria, modalidade, status, temFranquia, pageable);
             
             logger.info("Encontrados {} produtos", produtos.getTotalElements());
             return ResponseEntity.ok(produtos);
@@ -314,7 +318,7 @@ public class ProdutoController {
         try {
             logger.info("Listando produtos ativos");
             List<ProdutoResumoDTO> produtos = produtoService.listarProdutosPaginados(
-                    null, null, null, null, null, "ATIVO", null, 
+                    null, null, null, null, null, null, "ATIVO", null, 
                     PageRequest.of(0, 1000, Sort.by("nome"))).getContent();
             return ResponseEntity.ok(produtos);
         } catch (Exception e) {
@@ -333,7 +337,7 @@ public class ProdutoController {
         try {
             logger.info("Health check dos produtos");
             long total = produtoService.listarProdutosPaginados(
-                    null, null, null, null, null, null, null, 
+                    null, null, null, null, null, null, null, null, 
                     PageRequest.of(0, 1)).getTotalElements();
             
             Map<String, Object> health = new HashMap<>();

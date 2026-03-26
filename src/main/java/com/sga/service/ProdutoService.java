@@ -107,21 +107,22 @@ public class ProdutoService {
     
     @Transactional(readOnly = true)
     public Page<ProdutoResumoDTO> listarProdutosPaginados(
-            String codigo, String nome, String tipoProduto, 
-            String categoria, String modalidade, String status, 
-            Boolean temFranquia, Pageable pageable) {
+            String codigo, 
+            String codigoRm,  // 🔥 ADICIONADO
+            String nome, 
+            String tipoProduto, 
+            String categoria, 
+            String modalidade, 
+            String status, 
+            Boolean temFranquia, 
+            Pageable pageable) {
         
-        logger.info("Listando produtos com filtros: page={}, size={}, sort={}", 
-                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort());
+        logger.info("Listando produtos com filtros: page={}, size={}, sort={}, codigoRm={}", 
+                pageable.getPageNumber(), pageable.getPageSize(), pageable.getSort(), codigoRm);
         
         try {
-            if (produtoRepository == null) {
-                logger.error("ERRO CRÍTICO: produtoRepository é NULL!");
-                throw new RuntimeException("Repositório não inicializado");
-            }
-            
             Page<Produto> page = produtoRepository.filtrarProdutos(
-                    codigo, nome, tipoProduto, categoria, modalidade, status, temFranquia, pageable);
+                    codigo, codigoRm, nome, tipoProduto, categoria, modalidade, status, temFranquia, pageable);
             
             logger.info("Encontrados {} produtos", page.getTotalElements());
             

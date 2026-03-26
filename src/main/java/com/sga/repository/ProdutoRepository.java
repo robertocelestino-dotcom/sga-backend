@@ -20,6 +20,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     Optional<Produto> findByCodigo(String codigo);
     Optional<Produto> findByCodigoRm(String codigoRm);
     
+    // 🔥 Buscar produto pela descrição (campo correto)
+    Optional<Produto> findByDescricao(String descricao);
+    
     // Listagens com filtros
     List<Produto> findByStatus(String status);
     List<Produto> findByTipoProduto(String tipoProduto);
@@ -64,7 +67,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     List<Produto> findProdutosSPC();
     
     // Produtos do tipo MIX
-    @Query("SELECT p FROM Produto p WHERE p.isMix() = true OR LOWER(p.nome) LIKE '%mix%'")
+    @Query("SELECT p FROM Produto p WHERE LOWER(p.nome) LIKE '%mix%'")
     List<Produto> findProdutosMix();
     
     // Produtos SPC com modalidade específica
@@ -81,9 +84,9 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     
     // ========== QUERIES COM PAGINAÇÃO ==========
     
-    // Filtro completo com paginação
     @Query("SELECT p FROM Produto p WHERE " +
            "(:codigo IS NULL OR LOWER(p.codigo) LIKE LOWER(CONCAT('%', :codigo, '%'))) AND " +
+           "(:codigoRm IS NULL OR LOWER(p.codigoRm) LIKE LOWER(CONCAT('%', :codigoRm, '%'))) AND " +
            "(:nome IS NULL OR LOWER(p.nome) LIKE LOWER(CONCAT('%', :nome, '%'))) AND " +
            "(:tipoProduto IS NULL OR p.tipoProduto = :tipoProduto) AND " +
            "(:categoria IS NULL OR p.categoria = :categoria) AND " +
@@ -92,6 +95,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
            "(:temFranquia IS NULL OR p.temFranquia = :temFranquia)")
     Page<Produto> filtrarProdutos(
             @Param("codigo") String codigo,
+            @Param("codigoRm") String codigoRm,
             @Param("nome") String nome,
             @Param("tipoProduto") String tipoProduto,
             @Param("categoria") String categoria,
@@ -116,9 +120,7 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     @Query("SELECT p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
     List<String> findAllCodigosAtivos();
 
-    // Ou se quiser também os IDs:
+    // IDs e códigos dos produtos ativos
     @Query("SELECT p.id, p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
     List<Object[]> findAllAtivosComCodigo();
-
-
 }
