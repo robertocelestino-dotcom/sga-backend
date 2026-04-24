@@ -39,4 +39,6 @@ public interface AssociadoDefFaturamentoRepository extends JpaRepository<Associa
 	@Query("SELECT DISTINCT adf.diaEmissao FROM AssociadoDefFaturamento adf "
 			+ "WHERE adf.associado.id = :associadoId ORDER BY adf.diaEmissao")
 	List<Integer> findDiasEmissaoByAssociadoId(@Param("associadoId") Long associadoId);
+	
+	
 }

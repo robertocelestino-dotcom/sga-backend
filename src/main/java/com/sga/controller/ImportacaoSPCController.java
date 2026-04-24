@@ -10,9 +10,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -155,5 +157,22 @@ public class ImportacaoSPCController {
 			return ResponseEntity.status(404).body(Map.of("erro", e.getMessage()));
 		}
 	}
+	
+	@GetMapping("/historico")
+    public ResponseEntity<List<ImportacaoSPC>> listarHistorico() {
+        List<ImportacaoSPC> historico = importacaoSPService.listarImportacoes();
+        return ResponseEntity.ok(historico);
+    }
+    
+    // 🔥 ENDPOINT PARA DESFAZER IMPORTAÇÃO
+    @DeleteMapping("/{importacaoId}")
+    public ResponseEntity<Void> desfazerImportacao(
+            @PathVariable Long importacaoId,
+            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+        
+        importacaoSPService.desfazerImportacao(importacaoId, usuario);
+        
+        return ResponseEntity.ok().build();
+    }
 
 }

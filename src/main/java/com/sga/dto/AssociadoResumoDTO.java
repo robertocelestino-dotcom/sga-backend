@@ -38,13 +38,13 @@ public class AssociadoResumoDTO {
 	// Campos de relacionamento ADICIONADOS
 	private Long vendedorId;
 	private String vendedorNome;
-	
+
 	private Long vendedorExternoId;
 	private String vendedorExternoNome;
-	
+
 	private Long planoId;
 	private String planoTitulo; // Alterado para corresponder ao seu modelo
-	
+
 	private Long categoriaId;
 	private String categoriaNome;
 
@@ -241,4 +241,5 @@ public class AssociadoResumoDTO {
 	public void setCategoriaNome(String categoriaNome) {
 		this.categoriaNome = categoriaNome;
 	}
+
 }

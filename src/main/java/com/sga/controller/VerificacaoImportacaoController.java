@@ -1,5 +1,8 @@
 package com.sga.controller;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,7 +24,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sga.dto.ImportacaoResumoDTO;
 import com.sga.dto.NotaFaturamentoGridDTO;
+import com.sga.model.NotaDebitoSPC;
 import com.sga.repository.NotaDebitoSPCRepository;
+import com.sga.service.ImportacaoSPService;
 import com.sga.service.VerificacaoImportacaoService;
 
 @RestController
@@ -34,6 +39,10 @@ public class VerificacaoImportacaoController {
 
 	@Autowired
 	private NotaDebitoSPCRepository notaDebitoRepository;
+	
+	@Autowired
+    private ImportacaoSPService importacaoSPService;  // 🔥 CORRIGIDO: nome do service
+
 
 	// ---------------------------------------------------------
 	// 1. ÚLTIMA IMPORTAÇÃO (para carregamento inicial)
@@ -263,4 +272,50 @@ public class VerificacaoImportacaoController {
 			return ResponseEntity.internalServerError().build();
 		}
 	}
+	
+	@GetMapping("/{importacaoId}/financeiro")
+	public ResponseEntity<Map<String, Object>> verificarFinanceiro(@PathVariable Long importacaoId) {
+	    	    
+	    // 🔥 USAR O MESMO MÉTODO DE CÁLCULO
+	    Map<String, Object> totais = importacaoSPService.calcularTotaisImportacao(importacaoId);
+	    
+	    // Buscar associados com seus totais
+	    List<Map<String, Object>> associados = new ArrayList<>();
+	    
+	    List<NotaDebitoSPC> notas = notaDebitoRepository.findByImportacaoId(importacaoId);
+	    Map<String, Map<String, Object>> associadosMap = new HashMap<>();
+	    
+	    for (NotaDebitoSPC nota : notas) {
+	        String key = nota.getCodigoSocio();
+	        
+	        if (!associadosMap.containsKey(key)) {
+	            Map<String, Object> assoc = new HashMap<>();
+	            assoc.put("codigoSocio", nota.getCodigoSocio());
+	            assoc.put("nomeAssociado", nota.getNomeAssociado());
+	            assoc.put("totalDebito", BigDecimal.ZERO);
+	            assoc.put("totalCredito", BigDecimal.ZERO);
+	            associadosMap.put(key, assoc);
+	        }
+	        
+	        Map<String, Object> assoc = associadosMap.get(key);
+	        BigDecimal debitoAtual = (BigDecimal) assoc.get("totalDebito");
+	        BigDecimal creditoAtual = (BigDecimal) assoc.get("totalCredito");
+	        
+	        assoc.put("totalDebito", debitoAtual.add(nota.getTotalDebitos()));
+	        assoc.put("totalCredito", creditoAtual.add(nota.getTotalCreditos()));
+	    }
+	    
+	    associados = new ArrayList<>(associadosMap.values());
+	    
+	    Map<String, Object> response = new HashMap<>();
+	    response.put("totalDebitos", totais.get("totalDebitos"));
+	    response.put("totalCreditos", totais.get("totalCreditos"));
+	    response.put("valorCobrado", totais.get("valorCobrado"));
+	    response.put("quantidadeNotas", totais.get("quantidadeNotas"));
+	    response.put("quantidadeItens", totais.get("quantidadeItens"));
+	    response.put("associados", associados);
+	    
+	    return ResponseEntity.ok(response);
+	}
+
 }

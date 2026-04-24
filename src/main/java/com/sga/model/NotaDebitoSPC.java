@@ -1,6 +1,7 @@
 package com.sga.model;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,12 +73,27 @@ public class NotaDebitoSPC {
 	@Column(name = "inscricao_estadual", length = 14)
 	private String inscricaoEstadual;
 
+	@Column(name = "tipo_arquivo", length = 50)
+	private String tipoArquivo;
+
+	@Column(name = "data_fim_periodo")
+	private LocalDate dataFimPeriodo;
+
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "importacao_id", nullable = false)
 	private ImportacaoSPC importacao;
 
 	@OneToMany(mappedBy = "notaDebito", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<ItemSPC> itens = new ArrayList<>();
+
+	@Column(name = "total_debitos", precision = 15, scale = 2)
+	private BigDecimal totalDebitos = BigDecimal.ZERO;
+
+	@Column(name = "total_creditos", precision = 15, scale = 2)
+	private BigDecimal totalCreditos = BigDecimal.ZERO;
+
+	@Column(name = "valor_cobrado", precision = 15, scale = 2)
+	private BigDecimal valorCobrado = BigDecimal.ZERO;
 
 	public NotaDebitoSPC() {
 	}
@@ -234,4 +250,45 @@ public class NotaDebitoSPC {
 	public void setItens(List<ItemSPC> itens) {
 		this.itens = itens;
 	}
+
+	public String getTipoArquivo() {
+		return tipoArquivo;
+	}
+
+	public void setTipoArquivo(String tipoArquivo) {
+		this.tipoArquivo = tipoArquivo;
+	}
+
+	public LocalDate getDataFimPeriodo() {
+		return dataFimPeriodo;
+	}
+
+	public void setDataFimPeriodo(LocalDate dataFimPeriodo) {
+		this.dataFimPeriodo = dataFimPeriodo;
+	}
+
+	public BigDecimal getTotalDebitos() {
+		return totalDebitos;
+	}
+
+	public void setTotalDebitos(BigDecimal totalDebitos) {
+		this.totalDebitos = totalDebitos;
+	}
+
+	public BigDecimal getTotalCreditos() {
+		return totalCreditos;
+	}
+
+	public void setTotalCreditos(BigDecimal totalCreditos) {
+		this.totalCreditos = totalCreditos;
+	}
+
+	public BigDecimal getValorCobrado() {
+		return valorCobrado;
+	}
+
+	public void setValorCobrado(BigDecimal valorCobrado) {
+		this.valorCobrado = valorCobrado;
+	}
+
 }

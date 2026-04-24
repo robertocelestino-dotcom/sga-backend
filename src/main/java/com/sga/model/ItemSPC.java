@@ -11,6 +11,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "tb_nota_itens_spc")
@@ -72,6 +73,10 @@ public class ItemSPC {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "importacao_id", nullable = false)
 	private ImportacaoSPC importacao;
+
+	// 🔥 ADICIONAR ESTE CAMPO PARA CANCELAMENTO
+	@Transient
+	private Boolean cancelado = false;
 
 	public ItemSPC() {
 	}
@@ -220,4 +225,13 @@ public class ItemSPC {
 	public void setImportacao(ImportacaoSPC importacao) {
 		this.importacao = importacao;
 	}
+
+	public Boolean getCancelado() {
+		return cancelado;
+	}
+
+	public void setCancelado(Boolean cancelado) {
+		this.cancelado = cancelado;
+	}
+
 }

@@ -1,11 +1,13 @@
 package com.sga.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AssociadoDTO {
@@ -52,6 +54,8 @@ public class AssociadoDTO {
 	private List<EnderecoDTO> enderecos;
 	private List<EmailDTO> emails;
 	private List<TelefoneDTO> telefones;
+
+	private List<AssociadoDefFaturamentoDTO> definicoesFaturamento = new ArrayList<>();
 
 	// Construtor
 	public AssociadoDTO() {
@@ -257,6 +261,14 @@ public class AssociadoDTO {
 
 	public void setTelefones(List<TelefoneDTO> telefones) {
 		this.telefones = telefones;
+	}
+
+	public List<AssociadoDefFaturamentoDTO> getDefinicoesFaturamento() {
+		return definicoesFaturamento;
+	}
+
+	public void setDefinicoesFaturamento(List<AssociadoDefFaturamentoDTO> definicoesFaturamento) {
+		this.definicoesFaturamento = definicoesFaturamento;
 	}
 
 }

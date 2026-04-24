@@ -1,5 +1,6 @@
 package com.sga.model;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +31,15 @@ public class ImportacaoSPC {
 
 	@Column(name = "status")
 	private String status; // IMPORTADO, PROCESSADO, ERRO
+
+	@Column(name = "tipo_arquivo", length = 50)
+	private String tipoArquivo;
+
+	@Column(name = "descricao_arquivo", length = 255)
+	private String descricaoArquivo;
+
+	@Column(name = "data_fim_periodo")
+	private LocalDate dataFimPeriodo;
 
 	// One-to-Many relationships
 	@OneToMany(mappedBy = "importacao", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -118,4 +128,29 @@ public class ImportacaoSPC {
 	public void setTraillers(List<TraillerSPC> traillers) {
 		this.traillers = traillers;
 	}
+
+	public String getTipoArquivo() {
+		return tipoArquivo;
+	}
+
+	public void setTipoArquivo(String tipoArquivo) {
+		this.tipoArquivo = tipoArquivo;
+	}
+
+	public String getDescricaoArquivo() {
+		return descricaoArquivo;
+	}
+
+	public void setDescricaoArquivo(String descricaoArquivo) {
+		this.descricaoArquivo = descricaoArquivo;
+	}
+
+	public LocalDate getDataFimPeriodo() {
+		return dataFimPeriodo;
+	}
+
+	public void setDataFimPeriodo(LocalDate dataFimPeriodo) {
+		this.dataFimPeriodo = dataFimPeriodo;
+	}
+
 }

@@ -91,6 +91,7 @@ public class Faturamento {
 	public void setValorTotal(BigDecimal valorTotal) {
 		this.valorTotal = valorTotal;
 	}
+	
 
 	public Integer getQuantidadeNotas() {
 		return quantidadeNotas;
