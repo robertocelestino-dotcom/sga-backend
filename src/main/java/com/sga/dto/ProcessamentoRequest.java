@@ -1,5 +1,6 @@
 package com.sga.dto;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,14 +22,18 @@ public class ProcessamentoRequest {
 
     // ========== NOVOS CAMPOS ==========
     
-    private Boolean processarCancelamentos = true;      // Se deve processar cancelamentos
-    private Boolean aplicarFranquia = true;             // Se deve aplicar regra de franquia
-    private Boolean aplicarFaturamentoMinimo = false;   // Se deve aplicar faturamento mínimo
-    private String observacao;                          // Observação do processamento
-    private String usuario;                             // Usuário que está processando
-    private Long loteId;                                // ID do lote de processamento (opcional)
+    private Boolean processarCancelamentos = true;
+    private Boolean aplicarFranquia = true;
+    private Boolean aplicarFaturamentoMinimo = false;
+    private String observacao;
+    private String usuario;
+    private Long loteId;
     
-    // ========== GETTERS E SETTERS (EXISTENTES) ==========
+    // 🔥 CAMPOS DE DATA ADICIONADOS
+    private LocalDate dataEmissao;
+    private LocalDate dataVencimento;
+    
+    // ========== GETTERS E SETTERS ==========
     
     public List<Long> getAssociadosIds() {
         return associadosIds;
@@ -94,8 +99,6 @@ public class ProcessamentoRequest {
         this.reguaId = reguaId;
     }
 
-    // ========== NOVOS GETTERS E SETTERS ==========
-    
     public Boolean getProcessarCancelamentos() {
         return processarCancelamentos != null ? processarCancelamentos : true;
     }
@@ -144,18 +147,29 @@ public class ProcessamentoRequest {
         this.loteId = loteId;
     }
     
+    // 🔥 GETTERS E SETTERS PARA DATAS
+    public LocalDate getDataEmissao() {
+        return dataEmissao;
+    }
+    
+    public void setDataEmissao(LocalDate dataEmissao) {
+        this.dataEmissao = dataEmissao;
+    }
+    
+    public LocalDate getDataVencimento() {
+        return dataVencimento;
+    }
+    
+    public void setDataVencimento(LocalDate dataVencimento) {
+        this.dataVencimento = dataVencimento;
+    }
+    
     // ========== MÉTODOS AUXILIARES ==========
     
-    /**
-     * Verifica se o processamento é para período extemporâneo (dia 16 ou 1/2)
-     */
     public boolean isPeriodoExtemporaneo() {
         return getExtemporaneo();
     }
     
-    /**
-     * Retorna a descrição do período para logs
-     */
     public String getPeriodoDescricao() {
         if (getExtemporaneo()) {
             return "Extemporâneo - " + mes + "/" + ano;
@@ -163,17 +177,11 @@ public class ProcessamentoRequest {
         return "Padrão - " + mes + "/" + ano;
     }
     
-    /**
-     * Valida se a requisição tem dados mínimos para processamento
-     */
     public boolean isValid() {
         return (associadosIds != null && !associadosIds.isEmpty()) 
                 && mes != null && ano != null;
     }
     
-    /**
-     * Retorna o número de associados a processar
-     */
     public int getQuantidadeAssociados() {
         return associadosIds != null ? associadosIds.size() : 0;
     }
@@ -189,6 +197,8 @@ public class ProcessamentoRequest {
                 ", gerarNotas=" + gerarNotas +
                 ", simular=" + simular +
                 ", reguaId=" + reguaId +
+                ", dataEmissao=" + dataEmissao +
+                ", dataVencimento=" + dataVencimento +
                 '}';
     }
 }

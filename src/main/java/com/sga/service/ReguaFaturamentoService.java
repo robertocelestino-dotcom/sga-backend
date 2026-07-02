@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,8 @@ import com.sga.model.ReguaFaturamento;
 import com.sga.model.TipoArquivoRegua;
 import com.sga.repository.AssociadoReguaRepository;
 import com.sga.repository.AssociadoRepository;
+import com.sga.repository.FaturaRepository;
+import com.sga.repository.NotaDebitoSPCRepository;
 import com.sga.repository.ReguaFaturamentoRepository;
 import com.sga.repository.TipoArquivoReguaRepository;
 
@@ -44,6 +47,12 @@ public class ReguaFaturamentoService {
 
     @Autowired
     private TipoArquivoReguaRepository tipoArquivoReguaRepository;
+    
+    @Autowired
+    private FaturaRepository faturaRepository;
+    
+    @Autowired
+    private NotaDebitoSPCRepository notaDebitoSPCRepository;
 
     // ========== RÉGUAS ==========
 
@@ -71,7 +80,6 @@ public class ReguaFaturamentoService {
         return reguaFaturamentoRepository.findById(id);
     }
     
-    // 🔥 NOVO MÉTODO - Buscar régua e retornar DTO
     @Transactional(readOnly = true)
     public ReguaFaturamentoDTO buscarReguaDTOPorId(Long id) {
         log.info("Buscando régua DTO por ID: {}", id);
@@ -85,7 +93,6 @@ public class ReguaFaturamentoService {
         
         ReguaFaturamento regua = reguaOpt.get();
         
-        // Forçar carregamento dos tipos de arquivo
         if (regua.getTiposArquivo() != null) {
             regua.getTiposArquivo().size();
         }
@@ -101,8 +108,6 @@ public class ReguaFaturamentoService {
         return reguaFaturamentoRepository.save(regua);
     }
 
- // src/main/java/com/sga/service/ReguaFaturamentoService.java
-
     @Transactional
     public ReguaFaturamento atualizarRegua(Long id, ReguaFaturamento regua, String usuario) {
         log.info("Atualizando régua ID: {}", id);
@@ -110,7 +115,6 @@ public class ReguaFaturamentoService {
         ReguaFaturamento existing = reguaFaturamentoRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Régua não encontrada"));
         
-        // Atualizar campos básicos
         existing.setNome(regua.getNome());
         existing.setDescricao(regua.getDescricao());
         existing.setDiaEmissao(regua.getDiaEmissao());
@@ -125,14 +129,12 @@ public class ReguaFaturamentoService {
         existing.setAtualizadoPor(usuario);
         existing.setAtualizadoEm(LocalDateTime.now());
         
-        // 🔥 LIMPAR TIPOS ANTIGOS (usando o repository diretamente)
         if (existing.getTiposArquivo() != null && !existing.getTiposArquivo().isEmpty()) {
             tipoArquivoReguaRepository.deleteByReguaId(id);
             existing.getTiposArquivo().clear();
             log.info("🗑️ Tipos antigos removidos");
         }
         
-        // 🔥 ADICIONAR NOVOS TIPOS
         if (regua.getTiposArquivo() != null && !regua.getTiposArquivo().isEmpty()) {
             log.info("📝 Salvando {} tipos de arquivo", regua.getTiposArquivo().size());
             
@@ -147,18 +149,12 @@ public class ReguaFaturamentoService {
                 log.info("  ✅ Preparado tipo: {} - Ordem: {}", novoTipo.getTipo(), novoTipo.getOrdem());
             }
             
-            // Salvar os tipos diretamente no repositório
             tipoArquivoReguaRepository.saveAll(novosTipos);
             existing.setTiposArquivo(novosTipos);
         }
         
-        // Salvar a régua
         ReguaFaturamento saved = reguaFaturamentoRepository.save(existing);
-        
-        // 🔥 FORÇAR FLUSH E RECARREGAR
         reguaFaturamentoRepository.flush();
-        
-        // Recarregar para garantir que os tipos estão lá
         ReguaFaturamento reloaded = reguaFaturamentoRepository.findById(id).orElse(saved);
         
         log.info("✅ Régua atualizada. Total de tipos salvos: {}", 
@@ -166,6 +162,7 @@ public class ReguaFaturamentoService {
         
         return reloaded;
     }
+    
     @Transactional
     public void excluirRegua(Long id) {
         log.info("Excluindo régua ID: {}", id);
@@ -202,15 +199,12 @@ public class ReguaFaturamentoService {
     public Page<AssociadoResumoDTO> listarAssociadosPorReguaPaginado(Long reguaId, Pageable pageable) {
         log.info("📋 Listando associados da régua ID: {} com paginação", reguaId);
         
-        // 🔥 IMPORTANTE: Buscar os AssociadoRegua primeiro (sem ordenação problemática)
         Page<AssociadoRegua> associadosReguaPage = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId, pageable);
         
-        // Converter para Page<AssociadoResumoDTO>
         return associadosReguaPage.map(ar -> {
             Associado associado = ar.getAssociado();
             AssociadoResumoDTO dto = new AssociadoResumoDTO();
             
-            // Mapear campos básicos
             dto.setId(associado.getId());
             dto.setNomeRazao(associado.getNomeRazao());
             dto.setNomeFantasia(associado.getNomeFantasia());
@@ -227,12 +221,6 @@ public class ReguaFaturamentoService {
             dto.setMotivoInativacao(associado.getMotivoInativacao());
             dto.setMotivoSuspensao(associado.getMotivoSuspensao());
             
-            // 🔥 Buscar faturamento mínimo (se existir)
-            if (associado.getDefinicoesFaturamento() != null && !associado.getDefinicoesFaturamento().isEmpty()) {
-                dto.setFaturamentoMinimo(associado.getDefinicoesFaturamento().get(0).getAssociado().getFaturamentoMinimo());
-            }
-            
-            // Mapear relacionamentos
             if (associado.getVendedor() != null) {
                 dto.setVendedorId(associado.getVendedor().getId());
                 dto.setVendedorNome(associado.getVendedor().getNomeRazao());
@@ -340,6 +328,158 @@ public class ReguaFaturamentoService {
     @Transactional(readOnly = true)
     public Optional<AssociadoRegua> buscarAssociadoAtivo(Long associadoId) {
         return associadoReguaRepository.findByAssociadoIdAndAtivoTrue(associadoId);
+    }
+
+    // ========== MÉTODOS PARA FATURAMENTO CONSOLIDADO ==========
+
+    /**
+     * Lista associados da régua que possuem notas no último arquivo consolidado
+     * (busca automaticamente o maior vencimento)
+     */
+    @Transactional(readOnly = true)
+    public Page<AssociadoResumoDTO> listarAssociadosConsolidadoPaginado(
+            Long reguaId, String nome, String cnpjCpf, Pageable pageable) {
+        
+        log.info("📌 Listando associados CONSOLIDADOS da régua ID: {} (último vencimento)", reguaId);
+        
+        // 1. Buscar IDs dos associados ativos da régua
+        List<Long> idsAssociadosRegua = associadoReguaRepository.findAssociadoIdsByReguaId(reguaId);
+        
+        if (idsAssociadosRegua.isEmpty()) {
+            log.warn("Nenhum associado encontrado na régua ID: {}", reguaId);
+            return Page.empty(pageable);
+        }
+        
+        // 2. Buscar IDs dos associados que possuem notas no último consolidado
+        List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
+        
+        log.info("📊 Associados com notas no último consolidado: {}", idsComNotas.size());
+        log.info("📊 Associados na régua: {}", idsAssociadosRegua.size());
+        
+        // 3. Filtrar apenas os que estão em ambas listas
+        List<Long> idsFiltrados = idsAssociadosRegua.stream()
+            .filter(idsComNotas::contains)
+            .collect(Collectors.toList());
+        
+        log.info("✅ Associados após filtro consolidado: {}", idsFiltrados.size());
+        
+        if (idsFiltrados.isEmpty()) {
+            log.warn("Nenhum associado da régua possui notas no último consolidado");
+            return Page.empty(pageable);
+        }
+        
+        // 4. Buscar associados com paginação e filtros adicionais
+        return buscarAssociadosPorIdsPaginado(idsFiltrados, nome, cnpjCpf, pageable);
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Long> listarTodosIdsAssociadosConsolidado(Long reguaId) {
+        log.info("📌 Buscando IDs consolidados - régua ID: {}", reguaId);
+        
+        List<Long> idsAssociadosRegua = associadoReguaRepository.findAssociadoIdsByReguaId(reguaId);
+        log.info("📊 IDs na régua: {}", idsAssociadosRegua.size());
+        
+        List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
+        log.info("📊 IDs com notas no último consolidado: {}", idsComNotas.size());
+        
+        List<Long> resultado = idsAssociadosRegua.stream()
+            .filter(idsComNotas::contains)
+            .collect(Collectors.toList());
+        
+        log.info("✅ IDs após filtro consolidado: {}", resultado.size());
+        
+        return resultado;
+    }
+    
+    /**
+     * Busca associados por lista de IDs com paginação e filtros
+     */
+    @Transactional(readOnly = true)
+    public Page<AssociadoResumoDTO> buscarAssociadosPorIdsPaginado(
+            List<Long> ids, String nome, String cnpjCpf, Pageable pageable) {
+        
+        log.info("🔍 Buscando associados por IDs - total: {}, página: {}, size: {}", 
+            ids.size(), pageable.getPageNumber(), pageable.getPageSize());
+        
+        if (ids.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        Page<Associado> associadosPage = associadoRepository.findByIdInAndFiltros(
+            ids, nome, cnpjCpf, pageable);
+        
+        return associadosPage.map(this::toAssociadoResumoDTO);
+    }
+    
+    /**
+     * Converte Associado para AssociadoResumoDTO
+     */
+    private AssociadoResumoDTO toAssociadoResumoDTO(Associado associado) {
+        if (associado == null) return null;
+        
+        AssociadoResumoDTO dto = new AssociadoResumoDTO();
+        dto.setId(associado.getId());
+        dto.setCodigoSpc(associado.getCodigoSpc());
+        dto.setNomeRazao(associado.getNomeRazao());
+        dto.setCnpjCpf(associado.getCnpjCpf());
+        dto.setStatus(associado.getStatus());
+        
+        if (associado.getVendedor() != null) {
+            dto.setVendedorId(associado.getVendedor().getId());
+            dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+        }
+        
+        if (associado.getPlano() != null) {
+            dto.setPlanoId(associado.getPlano().getId());
+            dto.setPlanoTitulo(associado.getPlano().getPlano());
+        }
+        
+        if (associado.getCategoria() != null) {
+            dto.setCategoriaId(associado.getCategoria().getId());
+            dto.setCategoriaNome(associado.getCategoria().getDescricao());
+        }
+        
+        return dto;
+    }
+
+    // ========== MÉTODOS EXISTENTES (MANTIDOS) ==========
+
+    @Transactional(readOnly = true)
+    public List<AssociadoResumoDTO> listarAssociadosNaoFaturados(Long reguaId, Integer mes, Integer ano) {
+        log.info("📋 Listando associados NÃO FATURADOS da régua ID: {} no período {}/{}", reguaId, mes, ano);
+        
+        List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId);
+        
+        List<Long> associadosComFatura = faturaRepository.findAssociadosComFaturaNoPeriodo(mes, ano);
+        
+        log.info("📊 Associados já faturados no período: {}", associadosComFatura.size());
+        
+        return associadosRegua.stream()
+            .map(AssociadoRegua::getAssociado)
+            .filter(associado -> !associadosComFatura.contains(associado.getId()))
+            .map(this::toAssociadoResumoDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public List<AssociadoResumoDTO> listarTodosAssociadosResumo(Long reguaId) {
+        log.info("📋 Listando TODOS os associados da régua ID: {}", reguaId);
+        
+        List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId);
+        
+        return associadosRegua.stream()
+            .map(AssociadoRegua::getAssociado)
+            .map(this::toAssociadoResumoDTO)
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public List<Long> listarTodosIdsAssociadosPorRegua(Long reguaId) {
+        log.info("📋 Listando TODOS os IDs dos associados da régua ID: {}", reguaId);
+        
+        return associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId).stream()
+            .map(ar -> ar.getAssociado().getId())
+            .collect(Collectors.toList());
     }
 
     // ========== CONVERSORES ==========

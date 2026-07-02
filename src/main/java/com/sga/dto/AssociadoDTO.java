@@ -57,6 +57,9 @@ public class AssociadoDTO {
 
 	private List<AssociadoDefFaturamentoDTO> definicoesFaturamento = new ArrayList<>();
 
+	// 🔥 NOVO CAMPO - Forçar atualização de associados existentes
+	private Boolean forcarAtualizacao = false;
+
 	// Construtor
 	public AssociadoDTO() {
 	}
@@ -271,4 +274,12 @@ public class AssociadoDTO {
 		this.definicoesFaturamento = definicoesFaturamento;
 	}
 
+	// 🔥 GETTER E SETTER DO NOVO CAMPO
+	public Boolean getForcarAtualizacao() {
+		return forcarAtualizacao != null ? forcarAtualizacao : false;
+	}
+
+	public void setForcarAtualizacao(Boolean forcarAtualizacao) {
+		this.forcarAtualizacao = forcarAtualizacao;
+	}
 }

@@ -142,130 +142,132 @@ public class AssociadoController {
 	}
 
 	/**
-	 * 🔥 ENDPOINT CORRIGIDO - Importação em lote com criação automática de
-	 * configuração de faturamento
+	 * 🔥 ENDPOINT CORRIGIDO - Importação em lote com UPSERT e atualização de vendedor externo
 	 */
 	@PostMapping("/importacao/lote")
 	public ResponseEntity<List<AssociadoDTO>> importarAssociadosEmLote(@RequestBody List<AssociadoDTO> associados) {
-		logger.info("📥 Importando {} associados em lote (UPSERT)", associados.size());
+	    logger.info("📥 Importando {} associados em lote (UPSERT)", associados.size());
 
-		List<AssociadoDTO> associadosImportados = new ArrayList<>();
-		int criados = 0;
-		int atualizados = 0;
-		int erros = 0;
-		int configuracoesCriadas = 0;
+	    List<AssociadoDTO> associadosImportados = new ArrayList<>();
+	    int criados = 0;
+	    int atualizados = 0;
+	    int erros = 0;
+	    int configuracoesCriadas = 0;
 
-		for (AssociadoDTO dto : associados) {
-			try {
-				// Validação básica
-				if (dto.getCnpjCpf() == null || dto.getNomeRazao() == null) {
-					logger.warn("⚠️ Associado ignorado: dados obrigatórios faltando");
-					erros++;
-					continue;
-				}
+	    for (AssociadoDTO dto : associados) {
+	        try {
+	            // Validação básica
+	            if (dto.getCnpjCpf() == null || dto.getNomeRazao() == null) {
+	                logger.warn("⚠️ Associado ignorado: dados obrigatórios faltando");
+	                erros++;
+	                continue;
+	            }
 
-				// Valores padrão
-				if (dto.getStatus() == null)
-					dto.setStatus("A");
-				if (dto.getTipoPessoa() == null)
-					dto.setTipoPessoa("F");
+	            // Valores padrão
+	            if (dto.getStatus() == null) dto.setStatus("A");
+	            if (dto.getTipoPessoa() == null) dto.setTipoPessoa("F");
+	            
+	            // 🔥 GARANTIR QUE A FLAG FORCAR_ATUALIZACAO ESTEJA CONFIGURADA
+	            if (dto.getForcarAtualizacao() == null) {
+	                dto.setForcarAtualizacao(true);
+	            }
 
-				// 🔥 GARANTIR QUE AS CONFIGURAÇÕES DE FATURAMENTO EXISTAM
-				boolean precisaCriarConfiguracao = false;
+	            // 🔥 GARANTIR QUE AS CONFIGURAÇÕES DE FATURAMENTO EXISTAM
+	            boolean precisaCriarConfiguracao = false;
 
-				if (dto.getDefinicoesFaturamento() == null || dto.getDefinicoesFaturamento().isEmpty()) {
-					precisaCriarConfiguracao = true;
-					AssociadoDefFaturamentoDTO faturamento = new AssociadoDefFaturamentoDTO();
+	            if (dto.getDefinicoesFaturamento() == null || dto.getDefinicoesFaturamento().isEmpty()) {
+	                precisaCriarConfiguracao = true;
+	                AssociadoDefFaturamentoDTO faturamento = new AssociadoDefFaturamentoDTO();
 
-					// Plano padrão: 5
-					Long planoId = dto.getPlanoId() != null ? dto.getPlanoId() : 5L;
-					faturamento.setPlanoId(planoId);
-					faturamento.setDiaEmissao(26);
-					faturamento.setDiaVencimento(10);
-					faturamento.setValorDef(BigDecimal.valueOf(85.00));
-					faturamento.setObservacao("Configuração padrão - Importação em lote");
+	                Long planoId = dto.getPlanoId() != null ? dto.getPlanoId() : 5L;
+	                faturamento.setPlanoId(planoId);
+	                faturamento.setDiaEmissao(26);
+	                faturamento.setDiaVencimento(10);
+	                faturamento.setValorDef(BigDecimal.valueOf(85.00));
+	                faturamento.setObservacao("Configuração padrão - Importação em lote");
 
-					dto.setDefinicoesFaturamento(List.of(faturamento));
-					logger.info("📅 Configuração de faturamento adicionada para {}", dto.getNomeRazao());
-				}
+	                dto.setDefinicoesFaturamento(List.of(faturamento));
+	                logger.info("📅 Configuração de faturamento adicionada para {}", dto.getNomeRazao());
+	            }
 
-				// Verificar se já existe associado pelo CNPJ/CPF
-				AssociadoDTO resultado;
-				boolean associadoExistia = false;
+	            // Verificar se já existe associado pelo CNPJ/CPF
+	            AssociadoDTO resultado;
+	            boolean associadoExistia = false;
 
-				try {
-					AssociadoDTO existente = associadoService.buscarPorCnpjCpf(dto.getCnpjCpf());
-					if (existente != null && existente.getId() != null) {
-						associadoExistia = true;
-						dto.setId(existente.getId());
-						resultado = associadoService.atualizar(existente.getId(), dto);
-						atualizados++;
-						logger.info("✏️ Associado atualizado: {}", dto.getNomeRazao());
+	            try {
+	                AssociadoDTO existente = associadoService.buscarPorCnpjCpf(dto.getCnpjCpf());
+	                if (existente != null && existente.getId() != null) {
+	                    associadoExistia = true;
+	                    dto.setId(existente.getId());
+	                    
+	                    // 🔥 USAR O MÉTODO importarAssociado COM flag forcarAtualizacao
+	                    var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
+	                    resultado = associadoService.toDTO(associadoEntity);
+	                    atualizados++;
+	                    logger.info("✏️ Associado atualizado: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
 
-						// 🔥 Verificar se já existe configuração de faturamento para o associado
-						// atualizado
-						var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(existente.getId());
-						if (configsExistentes == null || configsExistentes.isEmpty()) {
-							// Criar configuração padrão para associado existente que não tem
-							AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
-							novaConfig.setAssociadoId(existente.getId());
-							novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
-							novaConfig.setDiaEmissao(26);
-							novaConfig.setDiaVencimento(10);
-							novaConfig.setValorDef(BigDecimal.valueOf(85.00));
-							novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
+	                    // Verificar se já existe configuração de faturamento para o associado atualizado
+	                    var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(existente.getId());
+	                    if (configsExistentes == null || configsExistentes.isEmpty()) {
+	                        AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
+	                        novaConfig.setAssociadoId(existente.getId());
+	                        novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
+	                        novaConfig.setDiaEmissao(26);
+	                        novaConfig.setDiaVencimento(10);
+	                        novaConfig.setValorDef(BigDecimal.valueOf(85.00));
+	                        novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
 
-							associadoDefFaturamentoService.criar(novaConfig);
-							configuracoesCriadas++;
-							logger.info("📅 Configuração de faturamento criada para associado existente ID: {}",
-									existente.getId());
-						}
-					} else {
-						throw new Exception("Associado não encontrado");
-					}
-				} catch (Exception e) {
-					// Associado não existe, criar novo
-					associadoExistia = false;
-					resultado = associadoService.criar(dto);
-					criados++;
-					configuracoesCriadas++;
-					logger.info("✅ Associado criado com configuração de faturamento: {}", dto.getNomeRazao());
-				}
+	                        associadoDefFaturamentoService.criar(novaConfig);
+	                        configuracoesCriadas++;
+	                        logger.info("📅 Configuração de faturamento criada para associado existente ID: {}", existente.getId());
+	                    }
+	                } else {
+	                    throw new Exception("Associado não encontrado");
+	                }
+	            } catch (Exception e) {
+	                // Associado não existe, criar novo
+	                associadoExistia = false;
+	                var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
+	                resultado = associadoService.toDTO(associadoEntity);
+	                criados++;
+	                configuracoesCriadas++;
+	                logger.info("✅ Associado criado com configuração de faturamento: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
+	            }
 
-				// 🔥 Se for novo associado e a configuração não foi criada pelo serviço, criar
-				// manualmente
-				if (!associadoExistia && resultado != null && resultado.getId() != null) {
-					var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(resultado.getId());
-					if (configsExistentes == null || configsExistentes.isEmpty()) {
-						AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
-						novaConfig.setAssociadoId(resultado.getId());
-						novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
-						novaConfig.setDiaEmissao(26);
-						novaConfig.setDiaVencimento(10);
-						novaConfig.setValorDef(BigDecimal.valueOf(85.00));
-						novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
+	            // Se for novo associado e a configuração não foi criada, criar manualmente
+	            if (!associadoExistia && resultado != null && resultado.getId() != null) {
+	                var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(resultado.getId());
+	                if (configsExistentes == null || configsExistentes.isEmpty()) {
+	                    AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
+	                    novaConfig.setAssociadoId(resultado.getId());
+	                    novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
+	                    novaConfig.setDiaEmissao(26);
+	                    novaConfig.setDiaVencimento(10);
+	                    novaConfig.setValorDef(BigDecimal.valueOf(85.00));
+	                    novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
 
-						associadoDefFaturamentoService.criar(novaConfig);
-						logger.info("📅 Configuração de faturamento criada para novo associado ID: {}",
-								resultado.getId());
-					}
-				}
+	                    associadoDefFaturamentoService.criar(novaConfig);
+	                    logger.info("📅 Configuração de faturamento criada para novo associado ID: {}", resultado.getId());
+	                }
+	            }
 
-				associadosImportados.add(resultado);
+	            associadosImportados.add(resultado);
 
-			} catch (Exception e) {
-				logger.error("❌ Erro ao processar associado {}: {}", dto.getNomeRazao(), e.getMessage(), e);
-				erros++;
-			}
-		}
+	        } catch (Exception e) {
+	            logger.error("❌ Erro ao processar associado {}: {}", dto.getNomeRazao(), e.getMessage(), e);
+	            erros++;
+	        }
+	    }
 
-		logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas", criados,
-				atualizados, erros, configuracoesCriadas);
+	    logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas", 
+	        criados, atualizados, erros, configuracoesCriadas);
 
-		return ResponseEntity.ok().header("X-Importacao-Criados", String.valueOf(criados))
-				.header("X-Importacao-Atualizados", String.valueOf(atualizados))
-				.header("X-Importacao-Erros", String.valueOf(erros))
-				.header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas)).body(associadosImportados);
+	    return ResponseEntity.ok()
+	            .header("X-Importacao-Criados", String.valueOf(criados))
+	            .header("X-Importacao-Atualizados", String.valueOf(atualizados))
+	            .header("X-Importacao-Erros", String.valueOf(erros))
+	            .header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas))
+	            .body(associadosImportados);
 	}
 
 	@PutMapping("/{id}/enderecos")

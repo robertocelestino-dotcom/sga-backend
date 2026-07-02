@@ -1,5 +1,6 @@
 package com.sga.controller;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.sga.dto.ImportacaoResponseDTO;
 import com.sga.dto.VerificacaoAssociadosDTO;
 import com.sga.model.ImportacaoSPC;
+import com.sga.repository.ImportacaoSPCRepository;
 import com.sga.service.ImportacaoSPService;
 import com.sga.service.VerificacaoImportacaoService;
 
@@ -38,6 +40,10 @@ public class ImportacaoSPCController {
 
 	@Autowired
 	private VerificacaoImportacaoService verificacaoImportacaoService;
+	
+    // 🔥 ADICIONAR ESTA INJEÇÃO
+    @Autowired
+    private ImportacaoSPCRepository importacaoSPCRepository;
 
 	@PostMapping("/upload")
 	public ResponseEntity<?> uploadArquivo(@RequestParam("arquivo") MultipartFile arquivo) {
@@ -173,6 +179,22 @@ public class ImportacaoSPCController {
         importacaoSPService.desfazerImportacao(importacaoId, usuario);
         
         return ResponseEntity.ok().build();
+    }
+    
+    @GetMapping("/count-recentes")
+    public ResponseEntity<Long> countImportacoesRecentes() {
+        log.info("📊 Contando importações recentes (últimos 30 dias)");
+        
+        try {
+            LocalDate dataLimite = LocalDate.now().minusDays(30);
+            long count = importacaoSPCRepository.countByDataImportacaoAfter(dataLimite.atStartOfDay());
+            
+            log.info("✅ Importações recentes: {}", count);
+            return ResponseEntity.ok(count);
+        } catch (Exception e) {
+            log.error("❌ Erro ao contar importações recentes: {}", e.getMessage());
+            return ResponseEntity.ok(0L);
+        }
     }
 
 }

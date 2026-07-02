@@ -13,11 +13,14 @@ import javax.persistence.Lob;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "TB_VENDEDOR")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Vendedor {
 
 	@Id

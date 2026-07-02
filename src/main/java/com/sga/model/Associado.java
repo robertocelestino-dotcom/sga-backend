@@ -20,11 +20,14 @@ import javax.persistence.OneToMany;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "TB_ASSOCIADO")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Associado {
 
 	public static final String STATUS_ATIVO = "A";

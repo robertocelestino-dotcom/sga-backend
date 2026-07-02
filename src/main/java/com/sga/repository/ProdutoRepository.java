@@ -17,110 +17,131 @@ import com.sga.model.Produto;
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
 	// Buscas básicas
-    Optional<Produto> findByCodigo(String codigo);
-    Optional<Produto> findByCodigoRm(String codigoRm);
-    
-    // 🔥 Buscar produto pela descrição (campo correto)
-    Optional<Produto> findByDescricao(String descricao);
-    
-    // Listagens com filtros
-    List<Produto> findByStatus(String status);
-    List<Produto> findByTipoProduto(String tipoProduto);
-    List<Produto> findByCategoria(String categoria);
-    List<Produto> findByModalidade(String modalidade);
-    
-    // Produtos ativos
-    List<Produto> findByStatusAndTipoProduto(String status, String tipoProduto);
-    
-    // Produtos com valor acima de X
-    List<Produto> findByValorUnitarioGreaterThan(BigDecimal valor);
-    
-    // Busca por nome ou descrição
-    List<Produto> findByNomeContainingIgnoreCaseOrDescricaoContainingIgnoreCase(String nome, String descricao);
-    
-    // ========== QUERIES PARA FRANQUIAS ==========
-    
-    // Produtos que têm franquias
-    @Query("SELECT p FROM Produto p WHERE p.temFranquia = true")
-    List<Produto> findProdutosComFranquia();
-    
-    // Franquias disponíveis (produtos que podem ser usados como franquia)
-    @Query("SELECT p FROM Produto p WHERE p.tipoProduto = 'FRANQUIA' OR p.temFranquia = true")
-    List<Produto> findFranquiasDisponiveis();
-    
-    // Produtos que usam uma franquia específica
-    @Query("SELECT p FROM Produto p JOIN p.franquias f WHERE f.id = :franquiaId")
-    List<Produto> findProdutosQueUsamFranquia(@Param("franquiaId") Long franquiaId);
-    
-    // Franquias de um produto específico
-    @Query("SELECT f FROM Produto p JOIN p.franquias f WHERE p.id = :produtoId")
-    List<Produto> findFranquiasByProdutoId(@Param("produtoId") Long produtoId);
-    
-    // Conta quantas franquias um produto tem
-    @Query("SELECT COUNT(f) FROM Produto p JOIN p.franquias f WHERE p.id = :produtoId")
-    Integer countFranquiasByProdutoId(@Param("produtoId") Long produtoId);
-    
-    // ========== QUERIES PARA PRODUTOS SPC/MIX ==========
-    
-    // Produtos da categoria SPC
-    @Query("SELECT p FROM Produto p WHERE p.categoria = 'SPC' OR LOWER(p.nome) LIKE '%spc%'")
-    List<Produto> findProdutosSPC();
-    
-    // Produtos do tipo MIX
-    @Query("SELECT p FROM Produto p WHERE LOWER(p.nome) LIKE '%mix%'")
-    List<Produto> findProdutosMix();
-    
-    // Produtos SPC com modalidade específica
-    @Query("SELECT p FROM Produto p WHERE p.categoria = 'SPC' AND p.modalidade = :modalidade")
-    List<Produto> findProdutosSPCByModalidade(@Param("modalidade") String modalidade);
-    
-    // Produtos relacionados a um produto MIX
-    @Query("SELECT pr FROM Produto p JOIN p.produtosRelacionados pr WHERE p.id = :produtoId")
-    List<Produto> findProdutosRelacionados(@Param("produtoId") Long produtoId);
-    
-    // Produtos que são combinações (ex: SPC + CHEQUE)
-    @Query("SELECT p FROM Produto p WHERE p.categoria LIKE '%+%' OR p.nome LIKE '%+%'")
-    List<Produto> findProdutosCombinados();
-    
-    // ========== QUERIES COM PAGINAÇÃO ==========
-    
-    @Query("SELECT p FROM Produto p WHERE " +
-           "(:codigo IS NULL OR LOWER(p.codigo) LIKE LOWER(CONCAT('%', :codigo, '%'))) AND " +
-           "(:codigoRm IS NULL OR LOWER(p.codigoRm) LIKE LOWER(CONCAT('%', :codigoRm, '%'))) AND " +
-           "(:nome IS NULL OR LOWER(p.nome) LIKE LOWER(CONCAT('%', :nome, '%'))) AND " +
-           "(:tipoProduto IS NULL OR p.tipoProduto = :tipoProduto) AND " +
-           "(:categoria IS NULL OR p.categoria = :categoria) AND " +
-           "(:modalidade IS NULL OR p.modalidade = :modalidade) AND " +
-           "(:status IS NULL OR p.status = :status) AND " +
-           "(:temFranquia IS NULL OR p.temFranquia = :temFranquia)")
-    Page<Produto> filtrarProdutos(
-            @Param("codigo") String codigo,
-            @Param("codigoRm") String codigoRm,
-            @Param("nome") String nome,
-            @Param("tipoProduto") String tipoProduto,
-            @Param("categoria") String categoria,
-            @Param("modalidade") String modalidade,
-            @Param("status") String status,
-            @Param("temFranquia") Boolean temFranquia,
-            Pageable pageable
-    );
-    
-    // Busca produtos para faturamento (ativos, com cobrança automática)
-    @Query("SELECT p FROM Produto p WHERE p.status = 'ATIVO' AND p.geraCobrancaAutomatica = true")
-    List<Produto> findProdutosParaFaturamento();
-    
-    // Produtos que exigem autorização por nível
-    @Query("SELECT p FROM Produto p WHERE p.exigeAutorizacao = true AND p.nivelAutorizacao <= :nivelUsuario")
-    List<Produto> findProdutosAutorizaveisPorNivel(@Param("nivelUsuario") Integer nivelUsuario);
-    
-    // Valor total estimado de produtos ativos
-    @Query("SELECT COALESCE(SUM(p.valorUnitario), 0) FROM Produto p WHERE p.status = 'ATIVO'")
-    BigDecimal calcularValorTotalAtivos();
-    
-    @Query("SELECT p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
-    List<String> findAllCodigosAtivos();
+	Optional<Produto> findByCodigo(String codigo);
 
-    // IDs e códigos dos produtos ativos
-    @Query("SELECT p.id, p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
-    List<Object[]> findAllAtivosComCodigo();
+	Optional<Produto> findByCodigoRm(String codigoRm);
+
+	// 🔥 Buscar produto pela descrição (campo correto)
+	Optional<Produto> findByDescricao(String descricao);
+
+	// Listagens com filtros
+	List<Produto> findByStatus(String status);
+
+	List<Produto> findByTipoProduto(String tipoProduto);
+
+	List<Produto> findByCategoria(String categoria);
+
+	List<Produto> findByModalidade(String modalidade);
+
+	// Produtos ativos
+	List<Produto> findByStatusAndTipoProduto(String status, String tipoProduto);
+
+	// Produtos com valor acima de X
+	List<Produto> findByValorUnitarioGreaterThan(BigDecimal valor);
+
+	// Busca por nome ou descrição
+	List<Produto> findByNomeContainingIgnoreCaseOrDescricaoContainingIgnoreCase(String nome, String descricao);
+
+	// ========== QUERIES PARA FRANQUIAS ==========
+
+	// Produtos que têm franquias
+	@Query("SELECT p FROM Produto p WHERE p.temFranquia = true")
+	List<Produto> findProdutosComFranquia();
+
+	// Franquias disponíveis (produtos que podem ser usados como franquia)
+	@Query("SELECT p FROM Produto p WHERE p.tipoProduto = 'FRANQUIA' OR p.temFranquia = true")
+	List<Produto> findFranquiasDisponiveis();
+
+	// Produtos que usam uma franquia específica
+	@Query("SELECT p FROM Produto p JOIN p.franquias f WHERE f.id = :franquiaId")
+	List<Produto> findProdutosQueUsamFranquia(@Param("franquiaId") Long franquiaId);
+
+	// Franquias de um produto específico
+	@Query("SELECT f FROM Produto p JOIN p.franquias f WHERE p.id = :produtoId")
+	List<Produto> findFranquiasByProdutoId(@Param("produtoId") Long produtoId);
+
+	// Conta quantas franquias um produto tem
+	@Query("SELECT COUNT(f) FROM Produto p JOIN p.franquias f WHERE p.id = :produtoId")
+	Integer countFranquiasByProdutoId(@Param("produtoId") Long produtoId);
+
+	// ========== QUERIES PARA PRODUTOS SPC/MIX ==========
+
+	// Produtos da categoria SPC
+	@Query("SELECT p FROM Produto p WHERE p.categoria = 'SPC' OR LOWER(p.nome) LIKE '%spc%'")
+	List<Produto> findProdutosSPC();
+
+	// Produtos do tipo MIX
+	@Query("SELECT p FROM Produto p WHERE LOWER(p.nome) LIKE '%mix%'")
+	List<Produto> findProdutosMix();
+
+	// Produtos SPC com modalidade específica
+	@Query("SELECT p FROM Produto p WHERE p.categoria = 'SPC' AND p.modalidade = :modalidade")
+	List<Produto> findProdutosSPCByModalidade(@Param("modalidade") String modalidade);
+
+	// Produtos relacionados a um produto MIX
+	@Query("SELECT pr FROM Produto p JOIN p.produtosRelacionados pr WHERE p.id = :produtoId")
+	List<Produto> findProdutosRelacionados(@Param("produtoId") Long produtoId);
+
+	// Produtos que são combinações (ex: SPC + CHEQUE)
+	@Query("SELECT p FROM Produto p WHERE p.categoria LIKE '%+%' OR p.nome LIKE '%+%'")
+	List<Produto> findProdutosCombinados();
+
+	// ========== QUERIES COM PAGINAÇÃO ==========
+
+	@Query("SELECT p FROM Produto p WHERE "
+			+ "(:codigo IS NULL OR LOWER(p.codigo) LIKE LOWER(CONCAT('%', :codigo, '%'))) AND "
+			+ "(:codigoRm IS NULL OR LOWER(p.codigoRm) LIKE LOWER(CONCAT('%', :codigoRm, '%'))) AND "
+			+ "(:nome IS NULL OR LOWER(p.nome) LIKE LOWER(CONCAT('%', :nome, '%'))) AND "
+			+ "(:tipoProduto IS NULL OR p.tipoProduto = :tipoProduto) AND "
+			+ "(:categoria IS NULL OR p.categoria = :categoria) AND "
+			+ "(:modalidade IS NULL OR p.modalidade = :modalidade) AND "
+			+ "(:status IS NULL OR p.status = :status) AND " + "(:temFranquia IS NULL OR p.temFranquia = :temFranquia)")
+	Page<Produto> filtrarProdutos(@Param("codigo") String codigo, @Param("codigoRm") String codigoRm,
+			@Param("nome") String nome, @Param("tipoProduto") String tipoProduto, @Param("categoria") String categoria,
+			@Param("modalidade") String modalidade, @Param("status") String status,
+			@Param("temFranquia") Boolean temFranquia, Pageable pageable);
+
+	// Busca produtos para faturamento (ativos, com cobrança automática)
+	@Query("SELECT p FROM Produto p WHERE p.status = 'ATIVO' AND p.geraCobrancaAutomatica = true")
+	List<Produto> findProdutosParaFaturamento();
+
+	// Produtos que exigem autorização por nível
+	@Query("SELECT p FROM Produto p WHERE p.exigeAutorizacao = true AND p.nivelAutorizacao <= :nivelUsuario")
+	List<Produto> findProdutosAutorizaveisPorNivel(@Param("nivelUsuario") Integer nivelUsuario);
+
+	// Valor total estimado de produtos ativos
+	@Query("SELECT COALESCE(SUM(p.valorUnitario), 0) FROM Produto p WHERE p.status = 'ATIVO'")
+	BigDecimal calcularValorTotalAtivos();
+
+	@Query("SELECT p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
+	List<String> findAllCodigosAtivos();
+
+	// IDs e códigos dos produtos ativos
+	@Query("SELECT p.id, p.codigo FROM Produto p WHERE p.status = 'ATIVO'")
+	List<Object[]> findAllAtivosComCodigo();
+
+	// 🔥 Buscar produto pela descrição (case insensitive)
+	Optional<Produto> findByDescricaoIgnoreCase(String descricao);
+
+	// 🔥 Buscar produto pela descrição contendo o texto
+	@Query("SELECT p FROM Produto p WHERE LOWER(p.descricao) LIKE LOWER(CONCAT('%', :descricao, '%'))")
+	List<Produto> findByDescricaoContainingIgnoreCase(@Param("descricao") String descricao);
+
+	// 🔥 BUSCAR O PRODUTO COM O MENOR CÓDIGO RM PARA UMA DESCRIÇÃO
+	@Query("SELECT p FROM Produto p WHERE LOWER(p.descricao) = LOWER(:descricao) AND p.codigoRm IS NOT NULL ORDER BY p.codigoRm ASC")
+	List<Produto> findByDescricaoIgnoreCaseOrderByCodigoRmAsc(@Param("descricao") String descricao);
+
+	// 🔥 BUSCAR O PRIMEIRO PRODUTO COM O MENOR CÓDIGO RM
+	Optional<Produto> findFirstByDescricaoIgnoreCaseOrderByCodigoRmAsc(String descricao);
+
+	// 🔥 BUSCAR TODOS OS PRODUTOS COM A MESMA DESCRIÇÃO EXATA (case insensitive)
+	@Query("SELECT p FROM Produto p WHERE LOWER(p.descricao) = LOWER(:descricao)")
+	List<Produto> findByDescricaoExactIgnoreCase(@Param("descricao") String descricao);
+	
+	/**
+	 * Busca produto pela descrição ignorando acentos e case
+	 */
+	@Query(value = "SELECT * FROM tb_produtos WHERE unaccent(LOWER(descricao)) = unaccent(LOWER(:descricao))", nativeQuery = true)
+	List<Produto> findByDescricaoIgnoringAccents(@Param("descricao") String descricao);
+	
 }

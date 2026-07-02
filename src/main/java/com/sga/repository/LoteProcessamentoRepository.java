@@ -25,4 +25,29 @@ public interface LoteProcessamentoRepository extends JpaRepository<LoteProcessam
     
     @Query("SELECT l FROM LoteProcessamento l ORDER BY l.criadoEm DESC")
     Page<LoteProcessamento> findAllOrderByCriadoEmDesc(Pageable pageable);
+    
+    // 🔥 MÉTODO PARA BUSCAR LOTE POR MÊS REFERÊNCIA E RÉGUA
+    @Query("SELECT l FROM LoteProcessamento l WHERE l.mesReferencia = :mesReferencia AND l.regua.id = :reguaId")
+    List<LoteProcessamento> findByMesReferenciaAndReguaId(
+            @Param("mesReferencia") LocalDate mesReferencia,
+            @Param("reguaId") Long reguaId);
+    
+ // 🔥 BUSCAR POR MÊS/ANO APENAS (ignorando o dia)
+    @Query("SELECT l FROM LoteProcessamento l " +
+           "WHERE FUNCTION('YEAR', l.mesReferencia) = :ano " +
+           "AND FUNCTION('MONTH', l.mesReferencia) = :mes " +
+           "AND l.regua.id = :reguaId " +
+           "AND l.status != 'ERRO'")
+    List<LoteProcessamento> findByMesAnoAndReguaId(
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano,
+            @Param("reguaId") Long reguaId);
+    
+    @Query("SELECT l FROM LoteProcessamento l " +
+           "WHERE FUNCTION('YEAR', l.mesReferencia) = :ano " +
+           "AND FUNCTION('MONTH', l.mesReferencia) = :mes " +
+           "AND l.status != 'ERRO'")
+    List<LoteProcessamento> findByMesAno(
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
 }

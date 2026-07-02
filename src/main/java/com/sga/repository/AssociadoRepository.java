@@ -94,5 +94,18 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	@Query("SELECT a FROM Associado a WHERE a.codigoSpc = :codigoSpc")
 	Optional<Associado> findByCodigoSpc(String codigoSpc);
 
+	/**
+	 * Busca associados por lista de IDs com filtros e paginação
+	 */
+	@Query("SELECT a FROM Associado a WHERE a.id IN :ids " +
+	       "AND (:nome IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nome, '%'))) " +
+	       "AND (:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%'))")
+	Page<Associado> findByIdInAndFiltros(@Param("ids") List<Long> ids,
+	                                     @Param("nome") String nome,
+	                                     @Param("cnpjCpf") String cnpjCpf,
+	                                     Pageable pageable);
+
+	
+	
 	
 }

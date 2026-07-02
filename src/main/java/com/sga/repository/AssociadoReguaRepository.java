@@ -72,5 +72,11 @@ public interface AssociadoReguaRepository extends JpaRepository<AssociadoRegua, 
     @Query("SELECT ar FROM AssociadoRegua ar WHERE ar.regua.id = :reguaId AND ar.ativo = true AND ar.dataInicio <= :dataReferencia")
     List<AssociadoRegua> findAtivosPorReguaNaData(@Param("reguaId") Long reguaId, @Param("dataReferencia") LocalDate dataReferencia);
     
+    /**
+     * Retorna apenas os IDs dos associados ativos de uma régua
+     */
+    @Query("SELECT ar.associado.id FROM AssociadoRegua ar WHERE ar.regua.id = :reguaId AND ar.ativo = true")
+    List<Long> findAssociadoIdsByReguaId(@Param("reguaId") Long reguaId);
+    
     
 }

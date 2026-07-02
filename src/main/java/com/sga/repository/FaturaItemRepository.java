@@ -27,4 +27,7 @@ public interface FaturaItemRepository extends JpaRepository<FaturaItem, Long> {
 
     @Query("SELECT SUM(fi.valorTotal) FROM FaturaItem fi WHERE fi.fatura.id = :faturaId AND fi.tipoLancamento = 'C'")
     BigDecimal sumCreditosByFaturaId(@Param("faturaId") Long faturaId);
+    
+    List<FaturaItem> findByFaturaIdAndTipoLancamento(Long faturaId, String tipoLancamento);
+    
 }

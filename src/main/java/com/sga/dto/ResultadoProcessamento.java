@@ -16,6 +16,9 @@ public class ResultadoProcessamento {
 	private List<AssociadoProcessamentoDTO> detalhes = new ArrayList<>();
 	private List<String> erros = new ArrayList<>();
 
+	// 🔥 NOVO CAMPO - Quantos associados já tinham fatura
+	private Long associadosJaFaturados = 0L;
+
 	// Getters e Setters
 	public Long getTotalAssociados() {
 		return totalAssociados;
@@ -80,11 +83,19 @@ public class ResultadoProcessamento {
 	public void setErros(List<String> erros) {
 		this.erros = erros;
 	}
-	
+
+	public Long getAssociadosJaFaturados() {
+		return associadosJaFaturados;
+	}
+
+	public void setAssociadosJaFaturados(Long associadosJaFaturados) {
+		this.associadosJaFaturados = associadosJaFaturados;
+	}
+
 	public void addErro(String erro) {
-	    if (this.erros == null) {
-	        this.erros = new ArrayList<>();
-	    }
-	    this.erros.add(erro);
+		if (this.erros == null) {
+			this.erros = new ArrayList<>();
+		}
+		this.erros.add(erro);
 	}
 }

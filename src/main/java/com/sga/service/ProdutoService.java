@@ -458,6 +458,7 @@ public class ProdutoService {
         ProdutoResumoDTO dto = new ProdutoResumoDTO();
         dto.setId(produto.getId());
         dto.setCodigo(produto.getCodigo());
+        dto.setCodigoRm(produto.getCodigoRm());
         dto.setNome(produto.getNome());
         dto.setValorUnitario(produto.getValorUnitario() != null ? produto.getValorUnitario() : BigDecimal.ZERO);
         dto.setStatus(produto.getStatus() != null ? produto.getStatus() : "ATIVO");

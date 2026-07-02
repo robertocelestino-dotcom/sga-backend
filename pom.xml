@@ -142,6 +142,13 @@
 			<version>9.1.22</version>
 		</dependency>
 
+		<!-- 🔥 Banco de Dados - MS-SQL (Sistema de Notificação) -->
+		<dependency>
+			<groupId>com.microsoft.sqlserver</groupId>
+			<artifactId>mssql-jdbc</artifactId>
+			<version>12.4.0.jre11</version>
+		</dependency>
+
 
 	</dependencies>
 

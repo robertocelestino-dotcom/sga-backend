@@ -69,6 +69,10 @@ public class PlanoProdutoFranquia {
 		dataAtualizacao = LocalDateTime.now();
 	}
 
+	public PlanoProdutoFranquia() {
+
+	}
+
 	// Getters e Setters
 	public Long getId() {
 		return id;
