@@ -1,3 +1,4 @@
+// src/main/java/com/sga/repository/AssociadoProdutoRepository.java
 package com.sga.repository;
 
 import com.sga.model.AssociadoProduto;
@@ -20,6 +21,15 @@ public interface AssociadoProdutoRepository extends JpaRepository<AssociadoProdu
     Page<AssociadoProduto> findByAssociadoId(Long associadoId, Pageable pageable);
 
     Optional<AssociadoProduto> findByAssociadoIdAndProdutoId(Long associadoId, Long produtoId);
+
+    // 🔥 NOVO MÉTODO: Buscar produtos específicos de um associado (para notificações)
+    @Query("SELECT ap FROM AssociadoProduto ap " +
+           "WHERE ap.associado.id = :associadoId " +
+           "AND ap.produto.id IN :idsProdutos " +
+           "AND ap.statusNoProcesso = 'A'")
+    List<AssociadoProduto> findByAssociadoIdAndProdutoIdIn(
+            @Param("associadoId") Long associadoId,
+            @Param("idsProdutos") List<Long> idsProdutos);
 
     @Query("SELECT ap FROM AssociadoProduto ap " +
            "JOIN FETCH ap.associado a " +

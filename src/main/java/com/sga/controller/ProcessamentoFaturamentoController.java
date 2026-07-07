@@ -102,6 +102,23 @@ public class ProcessamentoFaturamentoController {
 
 		return ResponseEntity.ok(fatura);
 	}
+	
+	/**
+	 * 🔥 PROCESSAR FATURAMENTO COM NOTIFICAÇÕES
+	 */
+	@PostMapping("/processar-com-notificacoes")
+	public ResponseEntity<ResultadoProcessamento> processarFaturamentoComNotificacoes(
+	        @RequestBody ProcessamentoRequest request,
+	        @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+	    log.info("🚀 Processando faturamento com notificações para {} associados",
+	            request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
+
+	    ResultadoProcessamento resultado = processamentoFaturamentoService
+	            .processarFaturamentoComNotificacoes(request, usuario);
+
+	    return ResponseEntity.ok(resultado);
+	}
 
 	// ========== CONSULTAS DE FATURAS ==========
 

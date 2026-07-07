@@ -670,4 +670,8 @@ public class FaturaService {
         faturaRepository.delete(fatura);
         log.info("✅ Fatura {} excluída com sucesso pelo usuário {}", id, usuario);
     }
+    
+    
+    
+    
 }

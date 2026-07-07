@@ -27,4 +27,14 @@ public interface NotificacaoAssociadoRepository extends JpaRepository<Notificaca
     @Modifying
     @Query("UPDATE NotificacaoAssociado n SET n.processadoFatura = true, n.faturaId = :faturaId, n.dataProcessamento = CURRENT_TIMESTAMP WHERE n.id = :id")
     void marcarComoProcessado(@Param("id") Long id, @Param("faturaId") Long faturaId);
+    
+    /**
+     * 🔥 Buscar notificações por código SPC e período
+     */
+    @Query("SELECT n FROM NotificacaoAssociado n WHERE n.codigoSpc = :codigoSpc AND n.mesReferencia = :mes AND n.anoReferencia = :ano")
+    Optional<NotificacaoAssociado> findByCodigoSpcAndMesReferenciaAndAnoReferencia(
+            @Param("codigoSpc") String codigoSpc,
+            @Param("mes") Integer mes,
+            @Param("ano") Integer ano);
+    
 }

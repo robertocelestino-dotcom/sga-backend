@@ -16,8 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.sga.dto.NotificacaoAssociadoDTO;
 import com.sga.dto.NotificacaoSumarizadaDTO;
+import com.sga.model.Associado;
 import com.sga.model.NotificacaoAssociado;
 import com.sga.model.notificacao.NotificacaoSumarizada;
+import com.sga.repository.AssociadoRepository;
 import com.sga.repository.NotificacaoAssociadoRepository;
 import com.sga.repository.notificacao.NotificacaoSumarizadaRepository;
 
@@ -32,13 +34,49 @@ public class NotificacaoIntegracaoService {
     @Autowired
     private NotificacaoAssociadoRepository notificacaoAssociadoRepository;
 
+    @Autowired
+    private AssociadoRepository associadoRepository;
+
     @Value("${notificacao.scheduler.dias-retrospectiva:30}")
     private Integer diasRetrospectiva;
+
+    // ========== MÉTODO AUXILIAR PARA CONVERTER CÓDIGO SPC EM ID SGA ==========
+
+    /**
+     * 🔥 Converte código SPC para ID do associado no SGA
+     * @param codigoSpc Código SPC (ex: 3643 ou 00003643)
+     * @return ID do associado no SGA ou null se não encontrado
+     */
+    private Long converterCodigoSpcParaIdSga(String codigoSpc) {
+        if (codigoSpc == null || codigoSpc.isEmpty()) {
+            return null;
+        }
+        
+        // Remover zeros à esquerda para buscar no SGA
+        String codigoLimpo = codigoSpc.replaceAll("^0+", "");
+        
+        try {
+            // Buscar associado pelo código SPC
+            Associado associado = associadoRepository.findByCodigoSpc(codigoLimpo).orElse(null);
+            
+            if (associado != null) {
+                log.debug("✅ Código SPC {} convertido para ID SGA: {}", codigoSpc, associado.getId());
+                return associado.getId();
+            } else {
+                log.warn("⚠️ Associado não encontrado para o código SPC: {} (limpo: {})", codigoSpc, codigoLimpo);
+                return null;
+            }
+        } catch (Exception e) {
+            log.error("❌ Erro ao converter código SPC {} para ID SGA: {}", codigoSpc, e.getMessage());
+            return null;
+        }
+    }
 
     // ========== SINCRONIZAÇÕES ==========
 
     @Transactional
     public int sincronizarNotificacoes(Integer mes, Integer ano, String codigoAssociado) {
+    	
         log.info("🔄 Sincronizando notificações - {}/{} - Código: {}", mes, ano, codigoAssociado);
 
         LocalDate dataInicio = LocalDate.of(ano, mes, 1);
@@ -60,14 +98,22 @@ public class NotificacaoIntegracaoService {
 
         int processados = 0;
         for (Map.Entry<Integer, List<NotificacaoSumarizada>> entry : notificacoesPorAssociado.entrySet()) {
-            Integer codigo = entry.getKey();
+            Integer codigoSpc = entry.getKey();
             List<NotificacaoSumarizada> lista = entry.getValue();
 
             try {
-                processarNotificacoesAssociado(codigo.longValue(), mes, ano, dataInicio, dataFim, lista);
+                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
+                Long idSga = converterCodigoSpcParaIdSga(String.valueOf(codigoSpc));
+                
+                if (idSga == null) {
+                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
+                    continue;
+                }
+                
+                processarNotificacoesAssociado(idSga, String.valueOf(codigoSpc), mes, ano, dataInicio, dataFim, lista);
                 processados++;
             } catch (Exception e) {
-                log.error("❌ Erro ao processar associado {}: {}", codigo, e.getMessage(), e);
+                log.error("❌ Erro ao processar associado {}: {}", codigoSpc, e.getMessage(), e);
             }
         }
 
@@ -87,19 +133,31 @@ public class NotificacaoIntegracaoService {
             return 0;
         }
 
-        int mes = dataInicio.getMonthValue();
-        int ano = dataInicio.getYear();
+        // 🔥 A competência é o mês da data de FIM do período
+        int mes = dataFim.getMonthValue();
+        int ano = dataFim.getYear();
+
+        log.info("📅 Período: {} à {} - Competência: {}/{}", dataInicio, dataFim, mes, ano);
 
         int processados = 0;
         for (NotificacaoSumarizada n : notificacoes) {
             try {
-                Long associadoId = n.getCodigoAssociado().longValue();
+                String codigoSpc = String.valueOf(n.getCodigoAssociado());
+                
+                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
+                Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
+                
+                if (idSga == null) {
+                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
+                    continue;
+                }
 
                 NotificacaoAssociado notificacao = notificacaoAssociadoRepository
-                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(associadoId, mes, ano)
+                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
                         .orElse(new NotificacaoAssociado());
 
-                notificacao.setAssociadoId(associadoId);
+                notificacao.setAssociadoId(idSga);
+                notificacao.setCodigoSpc(codigoSpc);
                 notificacao.setMesReferencia(mes);
                 notificacao.setAnoReferencia(ano);
                 notificacao.setPeriodoInicio(dataInicio);
@@ -154,13 +212,22 @@ public class NotificacaoIntegracaoService {
         int processados = 0;
         for (NotificacaoSumarizada n : notificacoes) {
             try {
-                Long associadoId = n.getCodigoAssociado().longValue();
+                String codigoSpc = String.valueOf(n.getCodigoAssociado());
+                
+                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
+                Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
+                
+                if (idSga == null) {
+                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
+                    continue;
+                }
 
                 NotificacaoAssociado notificacao = notificacaoAssociadoRepository
-                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(associadoId, mes, ano)
+                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
                         .orElse(new NotificacaoAssociado());
 
-                notificacao.setAssociadoId(associadoId);
+                notificacao.setAssociadoId(idSga);
+                notificacao.setCodigoSpc(codigoSpc);
                 notificacao.setMesReferencia(mes);
                 notificacao.setAnoReferencia(ano);
                 notificacao.setSmsSemEnriquecimento(n.getSmsSemEnriquecimento());
@@ -196,19 +263,31 @@ public class NotificacaoIntegracaoService {
             return 0;
         }
 
-        int mes = dataInicio.getMonthValue();
-        int ano = dataInicio.getYear();
+        // 🔥 A competência é o mês da data de FIM do período
+        int mes = dataFim.getMonthValue();
+        int ano = dataFim.getYear();
+
+        log.info("📅 Período: {} à {} - Competência: {}/{}", dataInicio, dataFim, mes, ano);
 
         int processados = 0;
         for (NotificacaoSumarizada n : notificacoes) {
             try {
-                Long associadoId = n.getCodigoAssociado().longValue();
+                String codigoSpc = String.valueOf(n.getCodigoAssociado());
+                
+                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
+                Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
+                
+                if (idSga == null) {
+                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
+                    continue;
+                }
 
                 NotificacaoAssociado notificacao = notificacaoAssociadoRepository
-                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(associadoId, mes, ano)
+                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
                         .orElse(new NotificacaoAssociado());
 
-                notificacao.setAssociadoId(associadoId);
+                notificacao.setAssociadoId(idSga);
+                notificacao.setCodigoSpc(codigoSpc);
                 notificacao.setMesReferencia(mes);
                 notificacao.setAnoReferencia(ano);
                 notificacao.setPeriodoInicio(dataInicio);
@@ -250,20 +329,22 @@ public class NotificacaoIntegracaoService {
 
     @Transactional
     public void processarNotificacoesAssociado(
-            Long associadoId,
+            Long idSga,
+            String codigoSpc,
             Integer mes,
             Integer ano,
             LocalDate periodoInicio,
             LocalDate periodoFim,
             List<NotificacaoSumarizada> notificacoes) {
 
-        log.info("📝 Processando notificações do associado: {}", associadoId);
+        log.info("📝 Processando notificações do associado - ID SGA: {}, Código SPC: {}", idSga, codigoSpc);
 
         NotificacaoAssociado notificacao = notificacaoAssociadoRepository
-                .findByAssociadoIdAndMesReferenciaAndAnoReferencia(associadoId, mes, ano)
+                .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
                 .orElse(new NotificacaoAssociado());
 
-        notificacao.setAssociadoId(associadoId);
+        notificacao.setAssociadoId(idSga);
+        notificacao.setCodigoSpc(codigoSpc);
         notificacao.setMesReferencia(mes);
         notificacao.setAnoReferencia(ano);
         notificacao.setPeriodoInicio(periodoInicio);
@@ -275,8 +356,8 @@ public class NotificacaoIntegracaoService {
 
         notificacaoAssociadoRepository.save(notificacao);
 
-        log.info("✅ Notificações atualizadas para associado {}: SMS: {} ({} sem / {} com), E-mail: {} ({} sem / {} com), Cartas: {}, Não enviadas: {}",
-                associadoId,
+        log.info("✅ Notificações atualizadas para associado {} (Código SPC: {}): SMS: {} ({} sem / {} com), E-mail: {} ({} sem / {} com), Cartas: {}, Não enviadas: {}",
+                idSga, codigoSpc,
                 notificacao.getSmsTotal(),
                 notificacao.getSmsSemEnriquecimento(),
                 notificacao.getSmsComEnriquecimento(),
