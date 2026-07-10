@@ -48,6 +48,21 @@ public class AssociadoResumoDTO {
 	private Long categoriaId;
 	private String categoriaNome;
 
+	public AssociadoResumoDTO() {
+	
+	}
+
+	public AssociadoResumoDTO(Long id, String codigoSpc, String codigoRm, String cnpjCpf, String nomeRazao,
+			String nomeFantasia, String status) {
+		this.id = id;
+		this.codigoSpc = codigoSpc;
+		this.codigoRm = codigoRm;
+		this.cnpjCpf = cnpjCpf;
+		this.nomeRazao = nomeRazao;
+		this.nomeFantasia = nomeFantasia;
+		this.status = status;
+	}
+
 	// Getters e Setters existentes (mantenha os que já tem)
 	public Long getId() {
 		return id;

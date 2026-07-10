@@ -20,6 +20,7 @@ import com.sga.dto.AssociadoReguaDTO;
 import com.sga.dto.AssociadoResumoDTO;
 import com.sga.dto.ReguaFaturamentoDTO;
 import com.sga.dto.TipoArquivoReguaDTO;
+import com.sga.exception.ResourceNotFoundException;
 import com.sga.model.Associado;
 import com.sga.model.AssociadoRegua;
 import com.sga.model.ReguaFaturamento;
@@ -53,7 +54,7 @@ public class ReguaFaturamentoService {
     
     @Autowired
     private NotaDebitoSPCRepository notaDebitoSPCRepository;
-
+    
     // ========== RÉGUAS ==========
 
     @Transactional(readOnly = true)
@@ -333,55 +334,78 @@ public class ReguaFaturamentoService {
     // ========== MÉTODOS PARA FATURAMENTO CONSOLIDADO ==========
 
     /**
-     * Lista associados da régua que possuem notas no último arquivo consolidado
-     * (busca automaticamente o maior vencimento)
+     * Lista associados da régua que possuem notas SPC no último consolidado
+     * Busca automaticamente o maior vencimento/consolidado
+     * 
+     * @param reguaId ID da régua
+     * @param nome Filtro por nome (opcional)
+     * @param cnpjCpf Filtro por CNPJ/CPF (opcional)
+     * @param pageable Paginação
+     * @return Page com os associados consolidados
      */
     @Transactional(readOnly = true)
     public Page<AssociadoResumoDTO> listarAssociadosConsolidadoPaginado(
-            Long reguaId, String nome, String cnpjCpf, Pageable pageable) {
+            Long reguaId, 
+            String nome, 
+            String cnpjCpf, 
+            Pageable pageable) {
         
-        log.info("📌 Listando associados CONSOLIDADOS da régua ID: {} (último vencimento)", reguaId);
+        log.info("📋 Buscando associados CONSOLIDADOS da régua {} - nome: {}, cnpj: {}", 
+                reguaId, nome, cnpjCpf);
         
-        // 1. Buscar IDs dos associados ativos da régua
-        List<Long> idsAssociadosRegua = associadoReguaRepository.findAssociadoIdsByReguaId(reguaId);
+        // Verificar se a régua existe
+        reguaFaturamentoRepository.findById(reguaId)
+                .orElseThrow(() -> new ResourceNotFoundException("Régua não encontrada: " + reguaId));
         
-        if (idsAssociadosRegua.isEmpty()) {
-            log.warn("Nenhum associado encontrado na régua ID: {}", reguaId);
-            return Page.empty(pageable);
+        try {
+            Page<Object[]> resultPage = associadoReguaRepository
+                    .findAssociadosConsolidadoPorReguaNative(reguaId, nome, cnpjCpf, pageable);
+            
+            List<AssociadoResumoDTO> dtos = resultPage.getContent().stream()
+                    .map(row -> {
+                        AssociadoResumoDTO dto = new AssociadoResumoDTO();
+                        
+                        // Converter com segurança cada campo
+                        dto.setId(row[0] != null ? ((Number) row[0]).longValue() : null);
+                        dto.setNomeRazao(row[1] != null ? row[1].toString() : null);
+                        dto.setCnpjCpf(row[2] != null ? row[2].toString() : null);
+                        dto.setCodigoSpc(row[3] != null ? row[3].toString() : null);
+                        dto.setStatus(row[4] != null ? row[4].toString() : null);
+                        
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+            
+            log.info("✅ Encontrados {} associados consolidados (total: {})", 
+                    dtos.size(), resultPage.getTotalElements());
+            
+            return new PageImpl<>(dtos, pageable, resultPage.getTotalElements());
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar associados consolidados: {}", e.getMessage(), e);
+            throw e;
         }
-        
-        // 2. Buscar IDs dos associados que possuem notas no último consolidado
-        List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
-        
-        log.info("📊 Associados com notas no último consolidado: {}", idsComNotas.size());
-        log.info("📊 Associados na régua: {}", idsAssociadosRegua.size());
-        
-        // 3. Filtrar apenas os que estão em ambas listas
-        List<Long> idsFiltrados = idsAssociadosRegua.stream()
-            .filter(idsComNotas::contains)
-            .collect(Collectors.toList());
-        
-        log.info("✅ Associados após filtro consolidado: {}", idsFiltrados.size());
-        
-        if (idsFiltrados.isEmpty()) {
-            log.warn("Nenhum associado da régua possui notas no último consolidado");
-            return Page.empty(pageable);
-        }
-        
-        // 4. Buscar associados com paginação e filtros adicionais
-        return buscarAssociadosPorIdsPaginado(idsFiltrados, nome, cnpjCpf, pageable);
     }
-    
+
+    /**
+     * Lista todos os IDs dos associados consolidados da régua
+     * 
+     * @param reguaId ID da régua
+     * @return Lista de IDs dos associados com notas SPC
+     */
     @Transactional(readOnly = true)
     public List<Long> listarTodosIdsAssociadosConsolidado(Long reguaId) {
         log.info("📌 Buscando IDs consolidados - régua ID: {}", reguaId);
         
+        // Buscar todos os IDs da régua
         List<Long> idsAssociadosRegua = associadoReguaRepository.findAssociadoIdsByReguaId(reguaId);
         log.info("📊 IDs na régua: {}", idsAssociadosRegua.size());
         
+        // Buscar IDs com notas SPC
         List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
-        log.info("📊 IDs com notas no último consolidado: {}", idsComNotas.size());
+        log.info("📊 IDs com notas SPC: {}", idsComNotas.size());
         
+        // Interseção: IDs que estão na régua E têm notas SPC
         List<Long> resultado = idsAssociadosRegua.stream()
             .filter(idsComNotas::contains)
             .collect(Collectors.toList());
@@ -393,10 +417,19 @@ public class ReguaFaturamentoService {
     
     /**
      * Busca associados por lista de IDs com paginação e filtros
+     * 
+     * @param ids Lista de IDs dos associados
+     * @param nome Filtro por nome (opcional)
+     * @param cnpjCpf Filtro por CNPJ/CPF (opcional)
+     * @param pageable Paginação
+     * @return Page com os associados
      */
     @Transactional(readOnly = true)
     public Page<AssociadoResumoDTO> buscarAssociadosPorIdsPaginado(
-            List<Long> ids, String nome, String cnpjCpf, Pageable pageable) {
+            List<Long> ids, 
+            String nome, 
+            String cnpjCpf, 
+            Pageable pageable) {
         
         log.info("🔍 Buscando associados por IDs - total: {}, página: {}, size: {}", 
             ids.size(), pageable.getPageNumber(), pageable.getPageSize());
@@ -409,37 +442,6 @@ public class ReguaFaturamentoService {
             ids, nome, cnpjCpf, pageable);
         
         return associadosPage.map(this::toAssociadoResumoDTO);
-    }
-    
-    /**
-     * Converte Associado para AssociadoResumoDTO
-     */
-    private AssociadoResumoDTO toAssociadoResumoDTO(Associado associado) {
-        if (associado == null) return null;
-        
-        AssociadoResumoDTO dto = new AssociadoResumoDTO();
-        dto.setId(associado.getId());
-        dto.setCodigoSpc(associado.getCodigoSpc());
-        dto.setNomeRazao(associado.getNomeRazao());
-        dto.setCnpjCpf(associado.getCnpjCpf());
-        dto.setStatus(associado.getStatus());
-        
-        if (associado.getVendedor() != null) {
-            dto.setVendedorId(associado.getVendedor().getId());
-            dto.setVendedorNome(associado.getVendedor().getNomeRazao());
-        }
-        
-        if (associado.getPlano() != null) {
-            dto.setPlanoId(associado.getPlano().getId());
-            dto.setPlanoTitulo(associado.getPlano().getPlano());
-        }
-        
-        if (associado.getCategoria() != null) {
-            dto.setCategoriaId(associado.getCategoria().getId());
-            dto.setCategoriaNome(associado.getCategoria().getDescricao());
-        }
-        
-        return dto;
     }
 
     // ========== MÉTODOS EXISTENTES (MANTIDOS) ==========
@@ -484,6 +486,9 @@ public class ReguaFaturamentoService {
 
     // ========== CONVERSORES ==========
     
+    /**
+     * Converte ReguaFaturamento para DTO
+     */
     public ReguaFaturamentoDTO toDTO(ReguaFaturamento entity) {
         if (entity == null) return null;
         
@@ -515,6 +520,9 @@ public class ReguaFaturamentoService {
         return dto;
     }
     
+    /**
+     * Converte AssociadoRegua para DTO
+     */
     private AssociadoReguaDTO toAssociadoReguaDTO(AssociadoRegua entity) {
         if (entity == null) return null;
         
@@ -532,6 +540,51 @@ public class ReguaFaturamentoService {
         dto.setObservacao(entity.getObservacao());
         dto.setCriadoEm(entity.getCriadoEm());
         dto.setCriadoPor(entity.getCriadoPor());
+        return dto;
+    }
+    
+    /**
+     * Converte Associado para AssociadoResumoDTO
+     */
+    private AssociadoResumoDTO toAssociadoResumoDTO(Associado associado) {
+        if (associado == null) return null;
+        
+        AssociadoResumoDTO dto = new AssociadoResumoDTO();
+        dto.setId(associado.getId());
+        dto.setCodigoSpc(associado.getCodigoSpc());
+        dto.setNomeRazao(associado.getNomeRazao());
+        dto.setNomeFantasia(associado.getNomeFantasia());
+        dto.setCnpjCpf(associado.getCnpjCpf());
+        dto.setTipoPessoa(associado.getTipoPessoa());
+        dto.setStatus(associado.getStatus());
+        dto.setDataFiliacao(associado.getDataFiliacao());
+        dto.setDataCadastro(associado.getDataCadastro());
+        dto.setDataInativacao(associado.getDataInativacao());
+        dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
+        dto.setDataFimSuspensao(associado.getDataFimSuspensao());
+        dto.setMotivoInativacao(associado.getMotivoInativacao());
+        dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+        
+        if (associado.getVendedor() != null) {
+            dto.setVendedorId(associado.getVendedor().getId());
+            dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+        }
+        
+        if (associado.getVendedorExterno() != null) {
+            dto.setVendedorExternoId(associado.getVendedorExterno().getId());
+            dto.setVendedorExternoNome(associado.getVendedorExterno().getNomeRazao());
+        }
+        
+        if (associado.getPlano() != null) {
+            dto.setPlanoId(associado.getPlano().getId());
+            dto.setPlanoTitulo(associado.getPlano().getPlano());
+        }
+        
+        if (associado.getCategoria() != null) {
+            dto.setCategoriaId(associado.getCategoria().getId());
+            dto.setCategoriaNome(associado.getCategoria().getDescricao());
+        }
+        
         return dto;
     }
 }

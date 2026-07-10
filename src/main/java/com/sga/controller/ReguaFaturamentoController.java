@@ -143,13 +143,21 @@ public class ReguaFaturamentoController {
 	}
 
 	@GetMapping("/{id}/associados/paginado")
-	public ResponseEntity<Page<AssociadoResumoDTO>> listarAssociadosPorReguaPaginado(@PathVariable Long id,
-			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+	public ResponseEntity<Page<AssociadoResumoDTO>> listarAssociadosPorReguaPaginado(
+	        @PathVariable Long id,
+	        @RequestParam(defaultValue = "0") int page,
+	        @RequestParam(defaultValue = "15") int size,
+	        @RequestParam(required = false) String nome,      // ← NOVO
+	        @RequestParam(required = false) String cnpjCpf) { // ← NOVO
 
-		log.info("👥 Listando associados da régua ID: {} - página: {}, size: {}", id, page, size);
-		Pageable pageable = PageRequest.of(page, size);
-		Page<AssociadoResumoDTO> associados = reguaService.listarAssociadosPorReguaPaginado(id, pageable);
-		return ResponseEntity.ok(associados);
+	    log.info("👥 Listando associados da régua ID: {} - página: {}, size: {}, nome: {}, cnpj: {}", 
+	            id, page, size, nome, cnpjCpf);
+	    
+	    Pageable pageable = PageRequest.of(page, size);
+	    Page<AssociadoResumoDTO> associados = reguaService.listarAssociadosConsolidadoPaginado(
+	            id, nome, cnpjCpf, pageable); // ← PASSAR FILTROS
+	    
+	    return ResponseEntity.ok(associados);
 	}
 
 	@GetMapping("/associado/ativo/{associadoId}")
@@ -225,8 +233,8 @@ public class ReguaFaturamentoController {
 	        @RequestParam(required = false) String nome,
 	        @RequestParam(required = false) String cnpjCpf) {
 
-	    log.info("📌 Listando associados CONSOLIDADOS da régua ID: {} - página: {}, size: {}", 
-	            reguaId, page, size);
+	    log.info("📌 Listando associados CONSOLIDADOS da régua ID: {} - página: {}, size: {}, nome: {}, cnpj: {}", 
+	            reguaId, page, size, nome, cnpjCpf);
 	    
 	    Pageable pageable = PageRequest.of(page, size);
 	    Page<AssociadoResumoDTO> associados = reguaService.listarAssociadosConsolidadoPaginado(
