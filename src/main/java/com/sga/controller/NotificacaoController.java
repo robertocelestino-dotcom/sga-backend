@@ -1,10 +1,14 @@
+// src/main/java/com/sga/controller/NotificacaoController.java
+
 package com.sga.controller;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.sga.dto.NotificacaoAssociadoDTO;
 import com.sga.dto.NotificacaoSumarizadaDTO;
+import com.sga.model.notificacao.NotificacaoSumarizada;
+import com.sga.repository.notificacao.NotificacaoSumarizadaRepository;
 import com.sga.service.NotificacaoIntegracaoService;
 
 @RestController
@@ -27,9 +33,14 @@ import com.sga.service.NotificacaoIntegracaoService;
 public class NotificacaoController {
 
     private static final Logger log = LoggerFactory.getLogger(NotificacaoController.class);
+    
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     @Autowired
     private NotificacaoIntegracaoService notificacaoIntegracaoService;
+
+    @Autowired
+    private NotificacaoSumarizadaRepository notificacaoSumarizadaRepository;
 
     // ========== SINCRONIZAÇÃO ==========
 
@@ -159,7 +170,7 @@ public class NotificacaoController {
             @RequestParam(required = false) String codigoAssociado) {
 
         log.info("📅 Buscando notificações por período - Início: {}, Fim: {}, Código: {}",
-                dataInicio, dataFim, codigoAssociado);
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
 
         List<NotificacaoSumarizadaDTO> resultado = notificacaoIntegracaoService
                 .buscarNotificacoesPorPeriodo(dataInicio, dataFim, codigoAssociado);
@@ -176,7 +187,7 @@ public class NotificacaoController {
             @RequestParam(required = false) String codigoAssociado) {
 
         log.info("📊 Buscando notificações agrupadas por período - Início: {}, Fim: {}, Código: {}",
-                dataInicio, dataFim, codigoAssociado);
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
 
         List<NotificacaoSumarizadaDTO> resultado = notificacaoIntegracaoService
                 .buscarNotificacoesAgrupadasPorPeriodo(dataInicio, dataFim, codigoAssociado);
@@ -194,20 +205,26 @@ public class NotificacaoController {
             @RequestParam @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
             @RequestParam(required = false) String codigoAssociado) {
 
-        log.info("🔄 Sincronizando por período - Início: {}, Fim: {}", dataInicio, dataFim);
+        log.info("🔄 Sincronizando por período - Início: {}, Fim: {}, Código: {}",
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
 
-        int processados = notificacaoIntegracaoService
+        // 🔥 CHAMAR MÉTODO QUE RETORNA MAP
+        Map<String, Object> resultado = notificacaoIntegracaoService
                 .sincronizarNotificacoesPorPeriodo(dataInicio, dataFim, codigoAssociado);
 
         Map<String, Object> response = new HashMap<>();
         response.put("success", true);
-        response.put("message", "Sincronização por período concluída!");
+        response.put("message", resultado.get("mensagem"));
         response.put("dataInicio", dataInicio);
         response.put("dataFim", dataFim);
-        response.put("associadosProcessados", processados);
+        response.put("associadosProcessados", resultado.get("processados"));
+        response.put("totalRegistros", resultado.get("totalRegistros"));  // 🔥 TOTAL DE REGISTROS
+        response.put("salvos", resultado.get("salvos"));
+        response.put("erros", resultado.get("erros"));
         response.put("dataSincronizacao", LocalDateTime.now());
 
-        log.info("✅ Sincronização por período concluída - {} associados processados", processados);
+        log.info("✅ Sincronização por período concluída - {} associados, {} registros", 
+                resultado.get("processados"), resultado.get("totalRegistros"));
 
         return ResponseEntity.ok(response);
     }
@@ -218,7 +235,8 @@ public class NotificacaoController {
             @RequestParam @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
             @RequestParam(required = false) String codigoAssociado) {
 
-        log.info("🔄 Sincronizando agrupado por período - Início: {}, Fim: {}", dataInicio, dataFim);
+        log.info("🔄 Sincronizando agrupado por período - Início: {}, Fim: {}, Código: {}",
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
 
         int processados = notificacaoIntegracaoService
                 .sincronizarNotificacoesAgrupadasPorPeriodo(dataInicio, dataFim, codigoAssociado);
@@ -260,6 +278,48 @@ public class NotificacaoController {
         return ResponseEntity.ok(response);
     }
 
+    // ========== BUSCAR MS-SQL (SEM SALVAR) ==========
+
+    /**
+     * 🔥 BUSCAR DADOS DO MS-SQL (SEM SALVAR) - USANDO AGRUPADO
+     * Apenas exibe os dados, não persiste na tabela local
+     */
+    @PostMapping("/buscar-ms-sql")
+    public ResponseEntity<List<NotificacaoSumarizadaDTO>> buscarMSSQL(
+            @RequestParam @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataInicio,
+            @RequestParam @DateTimeFormat(pattern = "dd/MM/yyyy") LocalDate dataFim,
+            @RequestParam(required = false) String codigoAssociado) {
+
+        log.info("🔍 Buscando dados no MS-SQL - Início: {}, Fim: {}, Código: {}",
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
+
+        // 🔥 VALIDAR DATAS
+        if (dataInicio == null || dataFim == null) {
+            log.error("❌ Datas são obrigatórias");
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (dataInicio.isAfter(dataFim)) {
+            log.error("❌ Data de início não pode ser maior que data de fim");
+            return ResponseEntity.badRequest().build();
+        }
+
+        long inicio = System.currentTimeMillis();
+
+        // 🔥 BUSCAR NO MS-SQL
+        List<NotificacaoSumarizada> resultado = notificacaoSumarizadaRepository
+                .buscarNotificacoesAgrupadasMSSQL(dataInicio, dataFim, codigoAssociado);
+
+        long fim = System.currentTimeMillis();
+        log.info("⏱️ Busca no MS-SQL concluída em {} ms - {} registros", (fim - inicio), resultado.size());
+
+        List<NotificacaoSumarizadaDTO> dtos = resultado.stream()
+                .map(this::toSumarizadaDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
+
     // ========== HEALTH CHECK ==========
 
     @GetMapping("/health")
@@ -273,7 +333,7 @@ public class NotificacaoController {
 
         return ResponseEntity.ok(response);
     }
-    
+
     /**
      * 🔥 Dispara sincronização manual via scheduler
      */
@@ -304,5 +364,30 @@ public class NotificacaoController {
         log.info("✅ Sincronização manual concluída - {} associados processados", processados);
 
         return ResponseEntity.ok(response);
+    }
+
+    // ========== MÉTODO AUXILIAR DE CONVERSÃO ==========
+
+    /**
+     * 🔥 Converte NotificacaoSumarizada para DTO
+     */
+    private NotificacaoSumarizadaDTO toSumarizadaDTO(NotificacaoSumarizada n) {
+        NotificacaoSumarizadaDTO dto = new NotificacaoSumarizadaDTO();
+        dto.setIdRemessa(n.getIdRemessa());
+        dto.setTipoEnvio(n.getTipoEnvio());
+        dto.setCompetencia(n.getCompetencia());
+        dto.setDataMovimento(n.getDataMovimento());
+        dto.setCodigoAssociado(n.getCodigoAssociado());
+        dto.setNomeAssociado(n.getNomeAssociado());
+        dto.setTotalRegistrosDigital(n.getTotalRegistrosDigital());
+        dto.setSmsSemEnriquecimento(n.getSmsSemEnriquecimento());
+        dto.setSmsComEnriquecimento(n.getSmsComEnriquecimento());
+        dto.setTotalSms(n.getTotalSms());
+        dto.setEmailsSemEnriquecimento(n.getEmailsSemEnriquecimento());
+        dto.setEmailsComEnriquecimento(n.getEmailsComEnriquecimento());
+        dto.setTotalEmail(n.getTotalEmail());
+        dto.setCartasEnviadas(n.getCartasEnviadas());
+        dto.setNaoEnviada(n.getNaoEnviada());
+        return dto;
     }
 }

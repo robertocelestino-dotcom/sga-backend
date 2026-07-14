@@ -213,15 +213,20 @@ public class FaturaGeracaoService {
             log.info("📊 Adicionando itens de notificações à fatura...");
             Map<String, BigDecimal> produtosAssociado = buscarProdutosNotificacaoAssociado(associado.getId());
             
-            if (!produtosAssociado.isEmpty()) {
-                List<FaturaItem> itensNotificacao = criarItensNotificacao(notificacao, produtosAssociado, associado);
-                if (!itensNotificacao.isEmpty()) {
-                    itensCalculados.addAll(itensNotificacao);
-                    log.info("✅ Adicionados {} itens de notificações", itensNotificacao.size());
-                }
-            } else {
-                log.warn("⚠️ Associado {} não possui produtos de notificação configurados", associado.getId());
+            log.info("📦 Produtos encontrados: {}", produtosAssociado.size());
+            for (Map.Entry<String, BigDecimal> entry : produtosAssociado.entrySet()) {
+                log.info("   - {}: R$ {}", entry.getKey(), entry.getValue());
             }
+            
+            List<FaturaItem> itensNotificacao = criarItensNotificacao(notificacao, produtosAssociado, associado);
+            if (!itensNotificacao.isEmpty()) {
+                itensCalculados.addAll(itensNotificacao);
+                log.info("✅ Adicionados {} itens de notificações", itensNotificacao.size());
+            } else {
+                log.warn("⚠️ Nenhum item de notificação foi criado");
+            }
+        } else {
+            log.info("ℹ️ Sem notificações para este associado no período");
         }
 
         if (itensCalculados.isEmpty()) {
@@ -305,7 +310,7 @@ public class FaturaGeracaoService {
             log.info("📝 Observação adicionada à fatura");
         }
 
-        // ========== 7. APLICAR REGRAS (EM MEMÓRIA) ==========
+        // ========== 7. APLICAR REGRAS ==========
         
         // 7.1 Franquia
         if (regua != null && Boolean.TRUE.equals(regua.getAplicarFranquia())) {
@@ -323,11 +328,10 @@ public class FaturaGeracaoService {
             log.info("⏭️ Pular regra de faturamento mínimo");
         }
         
-        // 🔥 7.3 Aplicar cancelamentos (EM MEMÓRIA - tanto para simulação quanto real)
+        // 7.3 Cancelamentos
         if (regua != null && Boolean.TRUE.equals(regua.getAplicarCancelamentos())) {
             log.info("🗑️ Verificando cancelamentos para associado: {}", associado.getNomeRazao());
             
-            // Buscar cancelamentos pendentes
             List<CancelamentoImportacao> cancelamentos = cancelamentoService.buscarCancelamentosPendentes(
                     associado.getCodigoSpc(), 
                     mesReferencia, 
@@ -339,22 +343,21 @@ public class FaturaGeracaoService {
                     log.info("   - ID: {}, Produto: {}", c.getId(), c.getProdutoPersonalizado());
                 }
                 
-                // 🔥 APLICAR CANCELAMENTOS EM MEMÓRIA (sempre, mesmo na simulação)
-                // Mas só persiste se NÃO for simulação
                 List<CancelamentoProcessado> processados = cancelamentoService.aplicarCancelamentos(
-                        fatura,  // ← FATURA AINDA NÃO SALVA (em memória)
+                        fatura,
                         associado.getCodigoSpc(),
                         mesReferencia,
                         anoReferencia,
                         usuario,
-                        simular);  // ← Passa o flag de simulação
+                        simular);
                 
-                log.info("✅ {} cancelamentos aplicados {}", processados.size(), simular ? "(SIMULAÇÃO)" : "(PERSISTIDO)");
+                log.info("✅ {} cancelamentos aplicados {}", processados.size(), 
+                        simular ? "(SIMULAÇÃO - NÃO PERSISTIDO)" : "(PERSISTIDO)");
             } else {
                 log.info("ℹ️ Nenhum cancelamento pendente para o período");
             }
         }
-        
+
         // ========== 8. MARCAR NOTIFICAÇÕES COMO FATURADAS ==========
         if (notificacao != null && !simular) {
             notificacao.setProcessadoFatura(true);
@@ -366,13 +369,14 @@ public class FaturaGeracaoService {
 
         // ========== 9. SALVAR ==========
         if (simular) {
+            log.info("🔍 SIMULAÇÃO: Fatura NÃO salva no banco");
             return fatura;
         } else {
-            // 🔥 9.1 SALVAR A FATURA PRIMEIRO
+            // 9.1 SALVAR A FATURA
             Fatura faturaSalva = faturaRepository.save(fatura);
             log.info("✅ Fatura salva com ID: {}", faturaSalva.getId());
             
-            // 🔥 9.2 SALVAR OS ITENS DA FATURA
+            // 9.2 SALVAR OS ITENS DA FATURA
             if (faturaSalva.getItens() != null && !faturaSalva.getItens().isEmpty()) {
                 for (FaturaItem item : faturaSalva.getItens()) {
                     item.setFatura(faturaSalva);
@@ -389,10 +393,16 @@ public class FaturaGeracaoService {
 
     // ========== MÉTODOS DE NOTIFICAÇÃO ==========
 
+    /**
+     * 🔥 Busca os produtos de notificação configurados para o associado
+     * Retorna um mapa com código RM -> valor definido
+     * 🔥 MANTIDO: Busca por IDs fixos (17, 18, 19, 20, 21)
+     */
     private Map<String, BigDecimal> buscarProdutosNotificacaoAssociado(Long associadoId) {
         Map<String, BigDecimal> produtos = new LinkedHashMap<>();
         
         try {
+            // 🔥 IDs DOS PRODUTOS DE NOTIFICAÇÃO (FIXOS)
             List<Long> idsProdutos = Arrays.asList(17L, 18L, 19L, 20L, 21L);
             
             List<AssociadoProduto> lista = associadoProdutoRepository
@@ -402,6 +412,8 @@ public class FaturaGeracaoService {
                 log.warn("⚠️ Nenhum produto de notificação configurado para associado {}", associadoId);
                 return produtos;
             }
+            
+            log.info("✅ {} produtos de notificação encontrados para associado {}", lista.size(), associadoId);
             
             for (AssociadoProduto ap : lista) {
                 Produto produto = ap.getProduto();
@@ -413,7 +425,7 @@ public class FaturaGeracaoService {
                 }
             }
             
-            log.info("✅ {} produtos de notificação encontrados para associado {}", produtos.size(), associadoId);
+            log.info("✅ {} produtos de notificação carregados para associado {}", produtos.size(), associadoId);
             
         } catch (Exception e) {
             log.error("❌ Erro ao buscar produtos de notificação para associado {}: {}", associadoId, e.getMessage());
@@ -422,30 +434,19 @@ public class FaturaGeracaoService {
         return produtos;
     }
 
+    /**
+     * 🔥 Verifica se o associado possui produtos com enriquecimento
+     */
     private boolean associadoPossuiEnriquecimento(Map<String, BigDecimal> produtosAssociado) {
-        return produtosAssociado.containsKey("04.01.03.94432") ||
-               produtosAssociado.containsKey("04.01.03.94431");
+        return produtosAssociado.containsKey("04.01.03.94432") ||  // E-MAIL C/ ENR
+               produtosAssociado.containsKey("04.01.03.94431");    // SMS C/ ENR
     }
 
-    private Integer getQuantidadeNotificacao(NotificacaoAssociado notificacao, String campo) {
-        if (notificacao == null) return 0;
-        
-        switch (campo) {
-            case "cartasTotal":
-                return notificacao.getCartasTotal() != null ? notificacao.getCartasTotal() : 0;
-            case "emailsSemEnriquecimento":
-                return notificacao.getEmailsSemEnriquecimento() != null ? notificacao.getEmailsSemEnriquecimento() : 0;
-            case "emailsComEnriquecimento":
-                return notificacao.getEmailsComEnriquecimento() != null ? notificacao.getEmailsComEnriquecimento() : 0;
-            case "smsSemEnriquecimento":
-                return notificacao.getSmsSemEnriquecimento() != null ? notificacao.getSmsSemEnriquecimento() : 0;
-            case "smsComEnriquecimento":
-                return notificacao.getSmsComEnriquecimento() != null ? notificacao.getSmsComEnriquecimento() : 0;
-            default:
-                return 0;
-        }
-    }
-
+    /**
+     * 🔥 CRIA ITENS DE FATURA A PARTIR DAS NOTIFICAÇÕES
+     * APENAS ITENS COM QUANTIDADE > 0
+     * 🔥 CORRIGIDO: Cria TODOS os itens com quantidade > 0, independentemente de ter produto configurado
+     */
     private List<FaturaItem> criarItensNotificacao(NotificacaoAssociado notificacao, 
             Map<String, BigDecimal> produtosAssociado, Associado associado) {
         
@@ -458,89 +459,112 @@ public class FaturaGeracaoService {
         
         log.info("📊 Criando itens de notificação para associado: {}", associado.getNomeRazao());
         
+        // 🔥 LOG DETALHADO DOS PRODUTOS DO ASSOCIADO
+        log.info("📦 Produtos de notificação do associado:");
+        for (Map.Entry<String, BigDecimal> entry : produtosAssociado.entrySet()) {
+            log.info("   - {}: R$ {}", entry.getKey(), entry.getValue());
+        }
+        
+        // 🔥 LOG DETALHADO DAS QUANTIDADES
+        int smsSemEnr = notificacao.getSmsSemEnriquecimento() != null ? notificacao.getSmsSemEnriquecimento() : 0;
+        int smsComEnr = notificacao.getSmsComEnriquecimento() != null ? notificacao.getSmsComEnriquecimento() : 0;
+        int emailSemEnr = notificacao.getEmailsSemEnriquecimento() != null ? notificacao.getEmailsSemEnriquecimento() : 0;
+        int emailComEnr = notificacao.getEmailsComEnriquecimento() != null ? notificacao.getEmailsComEnriquecimento() : 0;
+        int cartas = notificacao.getCartasTotal() != null ? notificacao.getCartasTotal() : 0;
+        
+        log.info("📊 Quantidades de notificação:");
+        log.info("   SMS SEM ENR: {}", smsSemEnr);
+        log.info("   SMS COM ENR: {}", smsComEnr);
+        log.info("   E-mail SEM ENR: {}", emailSemEnr);
+        log.info("   E-mail COM ENR: {}", emailComEnr);
+        log.info("   Cartas: {}", cartas);
+        
+        // 🔥 VERIFICAR SE O ASSOCIADO TEM PRODUTOS COM ENRIQUECIMENTO
         boolean possuiEnriquecimento = associadoPossuiEnriquecimento(produtosAssociado);
+        
+        // 🔥 VERIFICAR SE EXISTEM NOTIFICAÇÕES COM ENRIQUECIMENTO
+        boolean temNotificacoesComEnriquecimento = (smsComEnr > 0 || emailComEnr > 0);
+        
         log.info("📌 Associado {} - {}", associado.getNomeRazao(), 
                 possuiEnriquecimento ? "COM ENRIQUECIMENTO" : "SEM ENRIQUECIMENTO");
+        
+        if (temNotificacoesComEnriquecimento && !possuiEnriquecimento) {
+            log.warn("⚠️ Associado possui notificações COM enriquecimento, mas não tem produtos configurados!");
+            log.warn("   SMS COM ENR: {}, E-mail COM ENR: {}", smsComEnr, emailComEnr);
+            log.warn("   🔥 Somando notificações com enriquecimento às sem enriquecimento");
+        }
         
         int count = 0;
         BigDecimal valorTotalNotificacoes = BigDecimal.ZERO;
         List<String> itensCriados = new ArrayList<>();
 
-        // CARTAS
+        // ========== 1. CARTAS ==========
         String codigoCarta = "04.01.03.94343";
-        if (produtosAssociado.containsKey(codigoCarta)) {
-            Integer quantidade = notificacao.getCartasTotal() != null ? notificacao.getCartasTotal() : 0;
+        if (cartas > 0 && produtosAssociado.containsKey(codigoCarta)) {
             BigDecimal valorUnitario = produtosAssociado.get(codigoCarta);
-            
-            if (quantidade > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+            if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                 FaturaItem item = criarItemFatura(
                         codigoCarta,
-                        "NOTIFICAÇÃO SPC CARTA (" + quantidade + " unid.)",
-                        quantidade,
+                        "NOTIFICAÇÃO SPC CARTA (" + cartas + " unid.)",
+                        cartas,
                         valorUnitario,
                         "D"
                 );
                 itens.add(item);
                 valorTotalNotificacoes = valorTotalNotificacoes.add(item.getValorTotal());
                 count++;
-                itensCriados.add("CARTA: " + quantidade + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
-                log.info("  ✅ CARTA: {} x R$ {} = R$ {}", quantidade, valorUnitario, item.getValorTotal());
+                itensCriados.add("CARTA: " + cartas + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
+                log.info("  ✅ CARTA: {} x R$ {} = R$ {}", cartas, valorUnitario, item.getValorTotal());
             }
         }
 
-        // E-MAILS
+        // ========== 2. E-MAILS ==========
         if (possuiEnriquecimento) {
+            // 🔥 COM ENRIQUECIMENTO: SEPARADO
             String codigoEmailSem = "04.01.03.94341";
-            if (produtosAssociado.containsKey(codigoEmailSem)) {
-                Integer quantidade = notificacao.getEmailsSemEnriquecimento() != null ? 
-                        notificacao.getEmailsSemEnriquecimento() : 0;
+            if (emailSemEnr > 0 && produtosAssociado.containsKey(codigoEmailSem)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoEmailSem);
-                
-                if (quantidade > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoEmailSem,
-                            "NOTIFICAÇÃO SPC E-MAIL (" + quantidade + " unid.)",
-                            quantidade,
+                            "NOTIFICAÇÃO SPC E-MAIL (" + emailSemEnr + " unid.)",
+                            emailSemEnr,
                             valorUnitario,
                             "D"
                     );
                     itens.add(item);
                     valorTotalNotificacoes = valorTotalNotificacoes.add(item.getValorTotal());
                     count++;
-                    itensCriados.add("E-MAIL SEM ENR: " + quantidade + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
-                    log.info("  ✅ E-MAIL SEM ENR: {} x R$ {} = R$ {}", quantidade, valorUnitario, item.getValorTotal());
+                    itensCriados.add("E-MAIL SEM ENR: " + emailSemEnr + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
+                    log.info("  ✅ E-MAIL SEM ENR: {} x R$ {} = R$ {}", emailSemEnr, valorUnitario, item.getValorTotal());
                 }
             }
             
             String codigoEmailCom = "04.01.03.94432";
-            if (produtosAssociado.containsKey(codigoEmailCom)) {
-                Integer quantidade = notificacao.getEmailsComEnriquecimento() != null ? 
-                        notificacao.getEmailsComEnriquecimento() : 0;
+            if (emailComEnr > 0 && produtosAssociado.containsKey(codigoEmailCom)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoEmailCom);
-                
-                if (quantidade > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoEmailCom,
-                            "NOTIFICAÇÃO SPC E-MAIL C/ ENRIQUECIMENTO (" + quantidade + " unid.)",
-                            quantidade,
+                            "NOTIFICAÇÃO SPC E-MAIL C/ ENRIQUECIMENTO (" + emailComEnr + " unid.)",
+                            emailComEnr,
                             valorUnitario,
                             "D"
                     );
                     itens.add(item);
                     valorTotalNotificacoes = valorTotalNotificacoes.add(item.getValorTotal());
                     count++;
-                    itensCriados.add("E-MAIL COM ENR: " + quantidade + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
-                    log.info("  ✅ E-MAIL COM ENR: {} x R$ {} = R$ {}", quantidade, valorUnitario, item.getValorTotal());
+                    itensCriados.add("E-MAIL COM ENR: " + emailComEnr + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
+                    log.info("  ✅ E-MAIL COM ENR: {} x R$ {} = R$ {}", emailComEnr, valorUnitario, item.getValorTotal());
                 }
             }
         } else {
+            // 🔥 SEM ENRIQUECIMENTO: SOMA TOTAL (INCLUINDO OS COM ENRIQUECIMENTO)
+            int totalEmails = emailSemEnr + emailComEnr;
             String codigoEmail = "04.01.03.94341";
-            if (produtosAssociado.containsKey(codigoEmail)) {
-                Integer totalEmails = (notificacao.getEmailsSemEnriquecimento() != null ? notificacao.getEmailsSemEnriquecimento() : 0) +
-                                      (notificacao.getEmailsComEnriquecimento() != null ? notificacao.getEmailsComEnriquecimento() : 0);
+            if (totalEmails > 0 && produtosAssociado.containsKey(codigoEmail)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoEmail);
-                
-                if (totalEmails > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoEmail,
                             "NOTIFICAÇÃO SPC E-MAIL (" + totalEmails + " unid.)",
@@ -557,59 +581,53 @@ public class FaturaGeracaoService {
             }
         }
 
-        // SMS
+        // ========== 3. SMS ==========
         if (possuiEnriquecimento) {
+            // 🔥 COM ENRIQUECIMENTO: SEPARADO
             String codigoSmsSem = "04.01.03.94342";
-            if (produtosAssociado.containsKey(codigoSmsSem)) {
-                Integer quantidade = notificacao.getSmsSemEnriquecimento() != null ? 
-                        notificacao.getSmsSemEnriquecimento() : 0;
+            if (smsSemEnr > 0 && produtosAssociado.containsKey(codigoSmsSem)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoSmsSem);
-                
-                if (quantidade > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoSmsSem,
-                            "NOTIFICAÇÃO SPC SMS (" + quantidade + " unid.)",
-                            quantidade,
+                            "NOTIFICAÇÃO SPC SMS (" + smsSemEnr + " unid.)",
+                            smsSemEnr,
                             valorUnitario,
                             "D"
                     );
                     itens.add(item);
                     valorTotalNotificacoes = valorTotalNotificacoes.add(item.getValorTotal());
                     count++;
-                    itensCriados.add("SMS SEM ENR: " + quantidade + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
-                    log.info("  ✅ SMS SEM ENR: {} x R$ {} = R$ {}", quantidade, valorUnitario, item.getValorTotal());
+                    itensCriados.add("SMS SEM ENR: " + smsSemEnr + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
+                    log.info("  ✅ SMS SEM ENR: {} x R$ {} = R$ {}", smsSemEnr, valorUnitario, item.getValorTotal());
                 }
             }
             
             String codigoSmsCom = "04.01.03.94431";
-            if (produtosAssociado.containsKey(codigoSmsCom)) {
-                Integer quantidade = notificacao.getSmsComEnriquecimento() != null ? 
-                        notificacao.getSmsComEnriquecimento() : 0;
+            if (smsComEnr > 0 && produtosAssociado.containsKey(codigoSmsCom)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoSmsCom);
-                
-                if (quantidade > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoSmsCom,
-                            "NOTIFICAÇÃO SPC SMS C/ ENRIQUECIMENTO (" + quantidade + " unid.)",
-                            quantidade,
+                            "NOTIFICAÇÃO SPC SMS C/ ENRIQUECIMENTO (" + smsComEnr + " unid.)",
+                            smsComEnr,
                             valorUnitario,
                             "D"
                     );
                     itens.add(item);
                     valorTotalNotificacoes = valorTotalNotificacoes.add(item.getValorTotal());
                     count++;
-                    itensCriados.add("SMS COM ENR: " + quantidade + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
-                    log.info("  ✅ SMS COM ENR: {} x R$ {} = R$ {}", quantidade, valorUnitario, item.getValorTotal());
+                    itensCriados.add("SMS COM ENR: " + smsComEnr + " x R$ " + valorUnitario + " = R$ " + item.getValorTotal());
+                    log.info("  ✅ SMS COM ENR: {} x R$ {} = R$ {}", smsComEnr, valorUnitario, item.getValorTotal());
                 }
             }
         } else {
+            // 🔥 SEM ENRIQUECIMENTO: SOMA TOTAL (INCLUINDO OS COM ENRIQUECIMENTO)
+            int totalSms = smsSemEnr + smsComEnr;
             String codigoSms = "04.01.03.94342";
-            if (produtosAssociado.containsKey(codigoSms)) {
-                Integer totalSms = (notificacao.getSmsSemEnriquecimento() != null ? notificacao.getSmsSemEnriquecimento() : 0) +
-                                   (notificacao.getSmsComEnriquecimento() != null ? notificacao.getSmsComEnriquecimento() : 0);
+            if (totalSms > 0 && produtosAssociado.containsKey(codigoSms)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoSms);
-                
-                if (totalSms > 0 && valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
+                if (valorUnitario != null && valorUnitario.compareTo(BigDecimal.ZERO) > 0) {
                     FaturaItem item = criarItemFatura(
                             codigoSms,
                             "NOTIFICAÇÃO SPC SMS (" + totalSms + " unid.)",
@@ -626,8 +644,31 @@ public class FaturaGeracaoService {
             }
         }
 
+        // 🔥 VERIFICAR SE A SOMA DOS ITENS CORRESPONDE AO TOTAL DIGITAL
+        int totalItensCriados = 0;
+        for (FaturaItem item : itens) {
+            totalItensCriados += item.getQuantidade().intValue();
+        }
+        
+        int totalDigitalEsperado = (notificacao.getSmsTotal() != null ? notificacao.getSmsTotal() : 0) +
+                                   (notificacao.getEmailsTotal() != null ? notificacao.getEmailsTotal() : 0) +
+                                   (notificacao.getCartasTotal() != null ? notificacao.getCartasTotal() : 0);
+        
+        log.info("📊 VERIFICAÇÃO: Total itens criados: {}, Total digital esperado: {}", 
+                totalItensCriados, totalDigitalEsperado);
+        
+        if (totalItensCriados != totalDigitalEsperado) {
+            log.warn("⚠️ INCONSISTÊNCIA: Total itens criados ({}) difere do total digital esperado ({})", 
+                    totalItensCriados, totalDigitalEsperado);
+            log.warn("   Verifique se todos os produtos de notificação estão configurados para o associado");
+            if (temNotificacoesComEnriquecimento && !possuiEnriquecimento) {
+                log.warn("   🔥 Corrigido: Notificações COM enriquecimento foram somadas às SEM enriquecimento");
+            }
+        }
+
         if (count == 0) {
             log.warn("⚠️ NENHUM item de notificação foi criado para associado {}", associado.getId());
+            log.warn("   Verifique se há produtos configurados e quantidades > 0");
         } else {
             log.info("✅ Criados {} itens de notificação - Valor total: R$ {}", count, valorTotalNotificacoes);
             log.info("📋 Itens criados: {}", String.join(" | ", itensCriados));
@@ -636,6 +677,9 @@ public class FaturaGeracaoService {
         return itens;
     }
 
+    /**
+     * 🔥 Calcula o valor total das notificações
+     */
     private BigDecimal calcularValorTotalNotificacoes(NotificacaoAssociado notificacao) {
         BigDecimal total = BigDecimal.ZERO;
         
@@ -659,6 +703,9 @@ public class FaturaGeracaoService {
         return total;
     }
 
+    /**
+     * Cria um item de fatura
+     */
     private FaturaItem criarItemFatura(String codigo, String descricao, Integer quantidade, BigDecimal valorUnitario, String tipoLancamento) {
         FaturaItem item = new FaturaItem();
         item.setCodigoProduto(codigo);
@@ -736,7 +783,8 @@ public class FaturaGeracaoService {
 
             FaturaItem faturaItem = new FaturaItem();
             faturaItem.setDescricao(itemConsolidacao.getDescricaoServico());
-            faturaItem.setCodigoProduto(codigoProdutoRM != null ? codigoProdutoRM : itemConsolidacao.getCodigoProduto());
+            faturaItem
+                    .setCodigoProduto(codigoProdutoRM != null ? codigoProdutoRM : itemConsolidacao.getCodigoProduto());
             faturaItem.setQuantidade(qtdeCalculada);
             faturaItem.setValorUnitario(itemConsolidacao.getValorUnitario());
             faturaItem.setValorTotal(qtdeCalculada.multiply(itemConsolidacao.getValorUnitario()));
@@ -971,6 +1019,11 @@ public class FaturaGeracaoService {
         }
     }
     
+    /**
+     * 🔥 Remove itens duplicados de notificação
+     * Remove QUALQUER item que contenha "NOTIFICACAO" na descrição (exceto os detalhados)
+     * quando houver mais de um com a mesma quantidade OU quando a quantidade for igual ao total digital
+     */
     private void removerItemNotificacaoDuplicado(List<FaturaItem> itens, NotificacaoAssociado notificacao) {
         
         log.info("========================================");
@@ -1050,6 +1103,7 @@ public class FaturaGeracaoService {
         
         List<FaturaItem> itensParaRemover = new ArrayList<>();
         
+        // Verificar duplicatas (mesma quantidade)
         Map<Integer, List<FaturaItem>> itensPorQuantidade = new LinkedHashMap<>();
         for (FaturaItem item : itensNotificacaoNota) {
             int qtd = item.getQuantidade().intValue();
@@ -1066,6 +1120,7 @@ public class FaturaGeracaoService {
             }
         }
         
+        // Verificar NOTIFICACAO SPC com quantidade igual ao total digital
         for (FaturaItem item : itensNotificacaoNota) {
             String desc = item.getDescricao() != null ? item.getDescricao().toUpperCase() : "";
             int qtdItem = item.getQuantidade().intValue();
@@ -1088,6 +1143,7 @@ public class FaturaGeracaoService {
             }
         }
         
+        // Verificar REGISTRO / NOTIFICACAO com quantidade igual ao total digital
         for (FaturaItem item : itensNotificacaoNota) {
             String desc = item.getDescricao() != null ? item.getDescricao().toUpperCase() : "";
             int qtdItem = item.getQuantidade().intValue();

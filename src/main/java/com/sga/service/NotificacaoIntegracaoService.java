@@ -1,10 +1,12 @@
 // src/main/java/com/sga/service/NotificacaoIntegracaoService.java
+
 package com.sga.service;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;  // 🔥 ADICIONAR IMPORT
 import java.util.List;
-import java.util.Map;
+import java.util.Map;      // 🔥 ADICIONAR IMPORT
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import com.sga.dto.NotificacaoAssociadoDTO;
 import com.sga.dto.NotificacaoSumarizadaDTO;
 import com.sga.model.Associado;
 import com.sga.model.NotificacaoAssociado;
+import com.sga.model.SincronizacaoNotificacao;  // 🔥 ADICIONAR IMPORT
 import com.sga.model.notificacao.NotificacaoSumarizada;
 import com.sga.repository.AssociadoRepository;
 import com.sga.repository.NotificacaoAssociadoRepository;
@@ -28,6 +31,9 @@ public class NotificacaoIntegracaoService {
 
     private static final Logger log = LoggerFactory.getLogger(NotificacaoIntegracaoService.class);
 
+    private static final java.time.format.DateTimeFormatter DATE_FORMATTER = 
+            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     @Autowired
     private NotificacaoSumarizadaRepository notificacaoSumarizadaRepository;
 
@@ -37,26 +43,22 @@ public class NotificacaoIntegracaoService {
     @Autowired
     private AssociadoRepository associadoRepository;
 
+    @Autowired
+    private SincronizacaoNotificacaoService sincronizacaoService;  // 🔥 ADICIONAR DEPENDÊNCIA
+
     @Value("${notificacao.scheduler.dias-retrospectiva:30}")
     private Integer diasRetrospectiva;
 
     // ========== MÉTODO AUXILIAR PARA CONVERTER CÓDIGO SPC EM ID SGA ==========
 
-    /**
-     * 🔥 Converte código SPC para ID do associado no SGA
-     * @param codigoSpc Código SPC (ex: 3643 ou 00003643)
-     * @return ID do associado no SGA ou null se não encontrado
-     */
     private Long converterCodigoSpcParaIdSga(String codigoSpc) {
         if (codigoSpc == null || codigoSpc.isEmpty()) {
             return null;
         }
         
-        // Remover zeros à esquerda para buscar no SGA
         String codigoLimpo = codigoSpc.replaceAll("^0+", "");
         
         try {
-            // Buscar associado pelo código SPC
             Associado associado = associadoRepository.findByCodigoSpc(codigoLimpo).orElse(null);
             
             if (associado != null) {
@@ -74,9 +76,172 @@ public class NotificacaoIntegracaoService {
 
     // ========== SINCRONIZAÇÕES ==========
 
+    /**
+     * 🔥 SINCRONIZA POR PERÍODO - DATAS OBRIGATÓRIAS
+     * Formato esperado: dd/MM/yyyy
+     * 🔥 CORRIGIDO: Retorna Map com processados e totalRegistros
+     */
+    @Transactional
+    public Map<String, Object> sincronizarNotificacoesPorPeriodo(LocalDate dataInicio, LocalDate dataFim, String codigoAssociado) {
+        
+        Map<String, Object> resultado = new HashMap<>();
+        
+        // 🔥 VALIDAR DATAS OBRIGATÓRIAS
+        if (dataInicio == null || dataFim == null) {
+            log.error("❌ Datas são obrigatórias para sincronização");
+            resultado.put("processados", 0);
+            resultado.put("totalRegistros", 0);
+            resultado.put("mensagem", "Datas são obrigatórias");
+            return resultado;
+        }
+        
+        if (dataInicio.isAfter(dataFim)) {
+            log.error("❌ Data de início ({}) não pode ser maior que data de fim ({})", 
+                    dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER));
+            resultado.put("processados", 0);
+            resultado.put("totalRegistros", 0);
+            resultado.put("mensagem", "Data de início não pode ser maior que data de fim");
+            return resultado;
+        }
+        
+        log.info("🔄 SINCRONIZANDO do MS-SQL - Início: {}, Fim: {}, Código: {}", 
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), codigoAssociado);
+
+        // 🔥 BUSCAR DO MS-SQL (APENAS PARA SINCRONIZAÇÃO)
+        List<NotificacaoSumarizada> notificacoes = notificacaoSumarizadaRepository
+                .buscarNotificacoesMSSQL(dataInicio, dataFim, codigoAssociado);
+
+        if (notificacoes.isEmpty()) {
+            log.warn("⚠️ Nenhuma notificação encontrada no MS-SQL para o período");
+            resultado.put("processados", 0);
+            resultado.put("totalRegistros", 0);
+            resultado.put("mensagem", "Nenhuma notificação encontrada");
+            return resultado;
+        }
+
+        int mes = dataFim.getMonthValue();
+        int ano = dataFim.getYear();
+
+        log.info("📅 Período: {} à {} - Competência: {}/{}", 
+                dataInicio.format(DATE_FORMATTER), dataFim.format(DATE_FORMATTER), mes, ano);
+        log.info("📊 Total de registros encontrados no MS-SQL: {}", notificacoes.size());
+
+        int processados = 0;
+        int salvos = 0;
+        int erros = 0;
+        int totalRegistros = notificacoes.size();
+
+        for (NotificacaoSumarizada n : notificacoes) {
+            try {
+                String codigoSpc = String.valueOf(n.getCodigoAssociado());
+                
+                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
+                Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
+                
+                if (idSga == null) {
+                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
+                    erros++;
+                    continue;
+                }
+
+                // 🔥 BUSCAR OU CRIAR NOTIFICAÇÃO DO ASSOCIADO
+                NotificacaoAssociado notificacao = notificacaoAssociadoRepository
+                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
+                        .orElse(new NotificacaoAssociado());
+
+                // 🔥 PREENCHER DADOS
+                notificacao.setAssociadoId(idSga);
+                notificacao.setCodigoSpc(codigoSpc);
+                notificacao.setMesReferencia(mes);
+                notificacao.setAnoReferencia(ano);
+                notificacao.setPeriodoInicio(dataInicio);
+                notificacao.setPeriodoFim(dataFim);
+                notificacao.setTotalRegistros(n.getTotalRegistrosDigital() != null ? n.getTotalRegistrosDigital() : 0);
+
+                // 🔥 ATUALIZAR SMS
+                int smsSemEnr = notificacao.getSmsSemEnriquecimento() != null ? notificacao.getSmsSemEnriquecimento() : 0;
+                int smsComEnr = notificacao.getSmsComEnriquecimento() != null ? notificacao.getSmsComEnriquecimento() : 0;
+                int novoSmsSemEnr = n.getSmsSemEnriquecimento() != null ? n.getSmsSemEnriquecimento() : 0;
+                int novoSmsComEnr = n.getSmsComEnriquecimento() != null ? n.getSmsComEnriquecimento() : 0;
+                
+                notificacao.setSmsSemEnriquecimento(smsSemEnr + novoSmsSemEnr);
+                notificacao.setSmsComEnriquecimento(smsComEnr + novoSmsComEnr);
+
+                // 🔥 ATUALIZAR E-MAIL
+                int emailSemEnr = notificacao.getEmailsSemEnriquecimento() != null ? notificacao.getEmailsSemEnriquecimento() : 0;
+                int emailComEnr = notificacao.getEmailsComEnriquecimento() != null ? notificacao.getEmailsComEnriquecimento() : 0;
+                int novoEmailSemEnr = n.getEmailsSemEnriquecimento() != null ? n.getEmailsSemEnriquecimento() : 0;
+                int novoEmailComEnr = n.getEmailsComEnriquecimento() != null ? n.getEmailsComEnriquecimento() : 0;
+                
+                notificacao.setEmailsSemEnriquecimento(emailSemEnr + novoEmailSemEnr);
+                notificacao.setEmailsComEnriquecimento(emailComEnr + novoEmailComEnr);
+
+                // 🔥 ATUALIZAR CARTAS
+                int cartasTotal = notificacao.getCartasTotal() != null ? notificacao.getCartasTotal() : 0;
+                int novasCartas = n.getCartasEnviadas() != null ? n.getCartasEnviadas() : 0;
+                notificacao.setCartasTotal(cartasTotal + novasCartas);
+
+                // 🔥 ATUALIZAR NÃO ENVIADAS
+                int naoEnviadas = notificacao.getNaoEnviadas() != null ? notificacao.getNaoEnviadas() : 0;
+                int novasNaoEnviadas = n.getNaoEnviada() != null ? n.getNaoEnviada() : 0;
+                notificacao.setNaoEnviadas(naoEnviadas + novasNaoEnviadas);
+
+                // 🔥 CALCULAR TOTAIS E VALORES
+                notificacao.calcularTotais();
+                notificacao.calcularValoresTotais();
+
+                // 🔥 SALVAR NO BANCO LOCAL
+                notificacaoAssociadoRepository.save(notificacao);
+                salvos++;
+                processados++;
+
+                log.debug("✅ Associado {} (SPC: {}) processado: SMS={}, E-mail={}, Cartas={}", 
+                        idSga, codigoSpc, 
+                        notificacao.getSmsTotal(), 
+                        notificacao.getEmailsTotal(), 
+                        notificacao.getCartasTotal());
+
+            } catch (Exception e) {
+                log.error("❌ Erro ao processar associado {}: {}", n.getCodigoAssociado(), e.getMessage(), e);
+                erros++;
+            }
+        }
+
+        // 🔥 REGISTRAR NA TABELA DE SINCRONIZAÇÃO
+        try {
+            SincronizacaoNotificacao sincronizacao = sincronizacaoService.salvarSincronizacao(
+                    dataInicio,
+                    dataFim,
+                    codigoAssociado,
+                    processados,
+                    totalRegistros,
+                    "SISTEMA"
+            );
+            log.info("✅ Registro de sincronização salvo - ID: {}", sincronizacao.getId());
+        } catch (Exception e) {
+            log.error("❌ Erro ao salvar registro de sincronização: {}", e.getMessage());
+        }
+
+        log.info("✅ Sincronização por período concluída!");
+        log.info("   📊 Total registros MS-SQL: {}", totalRegistros);
+        log.info("   📊 Total processados: {}", processados);
+        log.info("   💾 Total salvos: {}", salvos);
+        log.info("   ❌ Total erros: {}", erros);
+        
+        // 🔥 RETORNAR MAP COM TODOS OS DADOS
+        resultado.put("processados", processados);
+        resultado.put("totalRegistros", totalRegistros);
+        resultado.put("salvos", salvos);
+        resultado.put("erros", erros);
+        resultado.put("mensagem", "Sincronização concluída com sucesso");
+        
+        return resultado;
+    }
+
+    // ========== MÉTODOS LEGADO (MANTIDOS) ==========
+
     @Transactional
     public int sincronizarNotificacoes(Integer mes, Integer ano, String codigoAssociado) {
-    	
         log.info("🔄 Sincronizando notificações - {}/{} - Código: {}", mes, ano, codigoAssociado);
 
         LocalDate dataInicio = LocalDate.of(ano, mes, 1);
@@ -102,7 +267,6 @@ public class NotificacaoIntegracaoService {
             List<NotificacaoSumarizada> lista = entry.getValue();
 
             try {
-                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
                 Long idSga = converterCodigoSpcParaIdSga(String.valueOf(codigoSpc));
                 
                 if (idSga == null) {
@@ -118,82 +282,6 @@ public class NotificacaoIntegracaoService {
         }
 
         log.info("✅ Sincronização concluída! {} associados processados", processados);
-        return processados;
-    }
-
-    @Transactional
-    public int sincronizarNotificacoesPorPeriodo(LocalDate dataInicio, LocalDate dataFim, String codigoAssociado) {
-        log.info("🔄 Sincronizando por período - Início: {}, Fim: {}", dataInicio, dataFim);
-
-        List<NotificacaoSumarizada> notificacoes = notificacaoSumarizadaRepository
-                .buscarNotificacoesSumarizadas(dataInicio, dataFim, codigoAssociado);
-
-        if (notificacoes.isEmpty()) {
-            log.warn("⚠️ Nenhuma notificação encontrada para o período");
-            return 0;
-        }
-
-        // 🔥 A competência é o mês da data de FIM do período
-        int mes = dataFim.getMonthValue();
-        int ano = dataFim.getYear();
-
-        log.info("📅 Período: {} à {} - Competência: {}/{}", dataInicio, dataFim, mes, ano);
-
-        int processados = 0;
-        for (NotificacaoSumarizada n : notificacoes) {
-            try {
-                String codigoSpc = String.valueOf(n.getCodigoAssociado());
-                
-                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
-                Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
-                
-                if (idSga == null) {
-                    log.warn("⚠️ Associado não encontrado para código SPC: {}, ignorando", codigoSpc);
-                    continue;
-                }
-
-                NotificacaoAssociado notificacao = notificacaoAssociadoRepository
-                        .findByAssociadoIdAndMesReferenciaAndAnoReferencia(idSga, mes, ano)
-                        .orElse(new NotificacaoAssociado());
-
-                notificacao.setAssociadoId(idSga);
-                notificacao.setCodigoSpc(codigoSpc);
-                notificacao.setMesReferencia(mes);
-                notificacao.setAnoReferencia(ano);
-                notificacao.setPeriodoInicio(dataInicio);
-                notificacao.setPeriodoFim(dataFim);
-
-                notificacao.setSmsSemEnriquecimento(
-                    notificacao.getSmsSemEnriquecimento() + (n.getSmsSemEnriquecimento() != null ? n.getSmsSemEnriquecimento() : 0)
-                );
-                notificacao.setSmsComEnriquecimento(
-                    notificacao.getSmsComEnriquecimento() + (n.getSmsComEnriquecimento() != null ? n.getSmsComEnriquecimento() : 0)
-                );
-                notificacao.setEmailsSemEnriquecimento(
-                    notificacao.getEmailsSemEnriquecimento() + (n.getEmailsSemEnriquecimento() != null ? n.getEmailsSemEnriquecimento() : 0)
-                );
-                notificacao.setEmailsComEnriquecimento(
-                    notificacao.getEmailsComEnriquecimento() + (n.getEmailsComEnriquecimento() != null ? n.getEmailsComEnriquecimento() : 0)
-                );
-                notificacao.setCartasTotal(
-                    notificacao.getCartasTotal() + (n.getCartasEnviadas() != null ? n.getCartasEnviadas() : 0)
-                );
-                notificacao.setNaoEnviadas(
-                    notificacao.getNaoEnviadas() + (n.getNaoEnviada() != null ? n.getNaoEnviada() : 0)
-                );
-
-                notificacao.calcularTotais();
-                notificacao.calcularValoresTotais();
-
-                notificacaoAssociadoRepository.save(notificacao);
-                processados++;
-
-            } catch (Exception e) {
-                log.error("❌ Erro ao processar associado {}: {}", n.getCodigoAssociado(), e.getMessage(), e);
-            }
-        }
-
-        log.info("✅ Sincronização por período concluída! {} associados processados", processados);
         return processados;
     }
 
@@ -214,7 +302,6 @@ public class NotificacaoIntegracaoService {
             try {
                 String codigoSpc = String.valueOf(n.getCodigoAssociado());
                 
-                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
                 Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
                 
                 if (idSga == null) {
@@ -263,7 +350,6 @@ public class NotificacaoIntegracaoService {
             return 0;
         }
 
-        // 🔥 A competência é o mês da data de FIM do período
         int mes = dataFim.getMonthValue();
         int ano = dataFim.getYear();
 
@@ -274,7 +360,6 @@ public class NotificacaoIntegracaoService {
             try {
                 String codigoSpc = String.valueOf(n.getCodigoAssociado());
                 
-                // 🔥 CONVERTER CÓDIGO SPC PARA ID SGA
                 Long idSga = converterCodigoSpcParaIdSga(codigoSpc);
                 
                 if (idSga == null) {

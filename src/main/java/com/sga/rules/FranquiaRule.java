@@ -2,8 +2,9 @@ package com.sga.rules;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,28 +22,23 @@ public class FranquiaRule {
     private static final String PREFIXO_FRANQUIA = "FRANQUIA DE CONSULTA";
     
     // Mapeamento específico de franquia para serviço
-    private static final java.util.Map<String, String> MAPEAMENTO_ESPECIFICO = new java.util.HashMap<>();
+    private static final Map<String, String> MAPEAMENTO_ESPECIFICO = new HashMap<>();
     static {
-        // Mapeamentos explícitos para evitar falsos positivos
-        MAPEAMENTO_ESPECIFICO.put("SPC MIX", "SPC MIX (SPC + CHEQUE) . INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC MIX PLUS", "SPC MIX PLUS INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC MAX", "SPC MAX INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC MAXI", "SPC MAXI INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC PLUS", "SPC PLUS INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC RELATORIO", "SPC RELATORIO PJ INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC RELATORIO COMPLETO", "SPC RELATORIO COMPLETO INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC MIX POSITIVO FOR", "SPC MIX POSITIVO FOR INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("SPC MIX POSITIVO", "SPC MIX POSITIVO INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MIX MAIS", "SPC MIX MAIS INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MAXI", "SPC MAXI INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MAXI 1/1", "SPC MAXI INTERNET");
-        MAPEAMENTO_ESPECIFICO.put("CHEQUE", "CHEQUE INTERNET");
+        MAPEAMENTO_ESPECIFICO.put("SPC MIX", "SPC MIX (SPC + CHEQUE)");
+        MAPEAMENTO_ESPECIFICO.put("SPC MIX PLUS", "SPC MIX PLUS");
+        MAPEAMENTO_ESPECIFICO.put("SPC MAX", "SPC MAX");
+        MAPEAMENTO_ESPECIFICO.put("SPC MAXI", "SPC MAXI");
+        MAPEAMENTO_ESPECIFICO.put("SPC PLUS", "SPC PLUS");
+        MAPEAMENTO_ESPECIFICO.put("SPC RELATORIO", "SPC RELATORIO");
+        MAPEAMENTO_ESPECIFICO.put("SPC RELATORIO COMPLETO", "SPC RELATORIO COMPLETO");
+        MAPEAMENTO_ESPECIFICO.put("SPC MIX POSITIVO FOR", "SPC MIX POSITIVO FOR");
+        MAPEAMENTO_ESPECIFICO.put("SPC MIX POSITIVO", "SPC MIX POSITIVO");
+        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MIX MAIS", "NOVO SPC MIX MAIS");
+        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MAXI", "NOVO SPC MAXI");
+        MAPEAMENTO_ESPECIFICO.put("NOVO SPC MAXI 1/1", "NOVO SPC MAXI 1/1");
+        MAPEAMENTO_ESPECIFICO.put("CHEQUE", "CHEQUE");
     }
     
-    /**
-     * Aplica a regra de franquia na fatura
-     * Processa TODAS as franquias encontradas
-     */
     public Fatura aplicarRegraFranquia(Fatura fatura, Associado associado) {
         if (fatura == null || associado == null) {
             log.warn("Fatura ou associado nulo, ignorando regra de franquia");
@@ -76,27 +72,38 @@ public class FranquiaRule {
         }
         log.info("");
         
-        // 2. PROCESSAR CADA FRANQUIA
-        List<FaturaItem> itensParaRemover = new ArrayList<>();
+        // 2. PROCESSAR CADA FRANQUIA (agrupando serviços)
+        List<FaturaItem> todosServicosRemover = new ArrayList<>();
+        List<FaturaItem> servicosComExcedente = new ArrayList<>();
         
         for (FaturaItem franquiaItem : itensFranquia) {
-            Optional<FaturaItem> servicoRemover = processarFranquia(fatura, franquiaItem);
-            servicoRemover.ifPresent(itensParaRemover::add);
+            processarFranquia(fatura, franquiaItem, todosServicosRemover, servicosComExcedente);
         }
         
-        // 3. REMOVER OS ITENS DE SERVIÇO (se houver)
-        for (FaturaItem item : itensParaRemover) {
+        // 3. REMOVER TODOS OS SERVIÇOS MARCADOS
+        for (FaturaItem item : todosServicosRemover) {
             if (fatura.getItens().contains(item)) {
                 fatura.getItens().remove(item);
-                log.info("🗑️ Serviço removido: {} (Qtd: {})", item.getDescricao(), item.getQuantidade());
+                log.info("🗑️ Serviço removido: {} (Qtd: {})", 
+                        item.getDescricao(), item.getQuantidade());
             }
         }
         
-        // 4. REMOVER TODAS AS FRANQUIAS
+        // 4. ADICIONAR SERVIÇOS COM EXCEDENTE (se houver)
+        for (FaturaItem item : servicosComExcedente) {
+            if (!fatura.getItens().contains(item)) {
+                fatura.getItens().add(item);
+                log.info("✅ Serviço com excedente adicionado: {} (Qtd: {})", 
+                        item.getDescricao(), item.getQuantidade());
+            }
+        }
+        
+        // 5. REMOVER TODAS AS FRANQUIAS
         for (FaturaItem franquiaItem : itensFranquia) {
             if (fatura.getItens().contains(franquiaItem)) {
                 fatura.getItens().remove(franquiaItem);
-                log.info("🗑️ Franquia removida: {} (Qtd: {})", franquiaItem.getDescricao(), franquiaItem.getQuantidade());
+                log.info("🗑️ Franquia removida: {} (Qtd: {})", 
+                        franquiaItem.getDescricao(), franquiaItem.getQuantidade());
             }
         }
         
@@ -108,9 +115,6 @@ public class FranquiaRule {
         return fatura;
     }
     
-    /**
-     * Verifica se a descrição é uma franquia
-     */
     private boolean isFranquia(String descricao) {
         if (descricao == null) return false;
         String desc = descricao.toUpperCase();
@@ -120,10 +124,11 @@ public class FranquiaRule {
     }
     
     /**
-     * Processa uma única franquia
-     * @return Optional contendo o serviço a ser removido, ou vazio se não houver
+     * Processa uma única franquia - AGRUPANDO TODOS OS SERVIÇOS
      */
-    private Optional<FaturaItem> processarFranquia(Fatura fatura, FaturaItem franquiaItem) {
+    private void processarFranquia(Fatura fatura, FaturaItem franquiaItem, 
+            List<FaturaItem> todosServicosRemover, List<FaturaItem> servicosComExcedente) {
+        
         log.info("========================================");
         log.info("📋 Processando franquia: {}", franquiaItem.getDescricao());
         
@@ -135,160 +140,96 @@ public class FranquiaRule {
         
         if (limiteFranquia == 0) {
             log.warn("⚠️ Limite da franquia é zero, apenas a franquia será removida");
-            return Optional.empty();
+            return;
         }
         
-        // 2. Extrair o nome do serviço vinculado
-        String nomeServico = extrairNomeServicoDaFranquia(franquiaItem.getDescricao());
-        log.info("🔍 Nome do serviço extraído: '{}'", nomeServico);
+        // 2. Extrair o nome base do serviço
+        String nomeBase = extrairNomeBaseDaFranquia(franquiaItem.getDescricao());
+        log.info("🔍 Nome base do serviço: '{}'", nomeBase);
         
-        if (nomeServico == null || nomeServico.isEmpty()) {
-            log.warn("⚠️ Não foi possível extrair o nome do serviço da franquia");
-            return Optional.empty();
+        if (nomeBase == null || nomeBase.isEmpty()) {
+            log.warn("⚠️ Não foi possível extrair o nome base da franquia");
+            return;
         }
         
-        // 3. Buscar o serviço relacionado na fatura (usando mapeamento específico)
-        Optional<FaturaItem> servicoItemOpt = buscarServicoPorFranquia(fatura, nomeServico, franquiaItem);
+        // 3. 🔥 BUSCAR TODOS OS SERVIÇOS RELACIONADOS (TODOS OS MEIOS DE ACESSO)
+        List<FaturaItem> servicosEncontrados = new ArrayList<>();
         
-        if (servicoItemOpt.isEmpty()) {
-            log.warn("❌ Serviço relacionado NÃO encontrado para: {}", nomeServico);
-            log.info("   ℹ️ Apenas a franquia será removida");
-            return Optional.empty();
-        }
-        
-        FaturaItem servicoItem = servicoItemOpt.get();
-        
-        // 4. Obter quantidade do serviço
-        BigDecimal quantidadeServicoBD = servicoItem.getQuantidade() != null ? 
-            servicoItem.getQuantidade() : BigDecimal.ZERO;
-        Integer quantidadeServico = quantidadeServicoBD.intValue();
-        
-        log.info("📋 Serviço relacionado encontrado: {}", servicoItem.getDescricao());
-        log.info("   Quantidade do serviço: {}", quantidadeServico);
-        log.info("📊 Comparação: Serviço={} vs Franquia={}", quantidadeServico, limiteFranquia);
-        
-        // 5. Aplicar regra
-        if (quantidadeServico > limiteFranquia) {
-            // Excedeu: manter apenas o excedente do serviço
-            Integer excedente = quantidadeServico - limiteFranquia;
-            servicoItem.setQuantidade(BigDecimal.valueOf(excedente));
-            servicoItem.setValorTotal(
-                servicoItem.getQuantidade().multiply(servicoItem.getValorUnitario())
-            );
-            log.info("✅ Franquia EXCEDIDA!");
-            log.info("   Limite: {}, Consumo: {}, Excedente: {}", 
-                limiteFranquia, quantidadeServico, excedente);
-            log.info("   Serviço atualizado: Quantidade={}, Valor=R$ {}", 
-                excedente, servicoItem.getValorTotal());
-            return Optional.empty(); // Não remove o serviço
-        } else {
-            // Não excedeu: remover o serviço
-            log.info("✅ Franquia NÃO excedida. Serviço será removido");
-            return Optional.of(servicoItem);
-        }
-    }
-    
-    /**
-     * Busca o serviço relacionado usando mapeamento específico
-     */
-    private Optional<FaturaItem> buscarServicoPorFranquia(Fatura fatura, String nomeServico, FaturaItem franquiaItem) {
-        String nomeBusca = nomeServico.toUpperCase().trim();
-        
-        log.info("   🔍 Buscando serviço específico para: '{}'", nomeBusca);
-        
-        // 1. Tentar mapeamento específico (mais confiável)
-        String servicoEsperado = MAPEAMENTO_ESPECIFICO.get(nomeBusca);
-        if (servicoEsperado != null) {
-            log.info("   📌 Mapeamento encontrado: '{}' -> '{}'", nomeBusca, servicoEsperado);
+        for (FaturaItem item : fatura.getItens()) {
+            if (item == franquiaItem || item.getDescricao() == null) continue;
             
-            // Buscar pelo nome mapeado (exato ou contém)
-            Optional<FaturaItem> itemOpt = fatura.getItens().stream()
-                .filter(item -> item != franquiaItem)
-                .filter(item -> item.getDescricao() != null)
-                .filter(item -> item.getDescricao().toUpperCase().contains(servicoEsperado.toUpperCase()))
-                .findFirst();
+            String descItem = item.getDescricao().toUpperCase();
             
-            if (itemOpt.isPresent()) {
-                log.info("   ✅ Serviço encontrado pelo mapeamento: {}", itemOpt.get().getDescricao());
-                return itemOpt;
+            // Verificar se o item contém o nome base (ignorando meio de acesso)
+            if (descItem.contains(nomeBase.toUpperCase())) {
+                servicosEncontrados.add(item);
+                log.info("   ✅ Serviço encontrado: {} (Qtd: {})", 
+                        item.getDescricao(), item.getQuantidade());
             }
         }
         
-        // 2. Busca por contém (menos agressiva)
-        // 🔥 IMPORTANTE: Buscar APENAS o nome exato do serviço, sem palavras adicionais
-        log.info("   🔍 Buscando por nome exato: '{}'", nomeBusca);
+        if (servicosEncontrados.isEmpty()) {
+            log.warn("❌ Nenhum serviço relacionado encontrado para: {}", nomeBase);
+            return;
+        }
         
-        Optional<FaturaItem> itemOpt = fatura.getItens().stream()
-            .filter(item -> item != franquiaItem)
-            .filter(item -> item.getDescricao() != null)
-            .filter(item -> {
-                String desc = item.getDescricao().toUpperCase();
-                // Verifica se a descrição contém o nome do serviço
-                // E NÃO contém palavras que indicam outro serviço
-                boolean contem = desc.contains(nomeBusca);
+        // 4. 🔥 SOMAR QUANTIDADES DE TODOS OS SERVIÇOS
+        int totalQuantidade = 0;
+        for (FaturaItem item : servicosEncontrados) {
+            totalQuantidade += item.getQuantidade().intValue();
+        }
+        
+        log.info("📊 TOTAL DE SERVIÇOS ENCONTRADOS: {} serviços, soma={}", 
+                servicosEncontrados.size(), totalQuantidade);
+        log.info("📊 Comparação: Soma={} vs Franquia={}", totalQuantidade, limiteFranquia);
+        
+        // 5. 🔥 APLICAR REGRA BASEADA NA SOMA TOTAL
+        if (totalQuantidade > limiteFranquia) {
+            // Excedeu: manter apenas o excedente
+            int excedente = totalQuantidade - limiteFranquia;
+            log.info("✅ Franquia EXCEDIDA! Excedente: {}", excedente);
+            
+            // Marcar todos os serviços para remover
+            todosServicosRemover.addAll(servicosEncontrados);
+            
+            // 🔥 Criar um novo item com o excedente (usando o primeiro serviço como base)
+            if (excedente > 0 && !servicosEncontrados.isEmpty()) {
+                FaturaItem primeiroItem = servicosEncontrados.get(0);
+                FaturaItem novoItem = new FaturaItem();
+                novoItem.setCodigoProduto(primeiroItem.getCodigoProduto());
+                novoItem.setDescricao(primeiroItem.getDescricao());
+                novoItem.setQuantidade(BigDecimal.valueOf(excedente));
+                novoItem.setValorUnitario(primeiroItem.getValorUnitario());
+                novoItem.setValorTotal(
+                    novoItem.getQuantidade().multiply(novoItem.getValorUnitario())
+                );
+                novoItem.setTipoLancamento(primeiroItem.getTipoLancamento());
+                novoItem.setFatura(fatura);
                 
-                // Se contém, verificar se não é um falso positivo
-                if (contem) {
-                    // Lista de palavras que indicam falso positivo
-                    String[] falsosPositivos = {"MAIS", "POSITIVO", "PLUS", "MAX", "MAXI"};
-                    for (String fp : falsosPositivos) {
-                        if (desc.contains(fp) && !nomeBusca.contains(fp)) {
-                            // Se a descrição contém uma palavra que não está no nomeBusca, pode ser falso positivo
-                            // Mas só rejeita se a diferença for significativa
-                            log.info("   ⚠️ Possível falso positivo: '{}' contém '{}' mas também '{}'", 
-                                item.getDescricao(), nomeBusca, fp);
-                            // Ainda assim, considerar se o nomeBusca for muito específico
-                            if (nomeBusca.length() > 10) {
-                                return true; // Nome específico, mantém
-                            }
-                            return false; // Nome curto, pode ser falso positivo
-                        }
-                    }
-                    return true;
-                }
-                return false;
-            })
-            .findFirst();
-        
-        if (itemOpt.isPresent()) {
-            log.info("   ✅ Serviço encontrado: {}", itemOpt.get().getDescricao());
-            return itemOpt;
-        }
-        
-        // 3. Fallback: buscar por palavras-chave específicas (apenas as primeiras 2 palavras)
-        String[] palavras = nomeBusca.split(" ");
-        if (palavras.length >= 2) {
-            String buscaReduzida = palavras[0] + " " + palavras[1];
-            log.info("   🔍 Buscando por palavras-chave reduzidas: '{}'", buscaReduzida);
-            
-            itemOpt = fatura.getItens().stream()
-                .filter(item -> item != franquiaItem)
-                .filter(item -> item.getDescricao() != null)
-                .filter(item -> {
-                    String desc = item.getDescricao().toUpperCase();
-                    return desc.contains(buscaReduzida);
-                })
-                .findFirst();
-            
-            if (itemOpt.isPresent()) {
-                log.info("   ✅ Serviço encontrado por palavras-chave: {}", itemOpt.get().getDescricao());
-                return itemOpt;
+                servicosComExcedente.add(novoItem);
+                log.info("   ✅ Novo item criado com excedente: {} (Qtd: {})", 
+                        novoItem.getDescricao(), excedente);
             }
+            
+        } else {
+            // Não excedeu: remover todos os serviços
+            log.info("✅ Franquia NÃO excedida. Removendo todos os {} serviços", 
+                    servicosEncontrados.size());
+            todosServicosRemover.addAll(servicosEncontrados);
         }
         
-        log.info("   ❌ Nenhum serviço encontrado");
-        return Optional.empty();
+        log.info("========================================");
     }
     
     /**
-     * Extrai o nome do serviço a partir da descrição da franquia
+     * Extrai o nome base da franquia
      */
-    private String extrairNomeServicoDaFranquia(String descricaoFranquia) {
+    private String extrairNomeBaseDaFranquia(String descricaoFranquia) {
         if (descricaoFranquia == null) return "";
         
         String desc = descricaoFranquia.toUpperCase();
         
-        // Remover "FRANQUIA DE CONSULTA" ou variações
+        // Remover "FRANQUIA DE CONSULTA"
         desc = desc.replace(PREFIXO_FRANQUIA, "").trim();
         
         // Remover "DE" se estiver no início
@@ -304,8 +245,14 @@ public class FranquiaRule {
         // Remover "1/1", "2/2", etc.
         desc = desc.replaceAll("\\d+/\\d+", "").trim();
         
-        log.debug("   Extraído: '{}' -> '{}'", descricaoFranquia, desc);
+        // Usar mapeamento específico se existir
+        String mapeado = MAPEAMENTO_ESPECIFICO.get(desc);
+        if (mapeado != null) {
+            log.debug("   Mapeamento encontrado: '{}' -> '{}'", desc, mapeado);
+            return mapeado;
+        }
         
+        log.debug("   Extraído: '{}' -> '{}'", descricaoFranquia, desc);
         return desc;
     }
 }
