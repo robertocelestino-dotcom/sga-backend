@@ -373,39 +373,146 @@ public class AssociadoService {
 
 	@Transactional
 	public AssociadoDTO atualizar(Long id, AssociadoDTO associadoDTO) {
-		logger.info("Atualizando associado ID: {}", id);
+		logger.info("📥 Atualizando associado ID: {}", id);
+		logger.debug("📥 DTO recebido: status={}, motivoInativacao='{}', dataInativacao={}", associadoDTO.getStatus(),
+				associadoDTO.getMotivoInativacao(), associadoDTO.getDataInativacao());
 
+		// 1. BUSCAR O ASSOCIADO
 		Associado associado = associadoRepository.findById(id).orElseThrow(() -> {
-			logger.error("Associado não encontrado com ID: {}", id);
+			logger.error("❌ Associado não encontrado com ID: {}", id);
 			return new EntityNotFoundException("Associado não encontrado com ID: " + id);
 		});
 
-		// Salvar status anterior
+		// 2. SALVAR ESTADO ANTERIOR PARA LOG E VALIDAÇÃO
 		String statusAnterior = associado.getStatus();
-		String novoStatus = associadoDTO.getStatus();
+		String motivoInativacaoAnterior = associado.getMotivoInativacao();
+		LocalDate dataInativacaoAnterior = associado.getDataInativacao();
 
-		// Validar mudança de status
-		if (novoStatus != null && !novoStatus.equals(statusAnterior)) {
-			validarMudancaStatus(associado, novoStatus);
-		}
+		logger.info("📊 Status anterior: {}, Novo status: {}", statusAnterior, associadoDTO.getStatus());
 
+		// 3. 🔥 ATUALIZAR TODOS OS DADOS PRIMEIRO (incluindo status e motivos)
 		updateEntityFromDTO(associado, associadoDTO);
 
-		// Aplicar regras de status
-		aplicarRegrasStatus(associado);
+		// 4. 🔥 APLICAR REGRAS DE STATUS DEPOIS DE ATUALIZAR TODOS OS DADOS
+		String novoStatus = associadoDTO.getStatus() != null ? associadoDTO.getStatus() : associado.getStatus();
 
-		Associado updated = associadoRepository.save(associado);
-		logger.info("Associado atualizado: {} - {}", updated.getId(), updated.getNomeRazao());
+		// Verificar se houve mudança de status
+		boolean statusMudou = !statusAnterior.equals(novoStatus);
 
-		// REGISTRA LOG
-		try {
-			String mensagem = "Atualizado associado: " + updated.getNomeRazao();
-			if (statusAnterior != null && !statusAnterior.equals(novoStatus)) {
-				mensagem += " (Status alterado: " + statusAnterior + " → " + novoStatus + ")";
+		if (statusMudou) {
+			logger.info("🔄 Mudança de status detectada: {} → {}", statusAnterior, novoStatus);
+
+			// Validar a mudança de status
+			validarMudancaStatus(associado, novoStatus);
+
+			// Aplicar regras específicas do status
+			aplicarRegrasStatus(associado);
+
+			// Se for inativação, garantir que os dados estejam consistentes
+			if ("I".equals(novoStatus)) {
+				// Garantir que o motivo de inativação foi preservado
+				if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
+					// Se por algum motivo o motivo foi perdido, usar o que veio do DTO ou um padrão
+					String motivo = associadoDTO.getMotivoInativacao();
+					if (motivo != null && !motivo.trim().isEmpty()) {
+						associado.setMotivoInativacao(motivo.trim());
+					} else {
+						// Fallback: usar motivo anterior ou padrão
+						if (motivoInativacaoAnterior != null && !motivoInativacaoAnterior.trim().isEmpty()) {
+							associado.setMotivoInativacao(motivoInativacaoAnterior);
+						} else {
+							associado.setMotivoInativacao("Inativação realizada pelo sistema");
+						}
+					}
+					logger.warn("⚠️ Motivo de inativação foi restaurado para: {}", associado.getMotivoInativacao());
+				}
+
+				// Garantir data de inativação
+				if (associado.getDataInativacao() == null) {
+					associado.setDataInativacao(
+							associadoDTO.getDataInativacao() != null ? associadoDTO.getDataInativacao()
+									: LocalDate.now());
+				}
 			}
-			sistemaLogService.logAtualizacao("Associado", updated.getId().toString(), mensagem);
+
+			// Se for reativação (I → A), limpar campos de inativação
+			if ("I".equals(statusAnterior) && "A".equals(novoStatus)) {
+				associado.setDataInativacao(null);
+				associado.setMotivoInativacao(null);
+				logger.info("♻️ Associado reativado, campos de inativação limpos");
+			}
+
+			// Se for suspensão (A/I → S)
+			if ("S".equals(novoStatus)) {
+				// Garantir motivo de suspensão
+				if (associado.getMotivoSuspensao() == null || associado.getMotivoSuspensao().trim().isEmpty()) {
+					String motivo = associadoDTO.getMotivoSuspensao();
+					if (motivo != null && !motivo.trim().isEmpty()) {
+						associado.setMotivoSuspensao(motivo.trim());
+					} else {
+						associado.setMotivoSuspensao("Suspensão realizada pelo sistema");
+					}
+				}
+
+				// Garantir datas de suspensão
+				if (associado.getDataInicioSuspensao() == null) {
+					associado.setDataInicioSuspensao(LocalDate.now());
+				}
+				if (associado.getDataFimSuspensao() == null) {
+					associado.setDataFimSuspensao(associado.getDataInicioSuspensao().plusMonths(1));
+				}
+			}
+
+			// Se for retorno de suspensão (S → A)
+			if ("S".equals(statusAnterior) && "A".equals(novoStatus)) {
+				associado.setDataInicioSuspensao(null);
+				associado.setDataFimSuspensao(null);
+				associado.setMotivoSuspensao(null);
+				logger.info("♻️ Suspensão removida, associado reativado");
+			}
+		} else {
+			// 🔥 MESMO SEM MUDANÇA DE STATUS, VALIDAR CONSISTÊNCIA DOS DADOS
+			if ("I".equals(associado.getStatus())) {
+				// Verificar se o motivo foi mantido
+				if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
+					// Tentar recuperar do DTO
+					String motivo = associadoDTO.getMotivoInativacao();
+					if (motivo != null && !motivo.trim().isEmpty()) {
+						associado.setMotivoInativacao(motivo.trim());
+					} else {
+						// Se veio vazio, manter o que já tinha ou usar padrão
+						if (motivoInativacaoAnterior != null && !motivoInativacaoAnterior.trim().isEmpty()) {
+							associado.setMotivoInativacao(motivoInativacaoAnterior);
+						} else {
+							associado.setMotivoInativacao("Motivo não informado");
+						}
+					}
+					logger.warn("⚠️ Motivo de inativação foi restaurado (sem mudança de status): {}",
+							associado.getMotivoInativacao());
+				}
+			}
+		}
+
+		// 5. VALIDAÇÃO FINAL ANTES DE SALVAR
+		validarConsistenciaDados(associado);
+
+		// 6. SALVAR O ASSOCIADO
+		Associado updated = associadoRepository.save(associado);
+		logger.info("✅ Associado atualizado com sucesso: {} - {}", updated.getId(), updated.getNomeRazao());
+
+		// 7. REGISTRAR LOG DE AUDITORIA
+		try {
+			StringBuilder mensagemLog = new StringBuilder("Atualizado associado: " + updated.getNomeRazao());
+			if (statusMudou) {
+				mensagemLog.append(" (Status alterado: ").append(statusAnterior).append(" → ").append(novoStatus)
+						.append(")");
+				if ("I".equals(novoStatus) && updated.getMotivoInativacao() != null) {
+					mensagemLog.append(" - Motivo inativação: ").append(updated.getMotivoInativacao());
+				}
+			}
+			sistemaLogService.logAtualizacao("Associado", updated.getId().toString(), mensagemLog.toString());
 		} catch (Exception e) {
-			logger.warn("Não foi possível registrar log de auditoria: {}", e.getMessage());
+			logger.warn("⚠️ Não foi possível registrar log de auditoria: {}", e.getMessage());
 		}
 
 		return toDTO(updated);
@@ -439,36 +546,69 @@ public class AssociadoService {
 	// ========== VALIDAÇÕES DE STATUS ==========
 
 	private void validarMudancaStatus(Associado associado, String novoStatus) {
-		String statusAtual = associado.getStatus();
-
-		if ("I".equals(statusAtual) && !"A".equals(novoStatus)) {
-			throw new IllegalStateException("Associado inativo só pode ser reativado para 'Ativo'");
-		}
-
-		if ("S".equals(statusAtual) && "I".equals(novoStatus)) {
-			throw new IllegalStateException("Associado suspenso não pode ser inativado diretamente. Reative primeiro.");
-		}
-
-		if ("I".equals(novoStatus)) {
-			validarInativacao(associado);
-		} else if ("S".equals(novoStatus)) {
-			validarSuspensao(associado);
-		}
+	    String statusAtual = associado.getStatus();
+	    
+	    // Se não mudou, não precisa validar
+	    if (statusAtual.equals(novoStatus)) {
+	        return;
+	    }
+	    
+	    logger.info("🔍 Validando mudança de status: {} → {}", statusAtual, novoStatus);
+	    
+	    // Regras de negócio para mudanças de status
+	    if ("I".equals(statusAtual) && !"A".equals(novoStatus)) {
+	        throw new IllegalStateException("Associado inativo só pode ser reativado para status 'Ativo'");
+	    }
+	    
+	    if ("S".equals(statusAtual) && "I".equals(novoStatus)) {
+	        throw new IllegalStateException("Associado suspenso não pode ser inativado diretamente. Reative primeiro.");
+	    }
+	    
+	    // Validação específica por novo status
+	    if ("I".equals(novoStatus)) {
+	        validarInativacao(associado);
+	    } else if ("S".equals(novoStatus)) {
+	        validarSuspensao(associado);
+	    }
+	    
+	    logger.info("✅ Mudança de status validada com sucesso");
 	}
 
 	private void validarInativacao(Associado associado) {
-		if (associado.getDataInativacao() == null) {
-			associado.setDataInativacao(LocalDate.now());
-		}
+	    // Garantir data de inativação
+	    if (associado.getDataInativacao() == null) {
+	        associado.setDataInativacao(LocalDate.now());
+	    }
 
-		if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
-			throw new IllegalArgumentException("Motivo da inativação é obrigatório");
-		}
-
-		// Limpar suspensão
-		associado.setDataInicioSuspensao(null);
-		associado.setDataFimSuspensao(null);
-		associado.setMotivoSuspensao(null);
+	    // 🔥 VALIDAÇÃO ROBUSTA DO MOTIVO
+	    String motivo = associado.getMotivoInativacao();
+	    
+	    // Verificar se o motivo é null ou vazio
+	    if (motivo == null || motivo.trim().isEmpty()) {
+	        logger.error("❌ Tentativa de inativar associado {} sem motivo", associado.getId());
+	        throw new IllegalArgumentException("Motivo da inativação é obrigatório");
+	    }
+	    
+	    // Verificar tamanho mínimo
+	    if (motivo.trim().length() < 3) {
+	        logger.warn("⚠️ Motivo de inativação muito curto: '{}'", motivo);
+	        throw new IllegalArgumentException("Motivo da inativação deve ter pelo menos 3 caracteres");
+	    }
+	    
+	    // 🔥 VERIFICAÇÃO ADICIONAL: Se o motivo é apenas números ou caracteres especiais
+	    String motivoLimpo = motivo.trim().replaceAll("[^\\p{L}\\p{N}\\s]", "").trim();
+	    if (motivoLimpo.length() < 3) {
+	        logger.warn("⚠️ Motivo de inativação contém apenas caracteres inválidos: '{}'", motivo);
+	        throw new IllegalArgumentException("Motivo da inativação deve conter texto descritivo");
+	    }
+	    
+	    // Limpar campos de suspensão
+	    associado.setDataInicioSuspensao(null);
+	    associado.setDataFimSuspensao(null);
+	    associado.setMotivoSuspensao(null);
+	    
+	    logger.info("✅ Inativação validada para associado {}: motivo='{}'", 
+	        associado.getId(), associado.getMotivoInativacao());
 	}
 
 	private void validarSuspensao(Associado associado) {
@@ -510,350 +650,368 @@ public class AssociadoService {
 	// ========== MÉTODO updateEntityFromDTO CORRIGIDO ==========
 
 	private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
-		logger.info("Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
+	    logger.info("🔄 Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
+	    logger.debug("📋 DTO completo: {}", dto);
 
-		try {
-			// 1. DADOS BÁSICOS - COM TRATAMENTO DE NULL
-			associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
-			associado.setCodigoRm(limparString(dto.getCodigoRm()));
-			associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
+	    try {
+	        // 1. DADOS BÁSICOS - COM TRATAMENTO DE NULL
+	        associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+	        associado.setCodigoRm(limparString(dto.getCodigoRm()));
+	        associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
 
-			// Campos obrigatórios
-			if (dto.getCnpjCpf() != null) {
-				associado.setCnpjCpf(dto.getCnpjCpf().trim());
-			}
+	        // Campos obrigatórios
+	        if (dto.getCnpjCpf() != null) {
+	            associado.setCnpjCpf(dto.getCnpjCpf().trim());
+	        }
+	        if (dto.getNomeRazao() != null) {
+	            associado.setNomeRazao(dto.getNomeRazao().trim());
+	        }
+	        if (dto.getTipoPessoa() != null) {
+	            associado.setTipoPessoa(dto.getTipoPessoa());
+	        }
 
-			if (dto.getNomeRazao() != null) {
-				associado.setNomeRazao(dto.getNomeRazao().trim());
-			}
+	        // Status - com preservação para validação posterior
+	        String novoStatus = (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) 
+	            ? dto.getStatus().trim() 
+	            : "A";
+	        associado.setStatus(novoStatus);
 
-			if (dto.getTipoPessoa() != null) {
-				associado.setTipoPessoa(dto.getTipoPessoa());
-			}
+	        // 2. DATAS - COM TRATAMENTO DE NULL
+	        if (dto.getDataCadastro() != null) {
+	            associado.setDataCadastro(dto.getDataCadastro());
+	        } else if (associado.getDataCadastro() == null) {
+	            associado.setDataCadastro(LocalDateTime.now());
+	        }
 
-			// Status - com valor padrão seguro
-			associado.setStatus(
-					(dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) ? dto.getStatus().trim() : "A");
+	        // 🔥 DATAS DE STATUS - PRESERVAR SE VIEREM NULL
+	        associado.setDataFiliacao(dto.getDataFiliacao());
+	        
+	        // Tratamento especial para datas de status
+	        if (dto.getDataInativacao() != null) {
+	            associado.setDataInativacao(dto.getDataInativacao());
+	        }
+	        // Se o status for I e não veio data, será setada na validação
+	        
+	        if (dto.getDataInicioSuspensao() != null) {
+	            associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
+	        }
+	        
+	        if (dto.getDataFimSuspensao() != null) {
+	            associado.setDataFimSuspensao(dto.getDataFimSuspensao());
+	        }
 
-			// 2. DATAS - COM TRATAMENTO DE NULL
-			if (dto.getDataCadastro() != null) {
-				associado.setDataCadastro(dto.getDataCadastro());
-			} else if (associado.getDataCadastro() == null) {
-				// Só define data atual se não existir data anterior
-				associado.setDataCadastro(LocalDateTime.now());
-			}
+	        // 🔥 MOTIVOS - PRESERVAR VALORES
+	        if (dto.getMotivoInativacao() != null && !dto.getMotivoInativacao().trim().isEmpty()) {
+	            associado.setMotivoInativacao(dto.getMotivoInativacao().trim());
+	        } else if ("I".equals(novoStatus) && associado.getMotivoInativacao() == null) {
+	            // Se está inativando e o motivo veio vazio, manter como está
+	            // A validação posterior vai exigir, mas pode ser preenchido na validação
+	        }
+	        
+	        if (dto.getMotivoSuspensao() != null && !dto.getMotivoSuspensao().trim().isEmpty()) {
+	            associado.setMotivoSuspensao(dto.getMotivoSuspensao().trim());
+	        }
 
-			// Datas opcionais - podem ser null
-			associado.setDataFiliacao(dto.getDataFiliacao());
-			associado.setDataInativacao(dto.getDataInativacao());
-			associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
-			associado.setDataFimSuspensao(dto.getDataFimSuspensao());
+	        // 3. FATURAMENTO MÍNIMO
+	        associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
 
-			// 3. TEXTOS OPCIONAIS - podem ser null
-			associado.setMotivoInativacao(dto.getMotivoInativacao());
-			associado.setMotivoSuspensao(dto.getMotivoSuspensao());
+	        // 4. RELACIONAMENTOS - TODOS COM VERIFICAÇÃO DE NULL
+	        try {
+	            // Vendedor Interno
+	            if (dto.getVendedorId() != null) {
+	                Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
+	                    .orElseThrow(() -> new EntityNotFoundException(
+	                        "Vendedor não encontrado com ID: " + dto.getVendedorId()));
+	                associado.setVendedor(vendedor);
+	            } else {
+	                associado.setVendedor(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("❌ Erro ao processar vendedor interno: {}", e.getMessage());
+	            associado.setVendedor(null);
+	        }
 
-			// 4. FATURAMENTO MÍNIMO
-			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+	        // Vendedor Externo
+	        try {
+	            if (dto.getVendedorExternoId() != null) {
+	                Long vendedorExternoId = dto.getVendedorExternoId().longValue();
+	                Optional<Vendedor> vendedorExternoOpt = vendedorRepository.findById(vendedorExternoId);
+	                if (vendedorExternoOpt.isPresent()) {
+	                    associado.setVendedorExterno(vendedorExternoOpt.get());
+	                } else {
+	                    logger.warn("⚠️ Vendedor externo não encontrado com ID {}", vendedorExternoId);
+	                    associado.setVendedorExterno(null);
+	                }
+	            } else {
+	                associado.setVendedorExterno(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("❌ Erro ao processar vendedor externo: {}", e.getMessage());
+	            associado.setVendedorExterno(null);
+	        }
 
-			// 5. RELACIONAMENTOS - TODOS COM VERIFICAÇÃO DE NULL
-			try {
-				// Vendedor Interno
-				if (dto.getVendedorId() != null) {
-					Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
-							.orElseThrow(() -> new EntityNotFoundException(
-									"Vendedor não encontrado com ID: " + dto.getVendedorId()));
-					associado.setVendedor(vendedor);
-				} else {
-					associado.setVendedor(null);
-				}
-			} catch (Exception e) {
-				logger.error("Erro ao processar vendedor interno: {}", e.getMessage());
-				associado.setVendedor(null);
-			}
+	        // Plano
+	        try {
+	            if (dto.getPlanoId() != null) {
+	                Planos plano = planosRepository.findById(dto.getPlanoId())
+	                    .orElseThrow(() -> new EntityNotFoundException(
+	                        "Plano não encontrado com ID: " + dto.getPlanoId()));
+	                associado.setPlano(plano);
+	            } else {
+	                associado.setPlano(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("❌ Erro ao processar plano: {}", e.getMessage());
+	            associado.setPlano(null);
+	        }
 
-			// Vendedor Externo - COM TRATAMENTO ROBUSTO
-			try {
-				if (dto.getVendedorExternoId() != null) {
-					// Tenta buscar como Vendedor (convertendo Long se necessário)
-					Long vendedorExternoId;
-					if (dto.getVendedorExternoId() instanceof Number) {
-						vendedorExternoId = ((Number) dto.getVendedorExternoId()).longValue();
-					} else {
-						vendedorExternoId = Long.parseLong(dto.getVendedorExternoId().toString());
-					}
+	        // Categoria
+	        try {
+	            if (dto.getCategoriaId() != null) {
+	                Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+	                    .orElseThrow(() -> new EntityNotFoundException(
+	                        "Categoria não encontrada com ID: " + dto.getCategoriaId()));
+	                associado.setCategoria(categoria);
+	            } else {
+	                associado.setCategoria(null);
+	            }
+	        } catch (Exception e) {
+	            logger.error("❌ Erro ao processar categoria: {}", e.getMessage());
+	            associado.setCategoria(null);
+	        }
 
-					Optional<Vendedor> vendedorExternoOpt = vendedorRepository.findById(vendedorExternoId);
-					if (vendedorExternoOpt.isPresent()) {
-						associado.setVendedorExterno(vendedorExternoOpt.get());
-					} else {
-						logger.warn("Vendedor externo não encontrado com ID {}, limpando campo", vendedorExternoId);
-						associado.setVendedorExterno(null);
-					}
-				} else {
-					associado.setVendedorExterno(null);
-				}
-			} catch (Exception e) {
-				logger.error("Erro ao processar vendedor externo: {}", e.getMessage());
-				associado.setVendedorExterno(null);
-			}
+	        // 5. SUB-ENTIDADES
+	        atualizarEnderecos(associado, dto.getEnderecos());
+	        atualizarTelefones(associado, dto.getTelefones());
+	        atualizarEmails(associado, dto.getEmails());
 
-			// Plano
-			try {
-				if (dto.getPlanoId() != null) {
-					Planos plano = planosRepository.findById(dto.getPlanoId()).orElseThrow(
-							() -> new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId()));
-					associado.setPlano(plano);
-				} else {
-					associado.setPlano(null);
-				}
-			} catch (Exception e) {
-				logger.error("Erro ao processar plano: {}", e.getMessage());
-				associado.setPlano(null);
-			}
+	        logger.info("✅ Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
 
-			// Categoria
-			try {
-				if (dto.getCategoriaId() != null) {
-					Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-							.orElseThrow(() -> new EntityNotFoundException(
-									"Categoria não encontrada com ID: " + dto.getCategoriaId()));
-					associado.setCategoria(categoria);
-				} else {
-					associado.setCategoria(null);
-				}
-			} catch (Exception e) {
-				logger.error("Erro ao processar categoria: {}", e.getMessage());
-				associado.setCategoria(null);
-			}
-
-			// 6. SUB-ENTIDADES - COM LIMPEZA APROPRIADA
-			atualizarEnderecos(associado, dto.getEnderecos());
-			atualizarTelefones(associado, dto.getTelefones());
-			atualizarEmails(associado, dto.getEmails());
-
-			logger.info("Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
-
-		} catch (IllegalArgumentException | EntityNotFoundException e) {
-			logger.error("Erro de validação: {}", e.getMessage());
-			throw e;
-		} catch (Exception e) {
-			logger.error("Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
-			throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
-		}
+	    } catch (IllegalArgumentException | EntityNotFoundException e) {
+	        logger.error("❌ Erro de validação: {}", e.getMessage());
+	        throw e;
+	    } catch (Exception e) {
+	        logger.error("❌ Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
+	        throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
+	    }
 	}
 
 	// ========== MÉTODOS AUXILIARES PARA ATUALIZAR SUB-ENTIDADES ==========
 
 	/**
-	 * Atualiza endereços do associado (UPSERT)
-	 * Se o endereço já existe (mesmo tipo), atualiza; senão, adiciona novo
+	 * Atualiza endereços do associado (UPSERT) Se o endereço já existe (mesmo
+	 * tipo), atualiza; senão, adiciona novo
 	 */
 	private void atualizarEnderecos(Associado associado, List<EnderecoDTO> enderecosDTO) {
-	    if (enderecosDTO == null) {
-	        if (associado.getEnderecos() != null) {
-	            associado.getEnderecos().clear();
-	        } else {
-	            associado.setEnderecos(new ArrayList<>());
-	        }
-	        return;
-	    }
+		if (enderecosDTO == null) {
+			if (associado.getEnderecos() != null) {
+				associado.getEnderecos().clear();
+			} else {
+				associado.setEnderecos(new ArrayList<>());
+			}
+			return;
+		}
 
-	    if (associado.getEnderecos() == null) {
-	        associado.setEnderecos(new ArrayList<>());
-	    }
+		if (associado.getEnderecos() == null) {
+			associado.setEnderecos(new ArrayList<>());
+		}
 
-	    Map<String, Endereco> enderecosPorTipo = new HashMap<>();
-	    for (Endereco e : associado.getEnderecos()) {
-	        if (e.getTipoEndereco() != null) {
-	            enderecosPorTipo.put(e.getTipoEndereco(), e);
-	        }
-	    }
+		Map<String, Endereco> enderecosPorTipo = new HashMap<>();
+		for (Endereco e : associado.getEnderecos()) {
+			if (e.getTipoEndereco() != null) {
+				enderecosPorTipo.put(e.getTipoEndereco(), e);
+			}
+		}
 
-	    List<Endereco> enderecosAtualizados = new ArrayList<>();
+		List<Endereco> enderecosAtualizados = new ArrayList<>();
 
-	    for (EnderecoDTO dto : enderecosDTO) {
-	        if (dto != null && temDadosMinimos(dto)) {
-	            String tipoEndereco = dto.getTipoEndereco() != null ? dto.getTipoEndereco() : "COMERCIAL";
-	            Endereco endereco;
+		for (EnderecoDTO dto : enderecosDTO) {
+			if (dto != null && temDadosMinimos(dto)) {
+				String tipoEndereco = dto.getTipoEndereco() != null ? dto.getTipoEndereco() : "COMERCIAL";
+				Endereco endereco;
 
-	            if (enderecosPorTipo.containsKey(tipoEndereco)) {
-	                endereco = enderecosPorTipo.get(tipoEndereco);
-	            } else {
-	                endereco = new Endereco();
-	                endereco.setAssociado(associado);
-	            }
+				if (enderecosPorTipo.containsKey(tipoEndereco)) {
+					endereco = enderecosPorTipo.get(tipoEndereco);
+				} else {
+					endereco = new Endereco();
+					endereco.setAssociado(associado);
+				}
 
-	            // 🔥 TRUNCAR CAMPOS PARA EVITAR ERRO DE TAMANHO
-	            String estado = dto.getEstado();
-	            if (estado != null && estado.length() > 2) {
-	                estado = estado.substring(0, 2);
-	                logger.warn("Estado truncado de '{}' para '{}'", dto.getEstado(), estado);
-	            }
-	            
-	            String cidade = dto.getCidade();
-	            if (cidade != null && cidade.length() > 100) {
-	                cidade = cidade.substring(0, 100);
-	                logger.warn("Cidade truncada de {} para {}", dto.getCidade().length(), cidade.length());
-	            }
-	            
-	            String logradouro = dto.getLogradouro();
-	            if (logradouro != null && logradouro.length() > 200) {
-	                logradouro = logradouro.substring(0, 200);
-	                logger.warn("Logradouro truncado");
-	            }
-	            
-	            String bairro = dto.getBairro();
-	            if (bairro != null && bairro.length() > 100) {
-	                bairro = bairro.substring(0, 100);
-	            }
-	            
-	            String complemento = dto.getComplemento();
-	            if (complemento != null && complemento.length() > 200) {
-	                complemento = complemento.substring(0, 200);
-	            }
+				// 🔥 TRUNCAR CAMPOS PARA EVITAR ERRO DE TAMANHO
+				String estado = dto.getEstado();
+				if (estado != null && estado.length() > 2) {
+					estado = estado.substring(0, 2);
+					logger.warn("Estado truncado de '{}' para '{}'", dto.getEstado(), estado);
+				}
 
-	            endereco.setCep(limparString(dto.getCep()));
-	            endereco.setLogradouro(limparString(logradouro));
-	            endereco.setNumero(limparString(dto.getNumero()));
-	            endereco.setComplemento(limparString(complemento));
-	            endereco.setBairro(limparString(bairro));
-	            endereco.setCidade(limparString(cidade));
-	            endereco.setEstado(limparString(estado));
-	            endereco.setTipoEndereco(tipoEndereco);
+				String cidade = dto.getCidade();
+				if (cidade != null && cidade.length() > 100) {
+					cidade = cidade.substring(0, 100);
+					logger.warn("Cidade truncada de {} para {}", dto.getCidade().length(), cidade.length());
+				}
 
-	            enderecosAtualizados.add(endereco);
-	        }
-	    }
+				String logradouro = dto.getLogradouro();
+				if (logradouro != null && logradouro.length() > 200) {
+					logradouro = logradouro.substring(0, 200);
+					logger.warn("Logradouro truncado");
+				}
 
-	    associado.getEnderecos().clear();
-	    associado.getEnderecos().addAll(enderecosAtualizados);
+				String bairro = dto.getBairro();
+				if (bairro != null && bairro.length() > 100) {
+					bairro = bairro.substring(0, 100);
+				}
+
+				String complemento = dto.getComplemento();
+				if (complemento != null && complemento.length() > 200) {
+					complemento = complemento.substring(0, 200);
+				}
+
+				endereco.setCep(limparString(dto.getCep()));
+				endereco.setLogradouro(limparString(logradouro));
+				endereco.setNumero(limparString(dto.getNumero()));
+				endereco.setComplemento(limparString(complemento));
+				endereco.setBairro(limparString(bairro));
+				endereco.setCidade(limparString(cidade));
+				endereco.setEstado(limparString(estado));
+				endereco.setTipoEndereco(tipoEndereco);
+
+				enderecosAtualizados.add(endereco);
+			}
+		}
+
+		associado.getEnderecos().clear();
+		associado.getEnderecos().addAll(enderecosAtualizados);
 	}
 
 	/**
-	 * Atualiza telefones do associado (UPSERT)
-	 * Se o telefone já existe (mesmo tipo), atualiza; senão, adiciona novo
+	 * Atualiza telefones do associado (UPSERT) Se o telefone já existe (mesmo
+	 * tipo), atualiza; senão, adiciona novo
 	 */
 	private void atualizarTelefones(Associado associado, List<TelefoneDTO> telefonesDTO) {
-	    if (telefonesDTO == null) {
-	        if (associado.getTelefones() != null) {
-	            associado.getTelefones().clear();
-	        } else {
-	            associado.setTelefones(new ArrayList<>());
-	        }
-	        return;
-	    }
+		if (telefonesDTO == null) {
+			if (associado.getTelefones() != null) {
+				associado.getTelefones().clear();
+			} else {
+				associado.setTelefones(new ArrayList<>());
+			}
+			return;
+		}
 
-	    // Inicializar lista se necessário
-	    if (associado.getTelefones() == null) {
-	        associado.setTelefones(new ArrayList<>());
-	    }
+		// Inicializar lista se necessário
+		if (associado.getTelefones() == null) {
+			associado.setTelefones(new ArrayList<>());
+		}
 
-	    // Mapa de telefones existentes por tipo
-	    Map<String, Telefone> telefonesPorTipo = new HashMap<>();
-	    for (Telefone t : associado.getTelefones()) {
-	        if (t.getTipoTelefone() != null) {
-	            telefonesPorTipo.put(t.getTipoTelefone(), t);
-	        }
-	    }
+		// Mapa de telefones existentes por tipo
+		Map<String, Telefone> telefonesPorTipo = new HashMap<>();
+		for (Telefone t : associado.getTelefones()) {
+			if (t.getTipoTelefone() != null) {
+				telefonesPorTipo.put(t.getTipoTelefone(), t);
+			}
+		}
 
-	    List<Telefone> telefonesAtualizados = new ArrayList<>();
+		List<Telefone> telefonesAtualizados = new ArrayList<>();
 
-	    for (TelefoneDTO dto : telefonesDTO) {
-	        if (dto != null && temDadosMinimos(dto)) {
-	            String tipoTelefone = dto.getTipoTelefone() != null ? dto.getTipoTelefone() : "CELULAR";
-	            Telefone telefone;
+		for (TelefoneDTO dto : telefonesDTO) {
+			if (dto != null && temDadosMinimos(dto)) {
+				String tipoTelefone = dto.getTipoTelefone() != null ? dto.getTipoTelefone() : "CELULAR";
+				Telefone telefone;
 
-	            // 🔥 Verificar se já existe telefone do mesmo tipo
-	            if (telefonesPorTipo.containsKey(tipoTelefone)) {
-	                // Atualizar existente
-	                telefone = telefonesPorTipo.get(tipoTelefone);
-	                logger.debug("✏️ Atualizando telefone tipo: {} para associado ID: {}", tipoTelefone, associado.getId());
-	            } else {
-	                // Criar novo telefone
-	                telefone = new Telefone();
-	                telefone.setAssociado(associado);
-	                logger.debug("➕ Adicionando novo telefone tipo: {} para associado ID: {}", tipoTelefone, associado.getId());
-	            }
+				// 🔥 Verificar se já existe telefone do mesmo tipo
+				if (telefonesPorTipo.containsKey(tipoTelefone)) {
+					// Atualizar existente
+					telefone = telefonesPorTipo.get(tipoTelefone);
+					logger.debug("✏️ Atualizando telefone tipo: {} para associado ID: {}", tipoTelefone,
+							associado.getId());
+				} else {
+					// Criar novo telefone
+					telefone = new Telefone();
+					telefone.setAssociado(associado);
+					logger.debug("➕ Adicionando novo telefone tipo: {} para associado ID: {}", tipoTelefone,
+							associado.getId());
+				}
 
-	            // Atualizar campos
-	            telefone.setDdd(limparString(dto.getDdd()));
-	            telefone.setNumero(limparString(dto.getNumero()));
-	            telefone.setTipoTelefone(tipoTelefone);
-	            telefone.setWhatsapp(dto.getWhatsapp() != null ? dto.getWhatsapp() : false);
-	            telefone.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
+				// Atualizar campos
+				telefone.setDdd(limparString(dto.getDdd()));
+				telefone.setNumero(limparString(dto.getNumero()));
+				telefone.setTipoTelefone(tipoTelefone);
+				telefone.setWhatsapp(dto.getWhatsapp() != null ? dto.getWhatsapp() : false);
+				telefone.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
 
-	            telefonesAtualizados.add(telefone);
-	        }
-	    }
+				telefonesAtualizados.add(telefone);
+			}
+		}
 
-	    // Limpar e adicionar todos os telefones
-	    associado.getTelefones().clear();
-	    associado.getTelefones().addAll(telefonesAtualizados);
+		// Limpar e adicionar todos os telefones
+		associado.getTelefones().clear();
+		associado.getTelefones().addAll(telefonesAtualizados);
 
-	    logger.info("📞 Telefones atualizados: {} registros para associado ID: {}", telefonesAtualizados.size(), associado.getId());
+		logger.info("📞 Telefones atualizados: {} registros para associado ID: {}", telefonesAtualizados.size(),
+				associado.getId());
 	}
 
 	/**
-	 * Atualiza emails do associado (UPSERT)
-	 * Se o email já existe (mesmo tipo), atualiza; senão, adiciona novo
+	 * Atualiza emails do associado (UPSERT) Se o email já existe (mesmo tipo),
+	 * atualiza; senão, adiciona novo
 	 */
 	private void atualizarEmails(Associado associado, List<EmailDTO> emailsDTO) {
-	    if (emailsDTO == null) {
-	        if (associado.getEmails() != null) {
-	            associado.getEmails().clear();
-	        } else {
-	            associado.setEmails(new ArrayList<>());
-	        }
-	        return;
-	    }
+		if (emailsDTO == null) {
+			if (associado.getEmails() != null) {
+				associado.getEmails().clear();
+			} else {
+				associado.setEmails(new ArrayList<>());
+			}
+			return;
+		}
 
-	    // Inicializar lista se necessário
-	    if (associado.getEmails() == null) {
-	        associado.setEmails(new ArrayList<>());
-	    }
+		// Inicializar lista se necessário
+		if (associado.getEmails() == null) {
+			associado.setEmails(new ArrayList<>());
+		}
 
-	    // Mapa de emails existentes por tipo
-	    Map<String, Email> emailsPorTipo = new HashMap<>();
-	    for (Email e : associado.getEmails()) {
-	        if (e.getTipoEmail() != null) {
-	            emailsPorTipo.put(e.getTipoEmail(), e);
-	        }
-	    }
+		// Mapa de emails existentes por tipo
+		Map<String, Email> emailsPorTipo = new HashMap<>();
+		for (Email e : associado.getEmails()) {
+			if (e.getTipoEmail() != null) {
+				emailsPorTipo.put(e.getTipoEmail(), e);
+			}
+		}
 
-	    List<Email> emailsAtualizados = new ArrayList<>();
+		List<Email> emailsAtualizados = new ArrayList<>();
 
-	    for (EmailDTO dto : emailsDTO) {
-	        if (dto != null && dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
-	            String tipoEmail = dto.getTipoEmail() != null ? dto.getTipoEmail() : "COMERCIAL";
-	            Email email;
+		for (EmailDTO dto : emailsDTO) {
+			if (dto != null && dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+				String tipoEmail = dto.getTipoEmail() != null ? dto.getTipoEmail() : "COMERCIAL";
+				Email email;
 
-	            // 🔥 Verificar se já existe email do mesmo tipo
-	            if (emailsPorTipo.containsKey(tipoEmail)) {
-	                // Atualizar existente
-	                email = emailsPorTipo.get(tipoEmail);
-	                logger.debug("✏️ Atualizando email tipo: {} para associado ID: {}", tipoEmail, associado.getId());
-	            } else {
-	                // Criar novo email
-	                email = new Email();
-	                email.setAssociado(associado);
-	                logger.debug("➕ Adicionando novo email tipo: {} para associado ID: {}", tipoEmail, associado.getId());
-	            }
+				// 🔥 Verificar se já existe email do mesmo tipo
+				if (emailsPorTipo.containsKey(tipoEmail)) {
+					// Atualizar existente
+					email = emailsPorTipo.get(tipoEmail);
+					logger.debug("✏️ Atualizando email tipo: {} para associado ID: {}", tipoEmail, associado.getId());
+				} else {
+					// Criar novo email
+					email = new Email();
+					email.setAssociado(associado);
+					logger.debug("➕ Adicionando novo email tipo: {} para associado ID: {}", tipoEmail,
+							associado.getId());
+				}
 
-	            // Atualizar campos
-	            email.setEmail(dto.getEmail().trim());
-	            email.setTipoEmail(tipoEmail);
-	            email.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
+				// Atualizar campos
+				email.setEmail(dto.getEmail().trim());
+				email.setTipoEmail(tipoEmail);
+				email.setAtivo(dto.getAtivo() != null ? dto.getAtivo() : true);
 
-	            emailsAtualizados.add(email);
-	        }
-	    }
+				emailsAtualizados.add(email);
+			}
+		}
 
-	    // Limpar e adicionar todos os emails
-	    associado.getEmails().clear();
-	    associado.getEmails().addAll(emailsAtualizados);
+		// Limpar e adicionar todos os emails
+		associado.getEmails().clear();
+		associado.getEmails().addAll(emailsAtualizados);
 
-	    logger.info("📧 Emails atualizados: {} registros para associado ID: {}", emailsAtualizados.size(), associado.getId());
+		logger.info("📧 Emails atualizados: {} registros para associado ID: {}", emailsAtualizados.size(),
+				associado.getId());
 	}
 
 	// ========== MÉTODOS AUXILIARES DE VALIDAÇÃO ==========
@@ -1069,191 +1227,235 @@ public class AssociadoService {
 		return associadoRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
 	}
-	
+
 	/**
 	 * Busca associado pelo código SPC
 	 */
 	public Optional<Associado> buscarPorCodigoSpc(String codigoSpc) {
-	    logger.info("Buscando associado por código SPC: {}", codigoSpc);
-	    return associadoRepository.findByCodigoSpc(codigoSpc);
+		logger.info("Buscando associado por código SPC: {}", codigoSpc);
+		return associadoRepository.findByCodigoSpc(codigoSpc);
 	}
-	
+
 	// ========== MÉTODO DE IMPORTAÇÃO COM UPSERT ==========
 
 	/**
-	 * Importa ou atualiza um associado (UPSERT)
-	 * Se o associado já existe e forcarAtualizacao = true, atualiza os dados
+	 * Importa ou atualiza um associado (UPSERT) Se o associado já existe e
+	 * forcarAtualizacao = true, atualiza os dados
 	 * 
-	 * @param dto DTO com os dados do associado
+	 * @param dto     DTO com os dados do associado
 	 * @param usuario Usuario que está realizando a operação
 	 * @return Associado importado/atualizado
 	 */
 	@Transactional
 	public Associado importarAssociado(AssociadoDTO dto, String usuario) {
-	    logger.info("📥 Importando associado: {} - CNPJ/CPF: {}", dto.getNomeRazao(), dto.getCnpjCpf());
-	    
-	    // Buscar associado existente por CNPJ/CPF
-	    Optional<Associado> associadoExistente = associadoRepository.findByCnpjCpf(dto.getCnpjCpf());
-	    
-	    Associado associado;
-	    boolean isNovo = false;
-	    
-	    if (associadoExistente.isPresent()) {
-	        if (Boolean.TRUE.equals(dto.getForcarAtualizacao())) {
-	            // 🔥 ATUALIZAR associado existente
-	            associado = associadoExistente.get();
-	            logger.info("🔄 Atualizando associado existente ID: {}", associado.getId());
-	            
-	            // Atualizar campos básicos
-	            associado.setNomeRazao(dto.getNomeRazao());
-	            associado.setNomeFantasia(dto.getNomeFantasia());
-	            associado.setTipoPessoa(dto.getTipoPessoa());
-	            associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
-	            associado.setCodigoRm(limparString(dto.getCodigoRm()));
-	            associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
-	            associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
-	            associado.setDataFiliacao(dto.getDataFiliacao());
-	            // 🔥 REMOVIDO: associado.setAtualizadoEm(LocalDateTime.now()); - campo não existe
-	            
-	            // 🔥 ATUALIZAR VENDEDOR EXTERNO
-	            if (dto.getVendedorExternoId() != null) {
-	                try {
-	                    Long vendedorExternoId = dto.getVendedorExternoId().longValue();
-	                    Optional<Vendedor> vendedorExterno = vendedorRepository.findById(vendedorExternoId);
-	                    if (vendedorExterno.isPresent()) {
-	                        associado.setVendedorExterno(vendedorExterno.get());
-	                        logger.info("✅ Vendedor externo atualizado para ID: {}", vendedorExternoId);
-	                    } else {
-	                        logger.warn("⚠️ Vendedor externo não encontrado com ID: {}", vendedorExternoId);
-	                    }
-	                } catch (Exception e) {
-	                    logger.error("❌ Erro ao atualizar vendedor externo: {}", e.getMessage());
-	                }
-	            }
-	            
-	            // Atualizar vendedor interno
-	            if (dto.getVendedorId() != null) {
-	                try {
-	                    Optional<Vendedor> vendedor = vendedorRepository.findById(dto.getVendedorId());
-	                    vendedor.ifPresent(associado::setVendedor);
-	                } catch (Exception e) {
-	                    logger.error("❌ Erro ao atualizar vendedor: {}", e.getMessage());
-	                }
-	            }
-	            
-	            // Atualizar plano
-	            if (dto.getPlanoId() != null) {
-	                try {
-	                    Optional<Planos> plano = planosRepository.findById(dto.getPlanoId());
-	                    plano.ifPresent(associado::setPlano);
-	                } catch (Exception e) {
-	                    logger.error("❌ Erro ao atualizar plano: {}", e.getMessage());
-	                }
-	            }
-	            
-	            // Atualizar categoria
-	            if (dto.getCategoriaId() != null) {
-	                try {
-	                    Optional<Categoria> categoria = categoriaRepository.findById(dto.getCategoriaId());
-	                    categoria.ifPresent(associado::setCategoria);
-	                } catch (Exception e) {
-	                    logger.error("❌ Erro ao atualizar categoria: {}", e.getMessage());
-	                }
-	            }
-	            
-	            // Atualizar endereços, telefones, emails
-	            atualizarEnderecos(associado, dto.getEnderecos());
-	            atualizarTelefones(associado, dto.getTelefones());
-	            atualizarEmails(associado, dto.getEmails());
-	            
-	        } else {
-	            // Não forçar atualização, apenas retornar o existente
-	            logger.info("ℹ️ Associado já existe e forcarAtualizacao=false, ignorando atualização");
-	            return associadoExistente.get();
+		logger.info("📥 Importando associado: {} - CNPJ/CPF: {}", dto.getNomeRazao(), dto.getCnpjCpf());
+
+		// Buscar associado existente por CNPJ/CPF
+		Optional<Associado> associadoExistente = associadoRepository.findByCnpjCpf(dto.getCnpjCpf());
+
+		Associado associado;
+		boolean isNovo = false;
+
+		if (associadoExistente.isPresent()) {
+			if (Boolean.TRUE.equals(dto.getForcarAtualizacao())) {
+				// 🔥 ATUALIZAR associado existente
+				associado = associadoExistente.get();
+				logger.info("🔄 Atualizando associado existente ID: {}", associado.getId());
+
+				// Atualizar campos básicos
+				associado.setNomeRazao(dto.getNomeRazao());
+				associado.setNomeFantasia(dto.getNomeFantasia());
+				associado.setTipoPessoa(dto.getTipoPessoa());
+				associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+				associado.setCodigoRm(limparString(dto.getCodigoRm()));
+				associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
+				associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+				associado.setDataFiliacao(dto.getDataFiliacao());
+				// 🔥 REMOVIDO: associado.setAtualizadoEm(LocalDateTime.now()); - campo não
+				// existe
+
+				// 🔥 ATUALIZAR VENDEDOR EXTERNO
+				if (dto.getVendedorExternoId() != null) {
+					try {
+						Long vendedorExternoId = dto.getVendedorExternoId().longValue();
+						Optional<Vendedor> vendedorExterno = vendedorRepository.findById(vendedorExternoId);
+						if (vendedorExterno.isPresent()) {
+							associado.setVendedorExterno(vendedorExterno.get());
+							logger.info("✅ Vendedor externo atualizado para ID: {}", vendedorExternoId);
+						} else {
+							logger.warn("⚠️ Vendedor externo não encontrado com ID: {}", vendedorExternoId);
+						}
+					} catch (Exception e) {
+						logger.error("❌ Erro ao atualizar vendedor externo: {}", e.getMessage());
+					}
+				}
+
+				// Atualizar vendedor interno
+				if (dto.getVendedorId() != null) {
+					try {
+						Optional<Vendedor> vendedor = vendedorRepository.findById(dto.getVendedorId());
+						vendedor.ifPresent(associado::setVendedor);
+					} catch (Exception e) {
+						logger.error("❌ Erro ao atualizar vendedor: {}", e.getMessage());
+					}
+				}
+
+				// Atualizar plano
+				if (dto.getPlanoId() != null) {
+					try {
+						Optional<Planos> plano = planosRepository.findById(dto.getPlanoId());
+						plano.ifPresent(associado::setPlano);
+					} catch (Exception e) {
+						logger.error("❌ Erro ao atualizar plano: {}", e.getMessage());
+					}
+				}
+
+				// Atualizar categoria
+				if (dto.getCategoriaId() != null) {
+					try {
+						Optional<Categoria> categoria = categoriaRepository.findById(dto.getCategoriaId());
+						categoria.ifPresent(associado::setCategoria);
+					} catch (Exception e) {
+						logger.error("❌ Erro ao atualizar categoria: {}", e.getMessage());
+					}
+				}
+
+				// Atualizar endereços, telefones, emails
+				atualizarEnderecos(associado, dto.getEnderecos());
+				atualizarTelefones(associado, dto.getTelefones());
+				atualizarEmails(associado, dto.getEmails());
+
+			} else {
+				// Não forçar atualização, apenas retornar o existente
+				logger.info("ℹ️ Associado já existe e forcarAtualizacao=false, ignorando atualização");
+				return associadoExistente.get();
+			}
+		} else {
+			// CRIAR novo associado
+			isNovo = true;
+			associado = new Associado();
+			associado.setCnpjCpf(dto.getCnpjCpf());
+			associado.setNomeRazao(dto.getNomeRazao());
+			associado.setNomeFantasia(dto.getNomeFantasia());
+			associado.setTipoPessoa(dto.getTipoPessoa());
+			associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+			associado.setCodigoRm(limparString(dto.getCodigoRm()));
+			associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
+			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+			associado.setDataFiliacao(dto.getDataFiliacao());
+			associado.setDataCadastro(LocalDateTime.now());
+			// 🔥 REMOVIDO: associado.setCriadoEm(LocalDateTime.now()); - campo não existe
+			// 🔥 REMOVIDO: associado.setCriadoPor(usuario); - campo não existe
+
+			// Buscar e setar vendedor interno
+			if (dto.getVendedorId() != null) {
+				try {
+					Optional<Vendedor> vendedor = vendedorRepository.findById(dto.getVendedorId());
+					vendedor.ifPresent(associado::setVendedor);
+				} catch (Exception e) {
+					logger.error("❌ Erro ao buscar vendedor: {}", e.getMessage());
+				}
+			}
+
+			// 🔥 BUSCAR E SETAR VENDEDOR EXTERNO
+			if (dto.getVendedorExternoId() != null) {
+				try {
+					Long vendedorExternoId = dto.getVendedorExternoId().longValue();
+					Optional<Vendedor> vendedorExterno = vendedorRepository.findById(vendedorExternoId);
+					if (vendedorExterno.isPresent()) {
+						associado.setVendedorExterno(vendedorExterno.get());
+						logger.info("✅ Vendedor externo configurado para ID: {}", vendedorExternoId);
+					} else {
+						logger.warn("⚠️ Vendedor externo não encontrado com ID: {}", vendedorExternoId);
+					}
+				} catch (Exception e) {
+					logger.error("❌ Erro ao buscar vendedor externo: {}", e.getMessage());
+				}
+			}
+
+			// Buscar e setar plano
+			if (dto.getPlanoId() != null) {
+				try {
+					Optional<Planos> plano = planosRepository.findById(dto.getPlanoId());
+					plano.ifPresent(associado::setPlano);
+				} catch (Exception e) {
+					logger.error("❌ Erro ao buscar plano: {}", e.getMessage());
+				}
+			}
+
+			// Buscar e setar categoria
+			if (dto.getCategoriaId() != null) {
+				try {
+					Optional<Categoria> categoria = categoriaRepository.findById(dto.getCategoriaId());
+					categoria.ifPresent(associado::setCategoria);
+				} catch (Exception e) {
+					logger.error("❌ Erro ao buscar categoria: {}", e.getMessage());
+				}
+			}
+
+			// Processar endereços, telefones, emails
+			if (dto.getEnderecos() != null && !dto.getEnderecos().isEmpty()) {
+				atualizarEnderecos(associado, dto.getEnderecos());
+			}
+
+			if (dto.getTelefones() != null && !dto.getTelefones().isEmpty()) {
+				atualizarTelefones(associado, dto.getTelefones());
+			}
+
+			if (dto.getEmails() != null && !dto.getEmails().isEmpty()) {
+				atualizarEmails(associado, dto.getEmails());
+			}
+		}
+
+		// Salvar associado
+		Associado saved = associadoRepository.save(associado);
+
+		logger.info("✅ Associado {} com sucesso: ID {}", isNovo ? "criado" : "atualizado", saved.getId());
+
+		return saved;
+	}
+	
+	/**
+	 * 🔥 NOVO MÉTODO: Validação de consistência dos dados antes de salvar
+	 */
+	private void validarConsistenciaDados(Associado associado) {
+	    // Verificar consistência entre status e campos relacionados
+	    if ("I".equals(associado.getStatus())) {
+	        // Inativo deve ter data e motivo
+	        if (associado.getDataInativacao() == null) {
+	            associado.setDataInativacao(LocalDate.now());
 	        }
-	    } else {
-	        // CRIAR novo associado
-	        isNovo = true;
-	        associado = new Associado();
-	        associado.setCnpjCpf(dto.getCnpjCpf());
-	        associado.setNomeRazao(dto.getNomeRazao());
-	        associado.setNomeFantasia(dto.getNomeFantasia());
-	        associado.setTipoPessoa(dto.getTipoPessoa());
-	        associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
-	        associado.setCodigoRm(limparString(dto.getCodigoRm()));
-	        associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
-	        associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
-	        associado.setDataFiliacao(dto.getDataFiliacao());
-	        associado.setDataCadastro(LocalDateTime.now());
-	        // 🔥 REMOVIDO: associado.setCriadoEm(LocalDateTime.now()); - campo não existe
-	        // 🔥 REMOVIDO: associado.setCriadoPor(usuario); - campo não existe
+	        if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
+	            throw new IllegalArgumentException("Motivo da inativação é obrigatório para associados inativos");
+	        }
 	        
-	        // Buscar e setar vendedor interno
-	        if (dto.getVendedorId() != null) {
-	            try {
-	                Optional<Vendedor> vendedor = vendedorRepository.findById(dto.getVendedorId());
-	                vendedor.ifPresent(associado::setVendedor);
-	            } catch (Exception e) {
-	                logger.error("❌ Erro ao buscar vendedor: {}", e.getMessage());
-	            }
+	        // Inativo não deve ter campos de suspensão
+	        associado.setDataInicioSuspensao(null);
+	        associado.setDataFimSuspensao(null);
+	        associado.setMotivoSuspensao(null);
+	    } else if ("S".equals(associado.getStatus())) {
+	        // Suspenso deve ter datas e motivo
+	        if (associado.getDataInicioSuspensao() == null) {
+	            associado.setDataInicioSuspensao(LocalDate.now());
+	        }
+	        if (associado.getDataFimSuspensao() == null) {
+	            associado.setDataFimSuspensao(associado.getDataInicioSuspensao().plusMonths(1));
+	        }
+	        if (associado.getMotivoSuspensao() == null || associado.getMotivoSuspensao().trim().isEmpty()) {
+	            throw new IllegalArgumentException("Motivo da suspensão é obrigatório para associados suspensos");
 	        }
 	        
-	        // 🔥 BUSCAR E SETAR VENDEDOR EXTERNO
-	        if (dto.getVendedorExternoId() != null) {
-	            try {
-	                Long vendedorExternoId = dto.getVendedorExternoId().longValue();
-	                Optional<Vendedor> vendedorExterno = vendedorRepository.findById(vendedorExternoId);
-	                if (vendedorExterno.isPresent()) {
-	                    associado.setVendedorExterno(vendedorExterno.get());
-	                    logger.info("✅ Vendedor externo configurado para ID: {}", vendedorExternoId);
-	                } else {
-	                    logger.warn("⚠️ Vendedor externo não encontrado com ID: {}", vendedorExternoId);
-	                }
-	            } catch (Exception e) {
-	                logger.error("❌ Erro ao buscar vendedor externo: {}", e.getMessage());
-	            }
-	        }
-	        
-	        // Buscar e setar plano
-	        if (dto.getPlanoId() != null) {
-	            try {
-	                Optional<Planos> plano = planosRepository.findById(dto.getPlanoId());
-	                plano.ifPresent(associado::setPlano);
-	            } catch (Exception e) {
-	                logger.error("❌ Erro ao buscar plano: {}", e.getMessage());
-	            }
-	        }
-	        
-	        // Buscar e setar categoria
-	        if (dto.getCategoriaId() != null) {
-	            try {
-	                Optional<Categoria> categoria = categoriaRepository.findById(dto.getCategoriaId());
-	                categoria.ifPresent(associado::setCategoria);
-	            } catch (Exception e) {
-	                logger.error("❌ Erro ao buscar categoria: {}", e.getMessage());
-	            }
-	        }
-	        
-	        // Processar endereços, telefones, emails
-	        if (dto.getEnderecos() != null && !dto.getEnderecos().isEmpty()) {
-	            atualizarEnderecos(associado, dto.getEnderecos());
-	        }
-	        
-	        if (dto.getTelefones() != null && !dto.getTelefones().isEmpty()) {
-	            atualizarTelefones(associado, dto.getTelefones());
-	        }
-	        
-	        if (dto.getEmails() != null && !dto.getEmails().isEmpty()) {
-	            atualizarEmails(associado, dto.getEmails());
-	        }
+	        // Suspenso não deve ter campos de inativação
+	        associado.setDataInativacao(null);
+	        associado.setMotivoInativacao(null);
+	    } else if ("A".equals(associado.getStatus())) {
+	        // Ativo não deve ter campos de inativação ou suspensão
+	        associado.setDataInativacao(null);
+	        associado.setDataInicioSuspensao(null);
+	        associado.setDataFimSuspensao(null);
+	        associado.setMotivoInativacao(null);
+	        associado.setMotivoSuspensao(null);
 	    }
-	    
-	    // Salvar associado
-	    Associado saved = associadoRepository.save(associado);
-	    
-	    logger.info("✅ Associado {} com sucesso: ID {}", isNovo ? "criado" : "atualizado", saved.getId());
-	    
-	    return saved;
 	}	
 
 }

@@ -215,7 +215,7 @@ public class ReguaFaturamentoController {
 	@GetMapping("/{id}/associados/todos-ids")
 	public ResponseEntity<List<Long>> listarTodosIdsAssociadosPorRegua(@PathVariable Long id) {
 		log.info("👥 Listando TODOS os IDs dos associados da régua ID: {}", id);
-		List<Long> ids = reguaService.listarTodosIdsAssociadosPorRegua(id);
+		List<Long> ids = reguaService.listarTodosIdsAssociadosConsolidado(id);
 		return ResponseEntity.ok(ids);
 	}
 

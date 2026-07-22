@@ -3,6 +3,7 @@ package com.sga.service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -388,29 +389,42 @@ public class ReguaFaturamentoService {
     }
 
     /**
-     * Lista todos os IDs dos associados consolidados da régua
+     * 🔥 CORRIGIDO - Lista todos os IDs dos associados consolidados da régua
+     * Retorna APENAS os IDs dos associados da régua que têm notas SPC consolidadas
      * 
      * @param reguaId ID da régua
-     * @return Lista de IDs dos associados com notas SPC
+     * @return Lista de IDs dos associados da régua com notas SPC
      */
     @Transactional(readOnly = true)
     public List<Long> listarTodosIdsAssociadosConsolidado(Long reguaId) {
-        log.info("📌 Buscando IDs consolidados - régua ID: {}", reguaId);
+        log.info("📌 Buscando IDs consolidados (com nota) da régua ID: {}", reguaId);
         
-        // Buscar todos os IDs da régua
-        List<Long> idsAssociadosRegua = associadoReguaRepository.findAssociadoIdsByReguaId(reguaId);
-        log.info("📊 IDs na régua: {}", idsAssociadosRegua.size());
-        
-        // Buscar IDs com notas SPC
-        List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
-        log.info("📊 IDs com notas SPC: {}", idsComNotas.size());
-        
-        // Interseção: IDs que estão na régua E têm notas SPC
-        List<Long> resultado = idsAssociadosRegua.stream()
-            .filter(idsComNotas::contains)
+        // 🔥 1. Buscar TODOS os IDs dos associados ATIVOS da régua
+        List<Long> idsAssociadosRegua = associadoReguaRepository
+            .findByReguaIdAndAtivoTrue(reguaId)
+            .stream()
+            .map(ar -> ar.getAssociado().getId())
             .collect(Collectors.toList());
         
-        log.info("✅ IDs após filtro consolidado: {}", resultado.size());
+        log.info("📊 IDs na régua {}: {}", reguaId, idsAssociadosRegua.size());
+        
+        // Se não houver associados na régua, retorna lista vazia
+        if (idsAssociadosRegua.isEmpty()) {
+            log.warn("⚠️ Nenhum associado ativo encontrado na régua {}", reguaId);
+            return Collections.emptyList();
+        }
+        
+        // 🔥 2. Buscar IDs com notas SPC consolidadas
+        List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
+        log.info("📊 IDs com notas SPC consolidadas: {}", idsComNotas.size());
+        
+        // 🔥 3. INTERSEÇÃO: IDs que estão na régua E têm notas SPC
+        List<Long> resultado = idsAssociadosRegua.stream()
+            .filter(idsComNotas::contains)  // ← AGORA FILTRA CORRETAMENTE
+            .collect(Collectors.toList());
+        
+        log.info("✅ IDs consolidados da régua {}: {} (total na régua: {}, com notas: {})", 
+            reguaId, resultado.size(), idsAssociadosRegua.size(), idsComNotas.size());
         
         return resultado;
     }
