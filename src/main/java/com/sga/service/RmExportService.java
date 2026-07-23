@@ -8,6 +8,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -948,6 +949,56 @@ public class RmExportService {
                    dataStr.substring(4, 8);
         } catch (Exception e) {
             return DATA_EMISSAO_PADRAO;
+        }
+    }
+    
+    /**
+     * 🔥 EXPORTA LISTA DE NOTAS PARA RM
+     */
+    public byte[] exportarParaRm(List<NotaDebitoSPC> notas) {
+        if (notas == null || notas.isEmpty()) {
+            logger.warn("⚠️ Lista de notas vazia para exportação RM");
+            return new byte[0];
+        }
+
+        logger.info("📤 Exportando {} notas para RM", notas.size());
+        
+        // Resetar contador de RPS
+        ultimoNumeroRPS = buscarUltimoNumeroRPS();
+
+        try {
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintWriter writer = new PrintWriter(baos);
+
+            int sequencialNota = 1;
+
+            for (NotaDebitoSPC nota : notas) {
+                // Verificar se nota tem itens
+                if (nota.getItens() == null || nota.getItens().isEmpty()) {
+                    logger.warn("⚠️ Nota {} sem itens, pulando...", nota.getId());
+                    continue;
+                }
+
+                // Gerar linha M (cabeçalho da nota)
+                writer.println(gerarLinhaM(nota, sequencialNota++));
+                
+                // Gerar linhas I (itens)
+                int itemSeq = 1;
+                for (ItemSPC item : nota.getItens()) {
+                    writer.println(gerarLinhaI(nota, item, itemSeq++));
+                }
+            }
+
+            writer.flush();
+            byte[] resultado = baos.toByteArray();
+            logger.info("✅ Arquivo RM gerado com sucesso! Tamanho: {} bytes, Notas: {}", 
+                resultado.length, notas.size());
+            
+            return resultado;
+
+        } catch (Exception e) {
+            logger.error("❌ Erro ao exportar notas para RM: {}", e.getMessage(), e);
+            throw new RuntimeException("Erro ao exportar para RM: " + e.getMessage());
         }
     }
 }

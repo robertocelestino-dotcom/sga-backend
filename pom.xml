@@ -149,6 +149,19 @@
 			<version>12.4.0.jre11</version>
 		</dependency>
 
+		<!-- Adicionar no <dependencies> -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>3.1.5</version>
+		</dependency>
+
+		<!-- adicionar o suporte Spring Boot para Caffeine -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
 
 	</dependencies>
 

@@ -165,5 +165,33 @@ public interface NotaDebitoSPCRepository extends JpaRepository<NotaDebitoSPC, Lo
 	List<Long> findAssociadoIdsComNotasConsolidado();
 	
 	
-	
+	// ============================================================
+    // 🔥 MÉTODO CORRIGIDO - Buscar notas por lista de IDs
+    // ============================================================
+    
+    /**
+     * Busca notas de débito por uma lista de IDs
+     */
+    List<NotaDebitoSPC> findByIdIn(List<Long> ids);
+    
+ // ============================================================
+    // 🔥 MÉTODO PARA BUSCAR NOTAS POR IDs DE FATURAS (CORRIGIDO)
+    // ============================================================
+    
+    /**
+     * Busca notas de débito a partir de uma lista de IDs de faturas.
+     * Como a NotaDebitoSPC não tem referência direta para Fatura,
+     * precisamos buscar as notas pelos IDs.
+     * 
+     * @param faturaIds Lista de IDs das faturas
+     * @return Lista de notas de débito
+     */
+    default List<NotaDebitoSPC> findByFaturaIds(List<Long> faturaIds) {
+        if (faturaIds == null || faturaIds.isEmpty()) {
+            return List.of();
+        }
+        // 🔥 Buscar notas pelos IDs (que correspondem aos notaDebitoId das faturas)
+        return findByIdIn(faturaIds);
+    }
+    
 }
