@@ -239,6 +239,14 @@ public class ProcessamentoFaturamentoService {
                         request.getUsuario() != null ? request.getUsuario() : "SISTEMA");
 
                 if (fatura != null) {
+                	
+                	// 🔥 VERIFICAR SE O notaDebitoId FOI SETADO
+                    if (fatura.getNotaDebitoId() == null && notas != null && !notas.isEmpty()) {
+                        log.warn("⚠️ Fatura criada sem notaDebitoId! Atribuindo manualmente...");
+                        fatura.setNotaDebitoId(notas.get(0).getId());
+                        log.info("✅ notaDebitoId atribuído manualmente: {}", fatura.getNotaDebitoId());
+                    }
+                    
                     if (!isSimulacao) {
                         fatura.setLoteProcessamentoId(lote.getId());
                         faturasGeradas.add(fatura);

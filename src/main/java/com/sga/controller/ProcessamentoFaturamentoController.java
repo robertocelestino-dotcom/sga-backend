@@ -342,6 +342,12 @@ public class ProcessamentoFaturamentoController {
 
         Page<FaturaResumoDTO> faturas = faturaService.listarFaturasComFiltros(
             numeroFatura, associadoNome, status, mes, ano, associadoId, reguaId, pageable);
+        
+        if (faturas.hasContent()) {
+            FaturaResumoDTO first = faturas.getContent().get(0);
+            log.info("🔍 Primeira fatura retornada: ID={}, notaDebitoId={}, numeroFatura={}", 
+                first.getId(), first.getNotaDebitoId(), first.getNumeroFatura());
+        }
 
         log.info("✅ Total de faturas encontradas: {}", faturas.getTotalElements());
 

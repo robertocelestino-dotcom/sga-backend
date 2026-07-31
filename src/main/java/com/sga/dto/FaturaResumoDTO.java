@@ -23,6 +23,12 @@ public class FaturaResumoDTO {
 	private String reguaNome;
 	private String reguaCor; // Opcional: cor da régua para destacar
 
+	// 🔥 CAMPO ESSENCIAL - NOTA DE DÉBITO
+	private Long notaDebitoId;
+
+	// 🔥 CAMPO PARA RPS
+	private Integer numeroRps;
+
 	// Getters e Setters
 	public Long getId() {
 		return id;
@@ -143,5 +149,21 @@ public class FaturaResumoDTO {
 	public void setReguaCor(String reguaCor) {
 		this.reguaCor = reguaCor;
 	}
-	
+
+	public Long getNotaDebitoId() {
+		return notaDebitoId;
+	}
+
+	public void setNotaDebitoId(Long notaDebitoId) {
+		this.notaDebitoId = notaDebitoId;
+	}
+
+	public Integer getNumeroRps() {
+		return numeroRps;
+	}
+
+	public void setNumeroRps(Integer numeroRps) {
+		this.numeroRps = numeroRps;
+	}
+
 }

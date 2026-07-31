@@ -172,6 +172,15 @@ public class FaturaService {
             FaturaResumoDTO dto = new FaturaResumoDTO();
             dto.setId(fatura.getId());
             dto.setNumeroFatura(fatura.getNumeroFatura());
+            
+            // 🔥 ESSENCIAL - SETAR O NOTA_DEBITO_ID
+            dto.setNotaDebitoId(fatura.getNotaDebitoId());
+            
+            // 🔥 LOG PARA DEBUG
+            if (dto.getNotaDebitoId() != null) {
+                log.debug("🔍 Fatura ID: {} - notaDebitoId: {}", dto.getId(), dto.getNotaDebitoId());
+            }
+            
             dto.setValorTotal(fatura.getValorTotal());
             dto.setDataEmissao(fatura.getDataEmissao());
             dto.setDataVencimento(fatura.getDataVencimento());
@@ -557,6 +566,9 @@ public class FaturaService {
         
         FaturaResumoDTO dto = new FaturaResumoDTO();
         dto.setId(fatura.getId());
+        
+        dto.setNotaDebitoId(fatura.getNotaDebitoId());
+        
         dto.setNumeroFatura(fatura.getNumeroFatura());
         dto.setValorTotal(fatura.getValorTotal());
         dto.setDataEmissao(fatura.getDataEmissao());

@@ -176,7 +176,8 @@ public class ReguaFaturamentoService {
     @Transactional(readOnly = true)
     public List<AssociadoReguaDTO> listarAssociadosPorReguaDTO(Long reguaId) {
         log.info("Listando associados da régua ID: {}", reguaId);
-        List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId);
+        //List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId);
+        List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaId(reguaId);
         
         return associadosRegua.stream().map(ar -> {
             AssociadoReguaDTO dto = new AssociadoReguaDTO();

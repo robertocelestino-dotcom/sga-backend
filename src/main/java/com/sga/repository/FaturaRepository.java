@@ -47,9 +47,8 @@ public interface FaturaRepository extends JpaRepository<Fatura, Long> {
 	@Query("SELECT f FROM Fatura f WHERE f.mesReferencia = :mes AND f.anoReferencia = :ano")
 	List<Fatura> findByPeriodo(@Param("mes") Integer mes, @Param("ano") Integer ano);
 
-	@Query("SELECT f FROM Fatura f WHERE f.associado.id = :associadoId " +
-	       "AND f.mesReferencia = :mesReferencia " +
-	       "AND f.anoReferencia = :anoReferencia")
+	@Query("SELECT f FROM Fatura f WHERE f.associado.id = :associadoId " + "AND f.mesReferencia = :mesReferencia "
+			+ "AND f.anoReferencia = :anoReferencia")
 	List<Fatura> findByAssociadoIdAndMesReferenciaAndAnoReferencia(@Param("associadoId") Long associadoId,
 			@Param("mesReferencia") Integer mesReferencia, @Param("anoReferencia") Integer anoReferencia);
 
@@ -98,16 +97,11 @@ public interface FaturaRepository extends JpaRepository<Fatura, Long> {
 
 	// ========== BUSCAS COM FILTROS ==========
 
-	@Query("SELECT f FROM Fatura f WHERE " +
-	       "(:associadoId IS NULL OR f.associado.id = :associadoId) AND " +
-	       "(:status IS NULL OR f.status = :status) AND " +
-	       "(:mes IS NULL OR f.mesReferencia = :mes) AND " +
-	       "(:ano IS NULL OR f.anoReferencia = :ano)")
-	Page<Fatura> findByFiltros(@Param("associadoId") Long associadoId,
-			@Param("status") String status,
-			@Param("mes") Integer mes,
-			@Param("ano") Integer ano,
-			Pageable pageable);
+	@Query("SELECT f FROM Fatura f WHERE " + "(:associadoId IS NULL OR f.associado.id = :associadoId) AND "
+			+ "(:status IS NULL OR f.status = :status) AND " + "(:mes IS NULL OR f.mesReferencia = :mes) AND "
+			+ "(:ano IS NULL OR f.anoReferencia = :ano)")
+	Page<Fatura> findByFiltros(@Param("associadoId") Long associadoId, @Param("status") String status,
+			@Param("mes") Integer mes, @Param("ano") Integer ano, Pageable pageable);
 
 	@Query("SELECT f FROM Fatura f WHERE f.mesReferencia = :mes AND f.anoReferencia = :ano")
 	Page<Fatura> findByMesReferenciaAndAnoReferencia(@Param("mes") Integer mes, @Param("ano") Integer ano,
@@ -117,23 +111,46 @@ public interface FaturaRepository extends JpaRepository<Fatura, Long> {
 	List<Long> findAssociadosComFaturaNoPeriodo(@Param("mes") Integer mes, @Param("ano") Integer ano);
 
 	// ========== 🔥 BUSCA COM FILTROS - COM @EntityGraph ==========
-	@Query("SELECT DISTINCT f FROM Fatura f " +
-		       "LEFT JOIN f.associado a " +
-		       "LEFT JOIN LoteProcessamento l ON f.loteProcessamentoId = l.id " +
-		       "WHERE (COALESCE(:numeroFatura, '') = '' OR f.numeroFatura LIKE CONCAT('%', :numeroFatura, '%')) " +
-		       "AND (COALESCE(:associadoNome, '') = '' OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :associadoNome, '%'))) " +
-		       "AND (COALESCE(:status, '') = '' OR f.status = :status) " +
-		       "AND (:mes IS NULL OR f.mesReferencia = :mes) " +
-		       "AND (:ano IS NULL OR f.anoReferencia = :ano) " +
-		       "AND (:associadoId IS NULL OR a.id = :associadoId) " +
-		       "AND (:reguaId IS NULL OR l.regua.id = :reguaId)")
-		Page<Fatura> findFaturasComFiltros(
-		        @Param("numeroFatura") String numeroFatura,
-		        @Param("associadoNome") String associadoNome,
-		        @Param("status") String status,
-		        @Param("mes") Integer mes,
-		        @Param("ano") Integer ano,
-		        @Param("associadoId") Long associadoId,
-		        @Param("reguaId") Long reguaId,
-		        Pageable pageable);
+	@Query("SELECT DISTINCT f FROM Fatura f " + "LEFT JOIN f.associado a "
+			+ "LEFT JOIN LoteProcessamento l ON f.loteProcessamentoId = l.id "
+			+ "WHERE (COALESCE(:numeroFatura, '') = '' OR f.numeroFatura LIKE CONCAT('%', :numeroFatura, '%')) "
+			+ "AND (COALESCE(:associadoNome, '') = '' OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :associadoNome, '%'))) "
+			+ "AND (COALESCE(:status, '') = '' OR f.status = :status) "
+			+ "AND (:mes IS NULL OR f.mesReferencia = :mes) " + "AND (:ano IS NULL OR f.anoReferencia = :ano) "
+			+ "AND (:associadoId IS NULL OR a.id = :associadoId) " + "AND (:reguaId IS NULL OR l.regua.id = :reguaId)")
+	Page<Fatura> findFaturasComFiltros(@Param("numeroFatura") String numeroFatura,
+			@Param("associadoNome") String associadoNome, @Param("status") String status, @Param("mes") Integer mes,
+			@Param("ano") Integer ano, @Param("associadoId") Long associadoId, @Param("reguaId") Long reguaId,
+			Pageable pageable);
+
+	// ============================================================
+	// 🔥 NOVOS MÉTODOS PARA INTEGRAÇÃO RM API
+	// ============================================================
+
+	/**
+	 * Busca fatura por notaDebitoId
+	 */
+	Optional<Fatura> findByNotaDebitoId(Long notaDebitoId);
+
+	/**
+	 * Busca faturas por lista de notaDebitoId
+	 */
+	List<Fatura> findByNotaDebitoIdIn(List<Long> notaDebitoIds);
+
+	/**
+	 * Busca faturas por notaDebitoId e status
+	 */
+	Optional<Fatura> findByNotaDebitoIdAndStatus(Long notaDebitoId, String status);
+
+	/**
+	 * Busca faturas processadas RM
+	 */
+	List<Fatura> findByProcessadoRmTrue();
+
+	/**
+	 * Busca faturas por notaDebitoId com itens
+	 */
+	@Query("SELECT f FROM Fatura f LEFT JOIN FETCH f.itens WHERE f.notaDebitoId = :notaDebitoId")
+	Optional<Fatura> findByNotaDebitoIdWithItens(@Param("notaDebitoId") Long notaDebitoId);
+
 }

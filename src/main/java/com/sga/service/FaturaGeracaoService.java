@@ -7,13 +7,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -39,7 +36,6 @@ import com.sga.repository.AssociadoProdutoRepository;
 import com.sga.repository.CancelamentoImportacaoRepository;
 import com.sga.repository.FaturaItemRepository;
 import com.sga.repository.FaturaRepository;
-import com.sga.repository.ItemSPCRepository;
 import com.sga.repository.NotaDebitoSPCRepository;
 import com.sga.repository.NotificacaoAssociadoRepository;
 import com.sga.repository.ParametrosSPCRepository;
@@ -60,9 +56,6 @@ public class FaturaGeracaoService {
 
     @Autowired
     private NotaDebitoSPCRepository notaDebitoRepository;
-
-    @Autowired
-    private ItemSPCRepository itemSPCRepository;
 
     @Autowired
     private AssociadoService associadoService;
@@ -93,6 +86,10 @@ public class FaturaGeracaoService {
 
     @Autowired
     private CancelamentoService cancelamentoService;
+
+    // ========== NOVA DEPENDÊNCIA PARA FATURAMENTO EXTEMPORÂNEO ==========
+    @Autowired
+    private FaturamentoExtemporaneoService faturamentoExtemporaneoService;
 
     // ========== MAPEAMENTO DOS PRODUTOS DE NOTIFICAÇÃO ==========
     private static final Map<String, ProdutoNotificacaoInfo> PRODUTOS_NOTIFICACAO = new LinkedHashMap<>();
@@ -205,61 +202,93 @@ public class FaturaGeracaoService {
         }
 
         // ========== 3. PROCESSAR NOTAS ==========
-        Map<String, List<ItemSPC>> itensPorTipo = processarNotasPorTipoArquivo(notas, regua);
-        List<FaturaItem> itensCalculados = calcularItensConformeFormula(itensPorTipo, regua);
+        List<FaturaItem> itensCalculados = new ArrayList<>();
 
-        // ========== 4. ADICIONAR ITENS DE NOTIFICAÇÕES ==========
-        if (notificacao != null) {
-            log.info("📊 Adicionando itens de notificações à fatura...");
-            Map<String, BigDecimal> produtosAssociado = buscarProdutosNotificacaoAssociado(associado.getId());
-            
-            log.info("📦 Produtos encontrados: {}", produtosAssociado.size());
-            for (Map.Entry<String, BigDecimal> entry : produtosAssociado.entrySet()) {
-                log.info("   - {}: R$ {}", entry.getKey(), entry.getValue());
-            }
-            
-            List<FaturaItem> itensNotificacao = criarItensNotificacao(notificacao, produtosAssociado, associado);
-            if (!itensNotificacao.isEmpty()) {
-                itensCalculados.addAll(itensNotificacao);
-                log.info("✅ Adicionados {} itens de notificações", itensNotificacao.size());
-            } else {
-                log.warn("⚠️ Nenhum item de notificação foi criado");
-            }
-        } else {
-            log.info("ℹ️ Sem notificações para este associado no período");
-        }
-
-        if (itensCalculados.isEmpty()) {
-            log.warn("⚠️ Nenhum item calculado para o associado: {}", associado.getNomeRazao());
-            return null;
-        }
+        // 🔥 VERIFICA SE É FATURAMENTO EXTEMPORÂNEO (RÉGUAS 7 E 8)
+        boolean isExtemporaneo = isReguaExtemporanea(regua);
         
-        // ========== REMOVER ITEM DUPLICADO ==========
-        if (notificacao != null) {
-            log.info("========================================");
-            log.info("🔍 INICIANDO PROCESSO DE REMOÇÃO DE DUPLICADO");
-            log.info("========================================");
+        if (isExtemporaneo) {
+            log.info("📊 USANDO FATURAMENTO EXTEMPORÂNEO - Régua ID: {}", regua.getId());
+            log.info("📋 Notas recebidas: {}", notas.size());
             
-            removerItemNotificacaoDuplicado(itensCalculados, notificacao);
+            // Processa usando a regra extemporânea
+            itensCalculados = faturamentoExtemporaneoService.processarExtemporaneo(notas);
             
-            log.info("========================================");
-            log.info("📋 ITENS FINAIS APÓS REMOÇÃO ({} itens):", itensCalculados.size());
-            for (FaturaItem item : itensCalculados) {
-                log.info("   - {} ({}): Qtd={}", 
-                        item.getDescricao(), item.getCodigoProduto(), item.getQuantidade());
+            log.info("📊 Itens calculados (extemporâneo): {}", itensCalculados.size());
+            
+            // Adicionar notificações após o processamento extemporâneo
+            if (notificacao != null) {
+                log.info("📊 Adicionando itens de notificações à fatura extemporânea...");
+                Map<String, BigDecimal> produtosAssociado = buscarProdutosNotificacaoAssociado(associado.getId());
+                List<FaturaItem> itensNotificacao = criarItensNotificacao(notificacao, produtosAssociado, associado);
+                if (!itensNotificacao.isEmpty()) {
+                    itensCalculados.addAll(itensNotificacao);
+                    log.info("✅ Adicionados {} itens de notificações", itensNotificacao.size());
+                }
             }
-            log.info("========================================");
+            
+            // 🔥 REMOVER ITEM DUPLICADO (se houver notificações)
+            if (notificacao != null && !itensCalculados.isEmpty()) {
+                removerItemNotificacaoDuplicado(itensCalculados, notificacao);
+            }
+            
+        } else {
+            // ========== PROCESSAMENTO NORMAL (EXISTENTE) ==========
+            log.info("📊 USANDO FATURAMENTO NORMAL - Régua ID: {}", regua != null ? regua.getId() : "N/A");
+            
+            Map<String, List<ItemSPC>> itensPorTipo = processarNotasPorTipoArquivo(notas, regua);
+            itensCalculados = calcularItensConformeFormula(itensPorTipo, regua);
+
+            // Adicionar notificações (como já existe)
+            if (notificacao != null) {
+                log.info("📊 Adicionando itens de notificações à fatura...");
+                Map<String, BigDecimal> produtosAssociado = buscarProdutosNotificacaoAssociado(associado.getId());
+                
+                log.info("📦 Produtos encontrados: {}", produtosAssociado.size());
+                for (Map.Entry<String, BigDecimal> entry : produtosAssociado.entrySet()) {
+                    log.info("   - {}: R$ {}", entry.getKey(), entry.getValue());
+                }
+                
+                List<FaturaItem> itensNotificacao = criarItensNotificacao(notificacao, produtosAssociado, associado);
+                if (!itensNotificacao.isEmpty()) {
+                    itensCalculados.addAll(itensNotificacao);
+                    log.info("✅ Adicionados {} itens de notificações", itensNotificacao.size());
+                } else {
+                    log.warn("⚠️ Nenhum item de notificação foi criado");
+                }
+            } else {
+                log.info("ℹ️ Sem notificações para este associado no período");
+            }
+
+            // 🔥 REMOVER ITEM DUPLICADO (se houver notificações)
+            if (notificacao != null && !itensCalculados.isEmpty()) {
+                removerItemNotificacaoDuplicado(itensCalculados, notificacao);
+            }
+
+            if (itensCalculados.isEmpty()) {
+                log.warn("⚠️ Nenhum item calculado para o associado: {}", associado.getNomeRazao());
+                return null;
+            }
         }
 
         if (itensCalculados.isEmpty()) {
             log.warn("⚠️ Nenhum item calculado para o associado: {}", associado.getNomeRazao());
             return null;
         }
-       
-        // ========== 5. CRIAR FATURA ==========
+
+        // ========== 4. CRIAR FATURA ==========
         Fatura fatura = new Fatura();
         fatura.setAssociado(associado);
         fatura.setNumeroFatura(gerarNumeroFatura(associado.getId(), mesReferencia, anoReferencia));
+        
+        // 🔥 SETAR O notaDebitoId
+        if (notas != null && !notas.isEmpty()) {
+            NotaDebitoSPC notaPrincipal = notas.get(0);
+            fatura.setNotaDebitoId(notaPrincipal.getId());
+            log.info("🔗 Fatura vinculada à nota de débito ID: {}", notaPrincipal.getId());
+        } else {
+            log.warn("⚠️ Nenhuma nota disponível para associar à fatura");
+        }
 
         if (dataEmissao != null) {
             fatura.setDataEmissao(dataEmissao);
@@ -287,15 +316,17 @@ public class FaturaGeracaoService {
 
         fatura.recalcularTotal();
 
-        // ========== 6. ADICIONAR OBSERVAÇÃO ==========
+        // ========== 5. ADICIONAR OBSERVAÇÃO ==========
         if (notificacao != null) {
             BigDecimal valorNotificacoes = calcularValorTotalNotificacoes(notificacao);
+            String tipoFaturamento = isExtemporaneo ? "EXTEMPORÂNEO" : "NORMAL";
             String observacao = String.format(
-                    "📊 RESUMO NOTIFICAÇÕES - %02d/%d\n" +
+                    "📊 FATURAMENTO %s - %02d/%d\n" +
                     "📱 SMS: %d total (%d sem / %d com enriquecimento)\n" +
                     "📧 E-mails: %d total (%d sem / %d com enriquecimento)\n" +
                     "📬 Cartas: %d\n" +
                     "💰 Valor Total das Notificações: R$ %.2f",
+                    tipoFaturamento,
                     mesReferencia, anoReferencia,
                     notificacao.getSmsTotal(),
                     notificacao.getSmsSemEnriquecimento(),
@@ -310,15 +341,15 @@ public class FaturaGeracaoService {
             log.info("📝 Observação adicionada à fatura");
         }
 
-        // ========== 7. APLICAR REGRAS ==========
+        // ========== 6. APLICAR REGRAS ==========
         
-        // 7.1 Franquia
+        // 6.1 Franquia
         if (regua != null && Boolean.TRUE.equals(regua.getAplicarFranquia())) {
             log.info("📊 Aplicando regra de franquia para associado: {}", associado.getNomeRazao());
             fatura = franquiaRule.aplicarRegraFranquia(fatura, associado);
         }
         
-        // 7.2 Faturamento mínimo
+        // 6.2 Faturamento mínimo
         if (regua != null && Boolean.TRUE.equals(regua.getAplicarFaturamentoMinimo())) {
             log.info("💰 Aplicando regra de faturamento mínimo...");
             log.info("   Valor atual: R$ {}", fatura.getValorTotal());
@@ -328,7 +359,7 @@ public class FaturaGeracaoService {
             log.info("⏭️ Pular regra de faturamento mínimo");
         }
         
-        // 7.3 Cancelamentos
+        // 6.3 Cancelamentos
         if (regua != null && Boolean.TRUE.equals(regua.getAplicarCancelamentos())) {
             log.info("🗑️ Verificando cancelamentos para associado: {}", associado.getNomeRazao());
             
@@ -358,7 +389,7 @@ public class FaturaGeracaoService {
             }
         }
 
-        // ========== 8. MARCAR NOTIFICAÇÕES COMO FATURADAS ==========
+        // ========== 7. MARCAR NOTIFICAÇÕES COMO FATURADAS ==========
         if (notificacao != null && !simular) {
             notificacao.setProcessadoFatura(true);
             notificacao.setFaturaId(fatura.getId());
@@ -367,16 +398,16 @@ public class FaturaGeracaoService {
             log.info("✅ Notificações marcadas como faturadas para associado {}", associado.getId());
         }
 
-        // ========== 9. SALVAR ==========
+        // ========== 8. SALVAR ==========
         if (simular) {
             log.info("🔍 SIMULAÇÃO: Fatura NÃO salva no banco");
             return fatura;
         } else {
-            // 9.1 SALVAR A FATURA
+            // 8.1 SALVAR A FATURA
             Fatura faturaSalva = faturaRepository.save(fatura);
             log.info("✅ Fatura salva com ID: {}", faturaSalva.getId());
             
-            // 9.2 SALVAR OS ITENS DA FATURA
+            // 8.2 SALVAR OS ITENS DA FATURA
             if (faturaSalva.getItens() != null && !faturaSalva.getItens().isEmpty()) {
                 for (FaturaItem item : faturaSalva.getItens()) {
                     item.setFatura(faturaSalva);
@@ -391,18 +422,30 @@ public class FaturaGeracaoService {
         }
     }
 
+    // ========== MÉTODO PARA VERIFICAR RÉGUA EXTEMPORÂNEA ==========
+
+    /**
+     * Verifica se a régua usa faturamento extemporâneo (IDs 7 ou 8)
+     */
+    private boolean isReguaExtemporanea(ReguaFaturamento regua) {
+        if (regua == null || regua.getId() == null) {
+            return false;
+        }
+        Long id = regua.getId();
+        // Réguas 7 e 8 são extemporâneas
+        return id == 7L || id == 8L;
+    }
+
     // ========== MÉTODOS DE NOTIFICAÇÃO ==========
 
     /**
      * 🔥 Busca os produtos de notificação configurados para o associado
      * Retorna um mapa com código RM -> valor definido
-     * 🔥 MANTIDO: Busca por IDs fixos (17, 18, 19, 20, 21)
      */
     private Map<String, BigDecimal> buscarProdutosNotificacaoAssociado(Long associadoId) {
         Map<String, BigDecimal> produtos = new LinkedHashMap<>();
         
         try {
-            // 🔥 IDs DOS PRODUTOS DE NOTIFICAÇÃO (FIXOS)
             List<Long> idsProdutos = Arrays.asList(17L, 18L, 19L, 20L, 21L);
             
             List<AssociadoProduto> lista = associadoProdutoRepository
@@ -445,7 +488,6 @@ public class FaturaGeracaoService {
     /**
      * 🔥 CRIA ITENS DE FATURA A PARTIR DAS NOTIFICAÇÕES
      * APENAS ITENS COM QUANTIDADE > 0
-     * 🔥 CORRIGIDO: Cria TODOS os itens com quantidade > 0, independentemente de ter produto configurado
      */
     private List<FaturaItem> criarItensNotificacao(NotificacaoAssociado notificacao, 
             Map<String, BigDecimal> produtosAssociado, Associado associado) {
@@ -459,13 +501,11 @@ public class FaturaGeracaoService {
         
         log.info("📊 Criando itens de notificação para associado: {}", associado.getNomeRazao());
         
-        // 🔥 LOG DETALHADO DOS PRODUTOS DO ASSOCIADO
         log.info("📦 Produtos de notificação do associado:");
         for (Map.Entry<String, BigDecimal> entry : produtosAssociado.entrySet()) {
             log.info("   - {}: R$ {}", entry.getKey(), entry.getValue());
         }
         
-        // 🔥 LOG DETALHADO DAS QUANTIDADES
         int smsSemEnr = notificacao.getSmsSemEnriquecimento() != null ? notificacao.getSmsSemEnriquecimento() : 0;
         int smsComEnr = notificacao.getSmsComEnriquecimento() != null ? notificacao.getSmsComEnriquecimento() : 0;
         int emailSemEnr = notificacao.getEmailsSemEnriquecimento() != null ? notificacao.getEmailsSemEnriquecimento() : 0;
@@ -479,10 +519,7 @@ public class FaturaGeracaoService {
         log.info("   E-mail COM ENR: {}", emailComEnr);
         log.info("   Cartas: {}", cartas);
         
-        // 🔥 VERIFICAR SE O ASSOCIADO TEM PRODUTOS COM ENRIQUECIMENTO
         boolean possuiEnriquecimento = associadoPossuiEnriquecimento(produtosAssociado);
-        
-        // 🔥 VERIFICAR SE EXISTEM NOTIFICAÇÕES COM ENRIQUECIMENTO
         boolean temNotificacoesComEnriquecimento = (smsComEnr > 0 || emailComEnr > 0);
         
         log.info("📌 Associado {} - {}", associado.getNomeRazao(), 
@@ -520,7 +557,6 @@ public class FaturaGeracaoService {
 
         // ========== 2. E-MAILS ==========
         if (possuiEnriquecimento) {
-            // 🔥 COM ENRIQUECIMENTO: SEPARADO
             String codigoEmailSem = "04.01.03.94341";
             if (emailSemEnr > 0 && produtosAssociado.containsKey(codigoEmailSem)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoEmailSem);
@@ -559,7 +595,6 @@ public class FaturaGeracaoService {
                 }
             }
         } else {
-            // 🔥 SEM ENRIQUECIMENTO: SOMA TOTAL (INCLUINDO OS COM ENRIQUECIMENTO)
             int totalEmails = emailSemEnr + emailComEnr;
             String codigoEmail = "04.01.03.94341";
             if (totalEmails > 0 && produtosAssociado.containsKey(codigoEmail)) {
@@ -583,7 +618,6 @@ public class FaturaGeracaoService {
 
         // ========== 3. SMS ==========
         if (possuiEnriquecimento) {
-            // 🔥 COM ENRIQUECIMENTO: SEPARADO
             String codigoSmsSem = "04.01.03.94342";
             if (smsSemEnr > 0 && produtosAssociado.containsKey(codigoSmsSem)) {
                 BigDecimal valorUnitario = produtosAssociado.get(codigoSmsSem);
@@ -622,7 +656,6 @@ public class FaturaGeracaoService {
                 }
             }
         } else {
-            // 🔥 SEM ENRIQUECIMENTO: SOMA TOTAL (INCLUINDO OS COM ENRIQUECIMENTO)
             int totalSms = smsSemEnr + smsComEnr;
             String codigoSms = "04.01.03.94342";
             if (totalSms > 0 && produtosAssociado.containsKey(codigoSms)) {
@@ -644,7 +677,6 @@ public class FaturaGeracaoService {
             }
         }
 
-        // 🔥 VERIFICAR SE A SOMA DOS ITENS CORRESPONDE AO TOTAL DIGITAL
         int totalItensCriados = 0;
         for (FaturaItem item : itens) {
             totalItensCriados += item.getQuantidade().intValue();
@@ -660,7 +692,6 @@ public class FaturaGeracaoService {
         if (totalItensCriados != totalDigitalEsperado) {
             log.warn("⚠️ INCONSISTÊNCIA: Total itens criados ({}) difere do total digital esperado ({})", 
                     totalItensCriados, totalDigitalEsperado);
-            log.warn("   Verifique se todos os produtos de notificação estão configurados para o associado");
             if (temNotificacoesComEnriquecimento && !possuiEnriquecimento) {
                 log.warn("   🔥 Corrigido: Notificações COM enriquecimento foram somadas às SEM enriquecimento");
             }
@@ -668,7 +699,6 @@ public class FaturaGeracaoService {
 
         if (count == 0) {
             log.warn("⚠️ NENHUM item de notificação foi criado para associado {}", associado.getId());
-            log.warn("   Verifique se há produtos configurados e quantidades > 0");
         } else {
             log.info("✅ Criados {} itens de notificação - Valor total: R$ {}", count, valorTotalNotificacoes);
             log.info("📋 Itens criados: {}", String.join(" | ", itensCriados));

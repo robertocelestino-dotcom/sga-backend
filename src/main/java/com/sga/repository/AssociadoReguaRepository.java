@@ -21,7 +21,6 @@ import com.sga.model.AssociadoRegua;
 public interface AssociadoReguaRepository extends JpaRepository<AssociadoRegua, Long> {
 
 	// ========== BUSCAS COM DTO ==========
-
 	@Query("SELECT new com.sga.dto.AssociadoReguaDTO(" + "ar.id, " + "ar.associado.id, " + "ar.associado.nomeRazao, "
 			+ "ar.associado.codigoSpc, " + "ar.regua.id, " + "ar.regua.nome, " + "ar.dataInicio, " + "ar.dataFim, "
 			+ "ar.ativo, " + "ar.motivoMigracao, " + "ar.observacao, " + "ar.criadoEm, " + "ar.criadoPor) "
@@ -29,16 +28,16 @@ public interface AssociadoReguaRepository extends JpaRepository<AssociadoRegua, 
 	List<AssociadoReguaDTO> findAtivosByReguaIdDTO(@Param("reguaId") Long reguaId);
 
 	// ========== BUSCAS POR RÉGUA ==========
-
 	@Query("SELECT ar FROM AssociadoRegua ar WHERE ar.regua.id = :reguaId AND ar.ativo = true")
 	List<AssociadoRegua> findByReguaIdAndAtivoTrue(@Param("reguaId") Long reguaId);
-
+	
 	Page<AssociadoRegua> findByReguaIdAndAtivoTrue(Long reguaId, Pageable pageable);
+	
+    // 🔥 NOVO: Busca TODOS (ativos e inativos)
+    List<AssociadoRegua> findByReguaId(Long reguaId);
 
 	// ========== BUSCAS POR ASSOCIADO ==========
-
 	Optional<AssociadoRegua> findByAssociadoIdAndAtivoTrue(Long associadoId);
-
 	List<AssociadoRegua> findByAssociadoId(Long associadoId);
 
 	// 🔥 MÉTODO PARA VERIFICAR SE EXISTE ASSOCIAÇÃO ATIVA
