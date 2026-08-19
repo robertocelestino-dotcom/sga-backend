@@ -15,6 +15,8 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.persistence.EntityNotFoundException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +45,7 @@ import com.sga.dto.FaturaDetalheDTO;
 import com.sga.dto.FaturaItemDTO;
 import com.sga.dto.FaturaItemResponseDTO;
 import com.sga.dto.FaturaResumoDTO;
+import com.sga.dto.LogFaturaDTO;
 import com.sga.dto.ProcessamentoRequest;
 import com.sga.dto.ResultadoProcessamento;
 import com.sga.model.Fatura;
@@ -50,6 +53,7 @@ import com.sga.model.ProcessamentoStatus;
 import com.sga.repository.LoteProcessamentoRepository;
 import com.sga.service.FaturaRmExportService;
 import com.sga.service.FaturaService;
+import com.sga.service.LogFaturaService;
 import com.sga.service.ProcessamentoFaturamentoService;
 
 @RestController
@@ -69,6 +73,10 @@ public class ProcessamentoFaturamentoController {
 
     @Autowired
     private LoteProcessamentoRepository loteProcessamentoRepository;
+
+    // ========== DEPENDÊNCIA PARA LOGS ==========
+    @Autowired
+    private LogFaturaService logFaturaService;
 
     // 🔥 MAPA PARA ARMAZENAR STATUS DAS TAREFAS ASSÍNCRONAS
     private final Map<String, ProcessamentoStatus> tarefasStatus = new ConcurrentHashMap<>();
@@ -396,15 +404,194 @@ public class ProcessamentoFaturamentoController {
         return ResponseEntity.ok(fatura);
     }
 
-    @PostMapping("/faturas/{id}/marcar-processada-rm")
-    public ResponseEntity<Fatura> marcarFaturaProcessadaRm(@PathVariable Long id,
+    // ============================================================
+    // 🔥 ENDPOINTS PARA LOGS - CORRIGIDOS COM DTO
+    // ============================================================
+
+    /**
+     * 🔥 BUSCAR LOGS DE UMA FATURA
+     */
+    @GetMapping("/faturas/{id}/logs")
+    public ResponseEntity<?> buscarLogsFatura(@PathVariable Long id) {
+        log.info("📝 Buscando logs da fatura ID: {}", id);
+        
+        try {
+            // Verificar se a fatura existe
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                log.warn("⚠️ Fatura não encontrada: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 🔥 USAR O MÉTODO QUE RETORNA DTO
+            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaDTO(id);
+            log.info("📊 Encontrados {} logs para a fatura {}", logs.size(), id);
+            
+            return ResponseEntity.ok(logs);
+            
+        } catch (EntityNotFoundException e) {
+            log.warn("⚠️ Fatura não encontrada: {}", id);
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar logs da fatura {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 🔥 BUSCAR APENAS LOGS DE ERRO (WARN E ERROR) DE UMA FATURA
+     */
+    @GetMapping("/faturas/{id}/logs/erros")
+    public ResponseEntity<?> buscarLogsErrosFatura(@PathVariable Long id) {
+        log.info("📝 Buscando logs de erro da fatura ID: {}", id);
+        
+        try {
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 🔥 USAR O MÉTODO QUE RETORNA DTO
+            List<LogFaturaDTO> logs = logFaturaService.buscarErrosPorFaturaDTO(id);
+            log.info("📊 Encontrados {} logs de erro para a fatura {}", logs.size(), id);
+            
+            return ResponseEntity.ok(logs);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar logs de erro da fatura {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR NÍVEL
+     */
+    @GetMapping("/faturas/{id}/logs/nivel/{nivel}")
+    public ResponseEntity<?> buscarLogsFaturaPorNivel(
+            @PathVariable Long id,
+            @PathVariable String nivel) {
+        
+        log.info("📝 Buscando logs da fatura ID: {} com nível: {}", id, nivel);
+        
+        try {
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 🔥 USAR O MÉTODO QUE RETORNA DTO
+            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaENivelDTO(id, nivel.toUpperCase());
+            log.info("📊 Encontrados {} logs com nível {} para a fatura {}", logs.size(), nivel, id);
+            
+            return ResponseEntity.ok(logs);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar logs da fatura {} com nível {}: {}", id, nivel, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR PASSO
+     */
+    @GetMapping("/faturas/{id}/logs/passo/{passo}")
+    public ResponseEntity<?> buscarLogsFaturaPorPasso(
+            @PathVariable Long id,
+            @PathVariable String passo) {
+        
+        log.info("📝 Buscando logs da fatura ID: {} com passo: {}", id, passo);
+        
+        try {
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            // 🔥 USAR O MÉTODO QUE RETORNA DTO
+            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaEPassoDTO(id, passo.toUpperCase());
+            log.info("📊 Encontrados {} logs com passo {} para a fatura {}", logs.size(), passo, id);
+            
+            return ResponseEntity.ok(logs);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar logs da fatura {} com passo {}: {}", id, passo, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 🔥 CONTAR LOGS DE UMA FATURA
+     */
+    @GetMapping("/faturas/{id}/logs/count")
+    public ResponseEntity<?> contarLogsFatura(@PathVariable Long id) {
+        log.info("📊 Contando logs da fatura ID: {}", id);
+        
+        try {
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            long total = logFaturaService.contarLogsPorFatura(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("faturaId", id);
+            response.put("totalLogs", total);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao contar logs da fatura {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao contar logs: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * 🔥 LIMPAR LOGS DE UMA FATURA
+     */
+    @DeleteMapping("/faturas/{id}/logs")
+    public ResponseEntity<?> limparLogsFatura(
+            @PathVariable Long id,
             @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-
-        log.info("🏷️ Marcando fatura {} como processada no RM", id);
-
-        Fatura fatura = faturaService.marcarComoProcessadoRm(id);
-
-        return ResponseEntity.ok(fatura);
+        
+        log.info("🗑️ Limpando logs da fatura ID: {} pelo usuário: {}", id, usuario);
+        
+        try {
+            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+            
+            if (fatura == null) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            long total = logFaturaService.contarLogsPorFatura(id);
+            logFaturaService.limparLogs(id);
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("faturaId", id);
+            response.put("logsRemovidos", total);
+            response.put("mensagem", "Logs da fatura " + id + " removidos com sucesso");
+            response.put("usuario", usuario);
+            
+            log.info("✅ Logs da fatura {} removidos. Total: {}", id, total);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao limpar logs da fatura {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(Map.of("error", "Erro ao limpar logs: " + e.getMessage()));
+        }
     }
 
     // ========== EXPORTAÇÃO RM ==========

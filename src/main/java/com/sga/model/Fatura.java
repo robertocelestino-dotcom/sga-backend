@@ -88,6 +88,9 @@ public class Fatura {
 	@Column(name = "numero_rps")
 	private Integer numeroRps;
 
+	@OneToMany(mappedBy = "fatura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+	private List<LogFatura> logs;
+
 	// ==================== CONSTRUTORES ====================
 	public Fatura() {
 	}
@@ -261,8 +264,15 @@ public class Fatura {
 		this.numeroRps = numeroRps;
 	}
 
-	// ==================== MÉTODOS AUXILIARES ====================
+	public List<LogFatura> getLogs() {
+		return logs;
+	}
 
+	public void setLogs(List<LogFatura> logs) {
+		this.logs = logs;
+	}
+
+	// ==================== MÉTODOS AUXILIARES ====================
 	/**
 	 * Adiciona um item à fatura
 	 */
@@ -383,8 +393,8 @@ public class Fatura {
 	public boolean isPendente() {
 		return "PENDENTE".equals(status);
 	}
-	
+
 	public void setDataProcessamentoRm(LocalDateTime dataProcessamentoRm) {
-	    this.dataProcessamento = dataProcessamentoRm;
+		this.dataProcessamento = dataProcessamentoRm;
 	}
 }
