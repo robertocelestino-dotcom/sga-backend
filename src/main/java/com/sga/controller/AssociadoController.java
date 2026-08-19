@@ -267,6 +267,7 @@ public class AssociadoController {
 	            .header("X-Importacao-Atualizados", String.valueOf(atualizados))
 	            .header("X-Importacao-Erros", String.valueOf(erros))
 	            .header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas))
+	            .header("Access-Control-Expose-Headers", "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, X-Importacao-Configuracoes")
 	            .body(associadosImportados);
 	}
 
