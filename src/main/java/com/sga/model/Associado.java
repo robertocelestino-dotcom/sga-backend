@@ -27,7 +27,7 @@ import lombok.Data;
 @Data
 @Entity
 @Table(name = "TB_ASSOCIADO")
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Associado {
 
 	public static final String STATUS_ATIVO = "A";
@@ -103,6 +103,12 @@ public class Associado {
 
 	@Column(name = "DATA_CADASTRO")
 	private LocalDateTime dataCadastro;
+
+	@Column(name = "ultima_migracao")
+	private LocalDateTime ultimaMigracao;
+
+	@Column(name = "usuario_ultima_migracao", length = 100)
+	private String usuarioUltimaMigracao;
 
 	@OneToMany(mappedBy = "associado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<Endereco> enderecos;
@@ -210,16 +216,16 @@ public class Associado {
 			return "Suspenso";
 		return "Desconhecido";
 	}
-	
+
 	// Métodos utilitários
 	public void addDefinicaoFaturamento(AssociadoDefFaturamento definicao) {
-	    definicoesFaturamento.add(definicao);
-	    definicao.setAssociado(this);
+		definicoesFaturamento.add(definicao);
+		definicao.setAssociado(this);
 	}
 
 	public void removeDefinicaoFaturamento(AssociadoDefFaturamento definicao) {
-	    definicoesFaturamento.remove(definicao);
-	    definicao.setAssociado(null);
+		definicoesFaturamento.remove(definicao);
+		definicao.setAssociado(null);
 	}
 
 	public Associado(Long id) {
@@ -451,6 +457,22 @@ public class Associado {
 
 	public void setStatusAnterior(String statusAnterior) {
 		this.statusAnterior = statusAnterior;
+	}
+
+	public LocalDateTime getUltimaMigracao() {
+		return ultimaMigracao;
+	}
+
+	public void setUltimaMigracao(LocalDateTime ultimaMigracao) {
+		this.ultimaMigracao = ultimaMigracao;
+	}
+
+	public String getUsuarioUltimaMigracao() {
+		return usuarioUltimaMigracao;
+	}
+
+	public void setUsuarioUltimaMigracao(String usuarioUltimaMigracao) {
+		this.usuarioUltimaMigracao = usuarioUltimaMigracao;
 	}
 
 	// Métodos auxiliares

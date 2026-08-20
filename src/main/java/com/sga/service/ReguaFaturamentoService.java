@@ -1,3 +1,5 @@
+// src/main/java/com/sga/service/ReguaFaturamentoService.java
+
 package com.sga.service;
 
 import java.time.LocalDate;
@@ -176,7 +178,6 @@ public class ReguaFaturamentoService {
     @Transactional(readOnly = true)
     public List<AssociadoReguaDTO> listarAssociadosPorReguaDTO(Long reguaId) {
         log.info("Listando associados da régua ID: {}", reguaId);
-        //List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaIdAndAtivoTrue(reguaId);
         List<AssociadoRegua> associadosRegua = associadoReguaRepository.findByReguaId(reguaId);
         
         return associadosRegua.stream().map(ar -> {
@@ -314,37 +315,136 @@ public class ReguaFaturamentoService {
         return associadoReguaRepository.save(novaAssociacao);
     }
 
+    // ========== MÉTODOS CORRIGIDOS ==========
+
+    /**
+     * 🔥 REMOVE UM ASSOCIADO DA RÉGUA ATUAL (CORRIGIDO PARA LIDAR COM DUPLICATAS)
+     */
     @Transactional
     public void removerAssociadoDaRegua(Long associadoId, String usuario) {
         log.info("Removendo associado {} da régua atual", associadoId);
+
+        // 🔥 BUSCAR TODOS OS REGISTROS ATIVOS (pode ter duplicados)
+        List<AssociadoRegua> associacoesAtivas = associadoReguaRepository
+                .findAllByAssociadoIdAndAtivoTrue(associadoId);
+
+        if (associacoesAtivas == null || associacoesAtivas.isEmpty()) {
+            throw new RuntimeException("Associado não possui régua ativa");
+        }
+
+        // 🔥 SE TIVER MAIS DE UM, LOGAR E REMOVER TODOS
+        if (associacoesAtivas.size() > 1) {
+            log.warn("⚠️ Associado {} possui {} associações ativas (duplicadas)!", 
+                     associadoId, associacoesAtivas.size());
+            
+            // Remover todos exceto o primeiro (mais antigo)
+            for (int i = 1; i < associacoesAtivas.size(); i++) {
+                AssociadoRegua duplicada = associacoesAtivas.get(i);
+                log.warn("🗑️ Removendo associação duplicada ID: {} - Régua: {}", 
+                         duplicada.getId(), duplicada.getRegua().getNome());
+                associadoReguaRepository.delete(duplicada);
+            }
+            
+            // Manter o primeiro registro
+            AssociadoRegua associacao = associacoesAtivas.get(0);
+            associacao.setAtivo(false);
+            associacao.setDataFim(LocalDate.now());
+            associacao.setAtualizadoPor(usuario);
+            associacao.setAtualizadoEm(LocalDateTime.now());
+            associadoReguaRepository.save(associacao);
+            
+            log.info("✅ Associado {} removido da régua {} (duplicatas limpas)", 
+                     associadoId, associacao.getRegua().getNome());
+            return;
+        }
+
+        // 🔥 CASO NORMAL: APENAS UM REGISTRO
+        AssociadoRegua associacao = associacoesAtivas.get(0);
         
-        AssociadoRegua associacao = associadoReguaRepository.findByAssociadoIdAndAtivoTrue(associadoId)
-            .orElseThrow(() -> new RuntimeException("Associado não possui régua ativa"));
-        
+        // Verificar se a régua permite remoção
+        if (associacao.getRegua().getPermiteMigracao() != null && 
+            !associacao.getRegua().getPermiteMigracao()) {
+            throw new RuntimeException("A régua '" + associacao.getRegua().getNome() + 
+                                       "' não permite remoção de associados");
+        }
+
         associacao.setAtivo(false);
         associacao.setDataFim(LocalDate.now());
         associacao.setAtualizadoPor(usuario);
         associacao.setAtualizadoEm(LocalDateTime.now());
         associadoReguaRepository.save(associacao);
+
+        log.info("✅ Associado {} removido da régua {}", associadoId, associacao.getRegua().getNome());
     }
 
+    /**
+     * 🔥 BUSCA A RÉGUA ATIVA DE UM ASSOCIADO (CORRIGIDO)
+     */
     @Transactional(readOnly = true)
     public Optional<AssociadoRegua> buscarAssociadoAtivo(Long associadoId) {
-        return associadoReguaRepository.findByAssociadoIdAndAtivoTrue(associadoId);
+        log.info("🔍 Buscando régua ATIVA do associado {}", associadoId);
+        
+        try {
+            // 🔥 USAR O NOVO MÉTODO QUE RETORNA LISTA
+            List<AssociadoRegua> associacoes = associadoReguaRepository
+                    .findAllByAssociadoIdAndAtivoTrue(associadoId);
+            
+            if (associacoes.isEmpty()) {
+                log.info("ℹ️ Nenhuma régua ativa para o associado {}", associadoId);
+                return Optional.empty();
+            }
+            
+            // Se tiver mais de um, pegar o mais recente (maior ID)
+            if (associacoes.size() > 1) {
+                log.warn("⚠️ Associado {} possui {} associações ativas. Retornando a mais recente.", 
+                         associadoId, associacoes.size());
+                return Optional.of(associacoes.get(associacoes.size() - 1));
+            }
+            
+            log.info("✅ Régua ativa encontrada: {}", associacoes.get(0).getRegua().getNome());
+            return Optional.of(associacoes.get(0));
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar régua ativa do associado {}: {}", associadoId, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    /**
+     * 🔥 BUSCA A RÉGUA DO ASSOCIADO (MAIS RECENTE, ATIVA OU INATIVA)
+     */
+    @Transactional(readOnly = true)
+    public Optional<AssociadoRegua> buscarAssociadoRegua(Long associadoId) {
+        log.info("🔍 Buscando régua do associado {} (mais recente)", associadoId);
+        
+        try {
+            // Buscar o registro mais recente (ativo ou inativo)
+            List<AssociadoRegua> registros = associadoReguaRepository
+                    .findByAssociadoIdOrderByIdDesc(associadoId);
+            
+            if (registros.isEmpty()) {
+                log.info("ℹ️ Associado {} não possui registro de régua", associadoId);
+                return Optional.empty();
+            }
+            
+            AssociadoRegua registro = registros.get(0);
+            
+            log.info("✅ Associado {} - Régua: {} (ID: {}, Ativo: {})", 
+                     associadoId, 
+                     registro.getRegua().getNome(), 
+                     registro.getRegua().getId(),
+                     registro.getAtivo());
+            
+            return Optional.of(registro);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao buscar régua do associado {}: {}", associadoId, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     // ========== MÉTODOS PARA FATURAMENTO CONSOLIDADO ==========
 
-    /**
-     * Lista associados da régua que possuem notas SPC no último consolidado
-     * Busca automaticamente o maior vencimento/consolidado
-     * 
-     * @param reguaId ID da régua
-     * @param nome Filtro por nome (opcional)
-     * @param cnpjCpf Filtro por CNPJ/CPF (opcional)
-     * @param pageable Paginação
-     * @return Page com os associados consolidados
-     */
     @Transactional(readOnly = true)
     public Page<AssociadoResumoDTO> listarAssociadosConsolidadoPaginado(
             Long reguaId, 
@@ -355,7 +455,6 @@ public class ReguaFaturamentoService {
         log.info("📋 Buscando associados CONSOLIDADOS da régua {} - nome: {}, cnpj: {}", 
                 reguaId, nome, cnpjCpf);
         
-        // Verificar se a régua existe
         reguaFaturamentoRepository.findById(reguaId)
                 .orElseThrow(() -> new ResourceNotFoundException("Régua não encontrada: " + reguaId));
         
@@ -366,14 +465,11 @@ public class ReguaFaturamentoService {
             List<AssociadoResumoDTO> dtos = resultPage.getContent().stream()
                     .map(row -> {
                         AssociadoResumoDTO dto = new AssociadoResumoDTO();
-                        
-                        // Converter com segurança cada campo
                         dto.setId(row[0] != null ? ((Number) row[0]).longValue() : null);
                         dto.setNomeRazao(row[1] != null ? row[1].toString() : null);
                         dto.setCnpjCpf(row[2] != null ? row[2].toString() : null);
                         dto.setCodigoSpc(row[3] != null ? row[3].toString() : null);
                         dto.setStatus(row[4] != null ? row[4].toString() : null);
-                        
                         return dto;
                     })
                     .collect(Collectors.toList());
@@ -389,18 +485,10 @@ public class ReguaFaturamentoService {
         }
     }
 
-    /**
-     * 🔥 CORRIGIDO - Lista todos os IDs dos associados consolidados da régua
-     * Retorna APENAS os IDs dos associados da régua que têm notas SPC consolidadas
-     * 
-     * @param reguaId ID da régua
-     * @return Lista de IDs dos associados da régua com notas SPC
-     */
     @Transactional(readOnly = true)
     public List<Long> listarTodosIdsAssociadosConsolidado(Long reguaId) {
         log.info("📌 Buscando IDs consolidados (com nota) da régua ID: {}", reguaId);
         
-        // 🔥 1. Buscar TODOS os IDs dos associados ATIVOS da régua
         List<Long> idsAssociadosRegua = associadoReguaRepository
             .findByReguaIdAndAtivoTrue(reguaId)
             .stream()
@@ -409,19 +497,16 @@ public class ReguaFaturamentoService {
         
         log.info("📊 IDs na régua {}: {}", reguaId, idsAssociadosRegua.size());
         
-        // Se não houver associados na régua, retorna lista vazia
         if (idsAssociadosRegua.isEmpty()) {
             log.warn("⚠️ Nenhum associado ativo encontrado na régua {}", reguaId);
             return Collections.emptyList();
         }
         
-        // 🔥 2. Buscar IDs com notas SPC consolidadas
         List<Long> idsComNotas = notaDebitoSPCRepository.findAssociadoIdsComNotasConsolidado();
         log.info("📊 IDs com notas SPC consolidadas: {}", idsComNotas.size());
         
-        // 🔥 3. INTERSEÇÃO: IDs que estão na régua E têm notas SPC
         List<Long> resultado = idsAssociadosRegua.stream()
-            .filter(idsComNotas::contains)  // ← AGORA FILTRA CORRETAMENTE
+            .filter(idsComNotas::contains)
             .collect(Collectors.toList());
         
         log.info("✅ IDs consolidados da régua {}: {} (total na régua: {}, com notas: {})", 
@@ -430,15 +515,6 @@ public class ReguaFaturamentoService {
         return resultado;
     }
     
-    /**
-     * Busca associados por lista de IDs com paginação e filtros
-     * 
-     * @param ids Lista de IDs dos associados
-     * @param nome Filtro por nome (opcional)
-     * @param cnpjCpf Filtro por CNPJ/CPF (opcional)
-     * @param pageable Paginação
-     * @return Page com os associados
-     */
     @Transactional(readOnly = true)
     public Page<AssociadoResumoDTO> buscarAssociadosPorIdsPaginado(
             List<Long> ids, 
@@ -501,9 +577,6 @@ public class ReguaFaturamentoService {
 
     // ========== CONVERSORES ==========
     
-    /**
-     * Converte ReguaFaturamento para DTO
-     */
     public ReguaFaturamentoDTO toDTO(ReguaFaturamento entity) {
         if (entity == null) return null;
         
@@ -535,9 +608,6 @@ public class ReguaFaturamentoService {
         return dto;
     }
     
-    /**
-     * Converte AssociadoRegua para DTO
-     */
     private AssociadoReguaDTO toAssociadoReguaDTO(AssociadoRegua entity) {
         if (entity == null) return null;
         
@@ -558,9 +628,6 @@ public class ReguaFaturamentoService {
         return dto;
     }
     
-    /**
-     * Converte Associado para AssociadoResumoDTO
-     */
     private AssociadoResumoDTO toAssociadoResumoDTO(Associado associado) {
         if (associado == null) return null;
         
