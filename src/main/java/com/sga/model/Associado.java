@@ -125,6 +125,17 @@ public class Associado {
 	@OneToMany(mappedBy = "associado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<AssociadoDefFaturamento> definicoesFaturamento = new ArrayList<>();
 
+	
+	// Campo para régua de faturamento
+	@ManyToOne
+	@JoinColumn(name = "regua_faturamento_id")
+	private ReguaFaturamento reguaFaturamento;
+
+	// Campo para data de atualização
+	@Column(name = "data_atualizacao")
+	private LocalDateTime dataAtualizacao;
+	
+	
 	// Campos transientes para controle
 	@Transient
 	private boolean statusChanged = false;
@@ -132,6 +143,24 @@ public class Associado {
 	@Transient
 	private String statusAnterior;
 
+
+	// Getters e Setters
+	public ReguaFaturamento getReguaFaturamento() {
+	    return reguaFaturamento;
+	}
+
+	public void setReguaFaturamento(ReguaFaturamento reguaFaturamento) {
+	    this.reguaFaturamento = reguaFaturamento;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+	    return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+	    this.dataAtualizacao = dataAtualizacao;
+	}
+	
 	// Adicionar métodos auxiliares
 	public boolean isAtivo() {
 		return STATUS_ATIVO.equals(status);

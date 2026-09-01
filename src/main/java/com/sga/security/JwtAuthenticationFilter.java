@@ -20,39 +20,62 @@ import java.io.IOException;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-	@Autowired
-	private JwtService jwtService;
+    @Autowired
+    private JwtService jwtService;
 
-	@Autowired
-	@Lazy
-	private UsuarioService usuarioService;
+    @Autowired
+    @Lazy
+    private UsuarioService usuarioService;
 
-	@Override
-	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-			throws ServletException, IOException {
+    @Override
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-		final String authHeader = request.getHeader("Authorization");
-		final String jwt;
-		final String username;
+        // 🔥 IGNORAR ENDPOINTS PÚBLICOS - NÃO TENTAR AUTENTICAR
+        String path = request.getRequestURI();
+        
+        // 🔥 URLs que NÃO devem passar pelo filtro JWT
+        if (path.startsWith("/api/auth/") || 
+            path.startsWith("/api/importacao-spc/") || 
+            path.startsWith("/api-docs/") || 
+            path.startsWith("/swagger-ui/") ||
+            path.startsWith("/actuator/")) {
+            System.out.println("🔓 Ignorando filtro JWT para: " + path);
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-			filterChain.doFilter(request, response);
-			return;
-		}
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String username;
 
-		jwt = authHeader.substring(7);
-		username = jwtService.extractUsername(jwt);
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            System.out.println("🔓 Sem token JWT, continuando...");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
-		if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-			UserDetails userDetails = usuarioService.loadUserByUsername(username);
+        try {
+            jwt = authHeader.substring(7);
+            username = jwtService.extractUsername(jwt);
 
-			if (jwtService.isTokenValid(jwt, userDetails)) {
-				UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-						null, userDetails.getAuthorities());
-				authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-				SecurityContextHolder.getContext().setAuthentication(authToken);
-			}
-		}
-		filterChain.doFilter(request, response);
-	}
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = usuarioService.loadUserByUsername(username);
+
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
+                            null, userDetails.getAuthorities());
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    System.out.println("✅ Usuário autenticado via JWT: " + username);
+                } else {
+                    System.out.println("⚠️ Token JWT inválido para: " + username);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("❌ Erro ao processar JWT: " + e.getMessage());
+        }
+        
+        filterChain.doFilter(request, response);
+    }
 }

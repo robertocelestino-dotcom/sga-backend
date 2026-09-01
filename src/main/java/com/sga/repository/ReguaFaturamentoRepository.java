@@ -34,5 +34,6 @@ public interface ReguaFaturamentoRepository extends JpaRepository<ReguaFaturamen
     @Query("SELECT DISTINCT r FROM ReguaFaturamento r LEFT JOIN FETCH r.tiposArquivo WHERE r.id = :id")
     Optional<ReguaFaturamento> findByIdWithTiposArquivo(@Param("id") Long id);
     
-    
+    // 🔥 MÉTODO PARA BUSCAR RÉGUA ATIVA
+    Optional<ReguaFaturamento> findFirstByAtivoTrue();   
 }

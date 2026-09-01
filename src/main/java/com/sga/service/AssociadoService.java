@@ -29,6 +29,7 @@ import com.sga.model.Categoria;
 import com.sga.model.Email;
 import com.sga.model.Endereco;
 import com.sga.model.Planos;
+import com.sga.model.ReguaFaturamento;
 import com.sga.model.Telefone;
 import com.sga.model.Vendedor;
 import com.sga.repository.AssociadoRepository;
@@ -36,6 +37,7 @@ import com.sga.repository.CategoriaRepository;
 import com.sga.repository.EmailRepository;
 import com.sga.repository.EnderecoRepository;
 import com.sga.repository.PlanosRepository;
+import com.sga.repository.ReguaFaturamentoRepository;
 import com.sga.repository.TelefoneRepository;
 import com.sga.repository.VendedorRepository;
 
@@ -70,20 +72,23 @@ public class AssociadoService {
 
 	@Autowired
 	private SistemaLogService sistemaLogService;
+	
+	@Autowired
+	private ReguaFaturamentoRepository reguaFaturamentoRepository;
 
 	// ========== MÉTODOS DO CONTROLLER ==========
 
 	@Transactional(readOnly = true)
 	public Page<AssociadoResumoDTO> listarComFiltros(Pageable pageable, String codigoSpc, String nome, String cnpjCpf,
-			String status) {
-		logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
-				cnpjCpf, status, codigoSpc);
+	        String status) {
+	    logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
+	            cnpjCpf, status, codigoSpc);
 
-		// Use o método existente no repository
-		Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
-				pageable);
+	    Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
+	            pageable);
 
-		return associados.map(this::toResumoDTO);
+	    // 🔥 CORRIGIDO: Usar toResumoDTO em vez de toDTO
+	    return associados.map(this::toResumoDTO);
 	}
 
 	@Transactional(readOnly = true)
@@ -98,12 +103,13 @@ public class AssociadoService {
 
 	@Transactional(readOnly = true)
 	public AssociadoDTO buscarPorCnpjCpf(String cnpjCpf) {
-		logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
+	    logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
 
-		Optional<Associado> associado = associadoRepository.findByCnpjCpf(cnpjCpf);
+	    Optional<Associado> associado = associadoRepository.findByCnpjCpf(cnpjCpf);
 
-		return associado.map(this::toDTO)
-				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf));
+	    // 🔥 CORRIGIDO: Usar toDTO diretamente
+	    return associado.map(this::toDTO)
+	            .orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf));
 	}
 
 	@Transactional
@@ -219,87 +225,7 @@ public class AssociadoService {
 		return dto;
 	}
 
-	// Converter Entity para DTO completo
-	public AssociadoDTO toDTO(Associado associado) {
-		if (associado == null)
-			return null;
-
-		AssociadoDTO dto = new AssociadoDTO();
-		dto.setId(associado.getId());
-		dto.setCodigoSpc(associado.getCodigoSpc());
-		dto.setCodigoRm(associado.getCodigoRm());
-		dto.setCnpjCpf(associado.getCnpjCpf());
-		dto.setNomeRazao(associado.getNomeRazao());
-		dto.setNomeFantasia(associado.getNomeFantasia());
-		dto.setTipoPessoa(associado.getTipoPessoa());
-		dto.setStatus(associado.getStatus());
-		dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
-		dto.setDataFiliacao(associado.getDataFiliacao());
-		dto.setDataCadastro(associado.getDataCadastro());
-
-		// NOVOS CAMPOS
-		dto.setDataInativacao(associado.getDataInativacao());
-		dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
-		dto.setDataFimSuspensao(associado.getDataFimSuspensao());
-		dto.setMotivoInativacao(associado.getMotivoInativacao());
-		dto.setMotivoSuspensao(associado.getMotivoSuspensao());
-
-		// Vendedor
-		if (associado.getVendedor() != null) {
-			dto.setVendedorId(associado.getVendedor().getId());
-			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
-		}
-
-		// Vendedor Externo - CORREÇÃO: Verifica se é Vendedor
-		Object vendedorExternoObj = associado.getVendedorExterno();
-		if (vendedorExternoObj != null) {
-			if (vendedorExternoObj instanceof Vendedor) {
-				Vendedor vendedorExterno = (Vendedor) vendedorExternoObj;
-				dto.setVendedorExternoId(vendedorExterno.getId().intValue());
-				dto.setVendedorExternoNome(vendedorExterno.getNomeRazao());
-			} else {
-				logger.debug("Vendedor externo no DTO não é instância de Vendedor: {}", vendedorExternoObj.getClass());
-				// Se não for Vendedor, não preenche os campos
-			}
-		}
-
-		// Plano e Categoria
-		if (associado.getPlano() != null) {
-			dto.setPlanoId(associado.getPlano().getId());
-		}
-
-		if (associado.getCategoria() != null) {
-			dto.setCategoriaId(associado.getCategoria().getId());
-		}
-
-		// Sub-entidades
-		List<EnderecoDTO> enderecosDTO = new ArrayList<>();
-		if (associado.getEnderecos() != null) {
-			for (Endereco endereco : associado.getEnderecos()) {
-				enderecosDTO.add(toEnderecoDTO(endereco));
-			}
-		}
-		dto.setEnderecos(enderecosDTO);
-
-		List<EmailDTO> emailsDTO = new ArrayList<>();
-		if (associado.getEmails() != null) {
-			for (Email email : associado.getEmails()) {
-				emailsDTO.add(toEmailDTO(email));
-			}
-		}
-		dto.setEmails(emailsDTO);
-
-		List<TelefoneDTO> telefonesDTO = new ArrayList<>();
-		if (associado.getTelefones() != null) {
-			for (Telefone telefone : associado.getTelefones()) {
-				telefonesDTO.add(toTelefoneDTO(telefone));
-			}
-		}
-		dto.setTelefones(telefonesDTO);
-
-		return dto;
-	}
-
+	
 	// ========== MÉTODOS DE CONVERSÃO PARA SUB-ENTIDADES ==========
 
 	private EnderecoDTO toEnderecoDTO(Endereco endereco) {
@@ -1456,6 +1382,87 @@ public class AssociadoService {
 	        associado.setMotivoInativacao(null);
 	        associado.setMotivoSuspensao(null);
 	    }
+	}
+	
+	
+	// ============================================================
+	// BUSCAR ENTIDADE POR ID
+	// ============================================================
+	public Associado buscarEntidadePorId(Long id) {
+	    return associadoRepository.findById(id)
+	            .orElseThrow(() -> new RuntimeException("Associado não encontrado com ID: " + id));
 	}	
+	
+	// ============================================================
+	// MIGRAR ASSOCIADO PARA RÉGUA DE FATURAMENTO
+	// ============================================================
+	@Transactional
+	public void migrarParaRegua(Long associadoId) {
+	    logger.info("📏 Migrando associado ID: {} para régua de faturamento", associadoId);
+
+	    // 1. Buscar o associado
+	    Associado associado = buscarEntidadePorId(associadoId);
+
+	    // 2. Verificar se o associado já está em uma régua
+	    if (associado.getReguaFaturamento() != null) {
+	        logger.warn("⚠️ Associado ID: {} já está na régua: {}", associadoId,
+	                associado.getReguaFaturamento().getId());
+	        throw new RuntimeException("Associado já está vinculado a uma régua de faturamento");
+	    }
+
+	    // 3. Buscar a régua ativa
+	    ReguaFaturamento regua = reguaFaturamentoRepository.findFirstByAtivoTrue()
+	            .orElseThrow(() -> new RuntimeException("Nenhuma régua de faturamento ativa encontrada"));
+
+	    // 4. Associar o associado à régua
+	    associado.setReguaFaturamento(regua);
+	    associado.setDataAtualizacao(LocalDateTime.now());
+
+	    // 5. Salvar
+	    associadoRepository.save(associado);
+
+	    logger.info("✅ Associado ID: {} migrado para régua ID: {}", associadoId, regua.getId());
+	}
+	
+	// ============================================================
+	// TO DTO (MÉTODO PÚBLICO)
+	// ============================================================
+	public AssociadoDTO toDTO(Associado associado) {
+	    if (associado == null) return null;
+
+	    AssociadoDTO dto = new AssociadoDTO();
+	    dto.setId(associado.getId());
+	    dto.setCodigoSpc(associado.getCodigoSpc());
+	    dto.setCodigoRm(associado.getCodigoRm());
+	    dto.setCnpjCpf(associado.getCnpjCpf());
+	    dto.setNomeRazao(associado.getNomeRazao());
+	    dto.setNomeFantasia(associado.getNomeFantasia());
+	    dto.setTipoPessoa(associado.getTipoPessoa());
+	    dto.setStatus(associado.getStatus());
+	    dto.setDataCadastro(associado.getDataCadastro());
+	    dto.setDataAtualizacao(associado.getDataAtualizacao());
+
+	    if (associado.getVendedor() != null) {
+	        dto.setVendedorId(associado.getVendedor().getId());
+	        dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+	    }
+
+	    if (associado.getPlano() != null) {
+	        dto.setPlanoId(associado.getPlano().getId());
+	        dto.setPlanoNome(associado.getPlano().getPlano());
+	    }
+
+	    if (associado.getCategoria() != null) {
+	        dto.setCategoriaId(associado.getCategoria().getId());
+	        dto.setCategoriaNome(associado.getCategoria().getDescricao());
+	    }
+
+	    if (associado.getReguaFaturamento() != null) {
+	        dto.setReguaFaturamentoId(associado.getReguaFaturamento().getId());
+	    }
+
+	    return dto;
+	}
+	
 
 }

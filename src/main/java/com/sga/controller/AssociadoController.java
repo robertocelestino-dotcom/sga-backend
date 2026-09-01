@@ -16,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,327 +44,401 @@ import com.sga.service.AssociadoService;
 @RequestMapping("/api/associados")
 public class AssociadoController {
 
-	private static final Logger logger = LoggerFactory.getLogger(AssociadoController.class);
+    private static final Logger logger = LoggerFactory.getLogger(AssociadoController.class);
 
-	@Autowired
-	private AssociadoService associadoService;
+    @Autowired
+    private AssociadoService associadoService;
 
-	@Autowired
-	private AssociadoDefFaturamentoService associadoDefFaturamentoService;
+    @Autowired
+    private AssociadoDefFaturamentoService associadoDefFaturamentoService;
 
-	@GetMapping
-	public ResponseEntity<Page<AssociadoResumoDTO>> listar(@RequestParam(defaultValue = "0") int page,
-			@RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "nomeRazao") String sort,
-			@RequestParam(defaultValue = "asc") String direction, @RequestParam(required = false) String codigoSpc,
-			@RequestParam(required = false) String codigoRm, @RequestParam(required = false) String cnpjCpf,
-			@RequestParam(required = false) String nomeRazao, @RequestParam(required = false) String tipoPessoa,
-			@RequestParam(required = false) String status, @RequestParam(required = false) Long vendedorId,
-			@RequestParam(required = false) Long planoId, @RequestParam(required = false) Long categoriaId) {
+    // ============================================================
+    // LISTAR ASSOCIADOS (VIEW)
+    // ============================================================
+    @GetMapping
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Page<AssociadoResumoDTO>> listar(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size, @RequestParam(defaultValue = "nomeRazao") String sort,
+            @RequestParam(defaultValue = "asc") String direction, @RequestParam(required = false) String codigoSpc,
+            @RequestParam(required = false) String codigoRm, @RequestParam(required = false) String cnpjCpf,
+            @RequestParam(required = false) String nomeRazao, @RequestParam(required = false) String tipoPessoa,
+            @RequestParam(required = false) String status, @RequestParam(required = false) Long vendedorId,
+            @RequestParam(required = false) Long planoId, @RequestParam(required = false) Long categoriaId) {
 
-		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
-		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
+        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
-		Page<AssociadoResumoDTO> associados = associadoService.listarComFiltros(pageable, codigoSpc, nomeRazao, cnpjCpf,
-				status);
+        Page<AssociadoResumoDTO> associados = associadoService.listarComFiltros(pageable, codigoSpc, nomeRazao, cnpjCpf,
+                status);
 
-		return ResponseEntity.ok(associados);
-	}
+        return ResponseEntity.ok(associados);
+    }
 
-	@GetMapping("/{id}")
-	public ResponseEntity<AssociadoDTO> buscarPorId(@PathVariable Long id) {
-		AssociadoDTO associado = associadoService.buscarPorId(id);
-		return ResponseEntity.ok(associado);
-	}
+    // ============================================================
+    // BUSCAR ASSOCIADO POR ID (VIEW)
+    // ============================================================
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AssociadoDTO> buscarPorId(@PathVariable Long id) {
+        AssociadoDTO associado = associadoService.buscarPorId(id);
+        return ResponseEntity.ok(associado);
+    }
 
-	@GetMapping("/cnpj-cpf/{cnpjCpf}")
-	public ResponseEntity<AssociadoDTO> buscarPorCnpjCpf(@PathVariable String cnpjCpf) {
-		AssociadoDTO associado = associadoService.buscarPorCnpjCpf(cnpjCpf);
-		return ResponseEntity.ok(associado);
-	}
+    // ============================================================
+    // BUSCAR ASSOCIADO POR CNPJ/CPF (VIEW)
+    // ============================================================
+    @GetMapping("/cnpj-cpf/{cnpjCpf}")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AssociadoDTO> buscarPorCnpjCpf(@PathVariable String cnpjCpf) {
+        AssociadoDTO associado = associadoService.buscarPorCnpjCpf(cnpjCpf);
+        return ResponseEntity.ok(associado);
+    }
 
-	@PostMapping
-	public ResponseEntity<AssociadoDTO> criar(@Valid @RequestBody AssociadoDTO associadoDTO) {
-		AssociadoDTO novoAssociado = associadoService.criar(associadoDTO);
-		return ResponseEntity.status(HttpStatus.CREATED).body(novoAssociado);
-	}
+    // ============================================================
+    // CRIAR ASSOCIADO (CREATE)
+    // ============================================================
+    @PostMapping
+    @PreAuthorize("hasAuthority('ASSOCIADO_CREATE') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AssociadoDTO> criar(@Valid @RequestBody AssociadoDTO associadoDTO) {
+        AssociadoDTO novoAssociado = associadoService.criar(associadoDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(novoAssociado);
+    }
 
-	@PutMapping("/{id}")
-	public ResponseEntity<AssociadoDTO> atualizar(@PathVariable Long id,
-			@Valid @RequestBody AssociadoDTO associadoDTO) {
-		AssociadoDTO atualizado = associadoService.atualizar(id, associadoDTO);
-		return ResponseEntity.ok(atualizado);
-	}
+    // ============================================================
+    // ATUALIZAR ASSOCIADO (EDIT)
+    // ============================================================
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ASSOCIADO_EDIT') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<AssociadoDTO> atualizar(@PathVariable Long id,
+            @Valid @RequestBody AssociadoDTO associadoDTO) {
+        AssociadoDTO atualizado = associadoService.atualizar(id, associadoDTO);
+        return ResponseEntity.ok(atualizado);
+    }
 
-	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> excluir(@PathVariable Long id) {
-		associadoService.excluir(id);
-		return ResponseEntity.noContent().build();
-	}
+    // ============================================================
+    // EXCLUIR ASSOCIADO (DELETE)
+    // ============================================================
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ASSOCIADO_DELETE') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        associadoService.excluir(id);
+        return ResponseEntity.noContent().build();
+    }
 
-	@GetMapping("/vendedores")
-	public ResponseEntity<List<Vendedor>> buscarVendedores() {
-		List<Vendedor> vendedores = associadoService.buscarTodosVendedores();
-		return ResponseEntity.ok(vendedores);
-	}
+    // ============================================================
+    // BUSCAR VENDEDORES (VIEW)
+    // ============================================================
+    @GetMapping("/vendedores")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<Vendedor>> buscarVendedores() {
+        List<Vendedor> vendedores = associadoService.buscarTodosVendedores();
+        return ResponseEntity.ok(vendedores);
+    }
 
-	@GetMapping("/planos")
-	public ResponseEntity<List<Planos>> buscarPlanos() {
-		List<Planos> planos = associadoService.buscarTodosPlanos();
-		return ResponseEntity.ok(planos);
-	}
+    // ============================================================
+    // BUSCAR PLANOS (VIEW)
+    // ============================================================
+    @GetMapping("/planos")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<Planos>> buscarPlanos() {
+        List<Planos> planos = associadoService.buscarTodosPlanos();
+        return ResponseEntity.ok(planos);
+    }
 
-	@GetMapping("/categorias")
-	public ResponseEntity<List<Categoria>> buscarCategorias() {
-		List<Categoria> categorias = associadoService.buscarTodasCategorias();
-		return ResponseEntity.ok(categorias);
-	}
+    // ============================================================
+    // BUSCAR CATEGORIAS (VIEW)
+    // ============================================================
+    @GetMapping("/categorias")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<Categoria>> buscarCategorias() {
+        List<Categoria> categorias = associadoService.buscarTodasCategorias();
+        return ResponseEntity.ok(categorias);
+    }
 
-	@GetMapping("/estatisticas/total")
-	public ResponseEntity<Long> getTotalAssociados() {
-		Long total = associadoService.countTotalAssociados();
-		return ResponseEntity.ok(total);
-	}
+    // ============================================================
+    // ESTATÍSTICAS (VIEW)
+    // ============================================================
+    @GetMapping("/estatisticas/total")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Long> getTotalAssociados() {
+        Long total = associadoService.countTotalAssociados();
+        return ResponseEntity.ok(total);
+    }
 
-	@GetMapping("/estatisticas/ativos")
-	public ResponseEntity<Long> getAssociadosAtivos() {
-		Long ativos = associadoService.countAssociadosAtivos();
-		return ResponseEntity.ok(ativos);
-	}
+    @GetMapping("/estatisticas/ativos")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Long> getAssociadosAtivos() {
+        Long ativos = associadoService.countAssociadosAtivos();
+        return ResponseEntity.ok(ativos);
+    }
 
-	@GetMapping("/health")
-	public ResponseEntity<?> healthCheck() {
-		try {
-			Long total = associadoService.countTotalAssociados();
-			return ResponseEntity.ok().body(new HealthResponse("UP", "Associado Service", total));
-		} catch (Exception e) {
-			return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
-					.body(new HealthResponse("DOWN", "Associado Service", 0L));
-		}
-	}
+    // ============================================================
+    // HEALTH CHECK (PÚBLICO)
+    // ============================================================
+    @GetMapping("/health")
+    public ResponseEntity<?> healthCheck() {
+        try {
+            Long total = associadoService.countTotalAssociados();
+            return ResponseEntity.ok().body(new HealthResponse("UP", "Associado Service", total));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(new HealthResponse("DOWN", "Associado Service", 0L));
+        }
+    }
 
-	/**
-	 * 🔥 ENDPOINT CORRIGIDO - Importação em lote com UPSERT e atualização de vendedor externo
-	 */
-	@PostMapping("/importacao/lote")
-	public ResponseEntity<List<AssociadoDTO>> importarAssociadosEmLote(@RequestBody List<AssociadoDTO> associados) {
-	    logger.info("📥 Importando {} associados em lote (UPSERT)", associados.size());
+    // ============================================================
+    // IMPORTAÇÃO EM LOTE (CREATE)
+    // ============================================================
+    @PostMapping("/importacao/lote")
+    @PreAuthorize("hasAuthority('ASSOCIADO_CREATE') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<AssociadoDTO>> importarAssociadosEmLote(@RequestBody List<AssociadoDTO> associados) {
+        logger.info("📥 Importando {} associados em lote (UPSERT)", associados.size());
 
-	    List<AssociadoDTO> associadosImportados = new ArrayList<>();
-	    int criados = 0;
-	    int atualizados = 0;
-	    int erros = 0;
-	    int configuracoesCriadas = 0;
+        List<AssociadoDTO> associadosImportados = new ArrayList<>();
+        int criados = 0;
+        int atualizados = 0;
+        int erros = 0;
+        int configuracoesCriadas = 0;
 
-	    for (AssociadoDTO dto : associados) {
-	        try {
-	            // Validação básica
-	            if (dto.getCnpjCpf() == null || dto.getNomeRazao() == null) {
-	                logger.warn("⚠️ Associado ignorado: dados obrigatórios faltando");
-	                erros++;
-	                continue;
-	            }
+        for (AssociadoDTO dto : associados) {
+            try {
+                if (dto.getCnpjCpf() == null || dto.getNomeRazao() == null) {
+                    logger.warn("⚠️ Associado ignorado: dados obrigatórios faltando");
+                    erros++;
+                    continue;
+                }
 
-	            // Valores padrão
-	            if (dto.getStatus() == null) dto.setStatus("A");
-	            if (dto.getTipoPessoa() == null) dto.setTipoPessoa("F");
-	            
-	            // 🔥 GARANTIR QUE A FLAG FORCAR_ATUALIZACAO ESTEJA CONFIGURADA
-	            if (dto.getForcarAtualizacao() == null) {
-	                dto.setForcarAtualizacao(true);
-	            }
+                if (dto.getStatus() == null) dto.setStatus("A");
+                if (dto.getTipoPessoa() == null) dto.setTipoPessoa("F");
+                
+                if (dto.getForcarAtualizacao() == null) {
+                    dto.setForcarAtualizacao(true);
+                }
 
-	            // 🔥 GARANTIR QUE AS CONFIGURAÇÕES DE FATURAMENTO EXISTAM
-	            boolean precisaCriarConfiguracao = false;
+                if (dto.getDefinicoesFaturamento() == null || dto.getDefinicoesFaturamento().isEmpty()) {
+                    AssociadoDefFaturamentoDTO faturamento = new AssociadoDefFaturamentoDTO();
 
-	            if (dto.getDefinicoesFaturamento() == null || dto.getDefinicoesFaturamento().isEmpty()) {
-	                precisaCriarConfiguracao = true;
-	                AssociadoDefFaturamentoDTO faturamento = new AssociadoDefFaturamentoDTO();
+                    Long planoId = dto.getPlanoId() != null ? dto.getPlanoId() : 5L;
+                    faturamento.setPlanoId(planoId);
+                    faturamento.setDiaEmissao(26);
+                    faturamento.setDiaVencimento(10);
+                    faturamento.setValorDef(BigDecimal.valueOf(85.00));
+                    faturamento.setObservacao("Configuração padrão - Importação em lote");
 
-	                Long planoId = dto.getPlanoId() != null ? dto.getPlanoId() : 5L;
-	                faturamento.setPlanoId(planoId);
-	                faturamento.setDiaEmissao(26);
-	                faturamento.setDiaVencimento(10);
-	                faturamento.setValorDef(BigDecimal.valueOf(85.00));
-	                faturamento.setObservacao("Configuração padrão - Importação em lote");
+                    dto.setDefinicoesFaturamento(List.of(faturamento));
+                    logger.info("📅 Configuração de faturamento adicionada para {}", dto.getNomeRazao());
+                }
 
-	                dto.setDefinicoesFaturamento(List.of(faturamento));
-	                logger.info("📅 Configuração de faturamento adicionada para {}", dto.getNomeRazao());
-	            }
+                AssociadoDTO resultado;
+                boolean associadoExistia = false;
 
-	            // Verificar se já existe associado pelo CNPJ/CPF
-	            AssociadoDTO resultado;
-	            boolean associadoExistia = false;
+                try {
+                    AssociadoDTO existente = associadoService.buscarPorCnpjCpf(dto.getCnpjCpf());
+                    if (existente != null && existente.getId() != null) {
+                        associadoExistia = true;
+                        dto.setId(existente.getId());
+                        
+                        var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
+                        resultado = associadoService.toDTO(associadoEntity);
+                        atualizados++;
+                        logger.info("✏️ Associado atualizado: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
 
-	            try {
-	                AssociadoDTO existente = associadoService.buscarPorCnpjCpf(dto.getCnpjCpf());
-	                if (existente != null && existente.getId() != null) {
-	                    associadoExistia = true;
-	                    dto.setId(existente.getId());
-	                    
-	                    // 🔥 USAR O MÉTODO importarAssociado COM flag forcarAtualizacao
-	                    var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
-	                    resultado = associadoService.toDTO(associadoEntity);
-	                    atualizados++;
-	                    logger.info("✏️ Associado atualizado: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
+                        var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(existente.getId());
+                        if (configsExistentes == null || configsExistentes.isEmpty()) {
+                            AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
+                            novaConfig.setAssociadoId(existente.getId());
+                            novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
+                            novaConfig.setDiaEmissao(26);
+                            novaConfig.setDiaVencimento(10);
+                            novaConfig.setValorDef(BigDecimal.valueOf(85.00));
+                            novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
 
-	                    // Verificar se já existe configuração de faturamento para o associado atualizado
-	                    var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(existente.getId());
-	                    if (configsExistentes == null || configsExistentes.isEmpty()) {
-	                        AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
-	                        novaConfig.setAssociadoId(existente.getId());
-	                        novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
-	                        novaConfig.setDiaEmissao(26);
-	                        novaConfig.setDiaVencimento(10);
-	                        novaConfig.setValorDef(BigDecimal.valueOf(85.00));
-	                        novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
+                            associadoDefFaturamentoService.criar(novaConfig);
+                            configuracoesCriadas++;
+                            logger.info("📅 Configuração de faturamento criada para associado existente ID: {}", existente.getId());
+                        }
+                    } else {
+                        throw new Exception("Associado não encontrado");
+                    }
+                } catch (Exception e) {
+                    associadoExistia = false;
+                    var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
+                    resultado = associadoService.toDTO(associadoEntity);
+                    criados++;
+                    configuracoesCriadas++;
+                    logger.info("✅ Associado criado com configuração de faturamento: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
+                }
 
-	                        associadoDefFaturamentoService.criar(novaConfig);
-	                        configuracoesCriadas++;
-	                        logger.info("📅 Configuração de faturamento criada para associado existente ID: {}", existente.getId());
-	                    }
-	                } else {
-	                    throw new Exception("Associado não encontrado");
-	                }
-	            } catch (Exception e) {
-	                // Associado não existe, criar novo
-	                associadoExistia = false;
-	                var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
-	                resultado = associadoService.toDTO(associadoEntity);
-	                criados++;
-	                configuracoesCriadas++;
-	                logger.info("✅ Associado criado com configuração de faturamento: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
-	            }
+                if (!associadoExistia && resultado != null && resultado.getId() != null) {
+                    var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(resultado.getId());
+                    if (configsExistentes == null || configsExistentes.isEmpty()) {
+                        AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
+                        novaConfig.setAssociadoId(resultado.getId());
+                        novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
+                        novaConfig.setDiaEmissao(26);
+                        novaConfig.setDiaVencimento(10);
+                        novaConfig.setValorDef(BigDecimal.valueOf(85.00));
+                        novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
 
-	            // Se for novo associado e a configuração não foi criada, criar manualmente
-	            if (!associadoExistia && resultado != null && resultado.getId() != null) {
-	                var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(resultado.getId());
-	                if (configsExistentes == null || configsExistentes.isEmpty()) {
-	                    AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
-	                    novaConfig.setAssociadoId(resultado.getId());
-	                    novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
-	                    novaConfig.setDiaEmissao(26);
-	                    novaConfig.setDiaVencimento(10);
-	                    novaConfig.setValorDef(BigDecimal.valueOf(85.00));
-	                    novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
+                        associadoDefFaturamentoService.criar(novaConfig);
+                        logger.info("📅 Configuração de faturamento criada para novo associado ID: {}", resultado.getId());
+                    }
+                }
 
-	                    associadoDefFaturamentoService.criar(novaConfig);
-	                    logger.info("📅 Configuração de faturamento criada para novo associado ID: {}", resultado.getId());
-	                }
-	            }
+                associadosImportados.add(resultado);
 
-	            associadosImportados.add(resultado);
+            } catch (Exception e) {
+                logger.error("❌ Erro ao processar associado {}: {}", dto.getNomeRazao(), e.getMessage(), e);
+                erros++;
+            }
+        }
 
-	        } catch (Exception e) {
-	            logger.error("❌ Erro ao processar associado {}: {}", dto.getNomeRazao(), e.getMessage(), e);
-	            erros++;
-	        }
-	    }
+        logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas", 
+            criados, atualizados, erros, configuracoesCriadas);
 
-	    logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas", 
-	        criados, atualizados, erros, configuracoesCriadas);
+        return ResponseEntity.ok()
+                .header("X-Importacao-Criados", String.valueOf(criados))
+                .header("X-Importacao-Atualizados", String.valueOf(atualizados))
+                .header("X-Importacao-Erros", String.valueOf(erros))
+                .header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas))
+                .header("Access-Control-Expose-Headers", "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, X-Importacao-Configuracoes")
+                .body(associadosImportados);
+    }
 
-	    return ResponseEntity.ok()
-	            .header("X-Importacao-Criados", String.valueOf(criados))
-	            .header("X-Importacao-Atualizados", String.valueOf(atualizados))
-	            .header("X-Importacao-Erros", String.valueOf(erros))
-	            .header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas))
-	            .header("Access-Control-Expose-Headers", "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, X-Importacao-Configuracoes")
-	            .body(associadosImportados);
-	}
+    // ============================================================
+    // ATUALIZAR ENDEREÇOS (EDIT)
+    // ============================================================
+    @PutMapping("/{id}/enderecos")
+    @PreAuthorize("hasAuthority('ASSOCIADO_EDIT') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<EnderecoDTO>> atualizarEnderecos(@PathVariable Long id,
+            @Valid @RequestBody List<EnderecoDTO> enderecosDTO) {
+        List<EnderecoDTO> enderecosAtualizados = associadoService.atualizarEnderecos(id, enderecosDTO);
+        return ResponseEntity.ok(enderecosAtualizados);
+    }
 
-	@PutMapping("/{id}/enderecos")
-	public ResponseEntity<List<EnderecoDTO>> atualizarEnderecos(@PathVariable Long id,
-			@Valid @RequestBody List<EnderecoDTO> enderecosDTO) {
-		List<EnderecoDTO> enderecosAtualizados = associadoService.atualizarEnderecos(id, enderecosDTO);
-		return ResponseEntity.ok(enderecosAtualizados);
-	}
+    // ============================================================
+    // ATUALIZAR TELEFONES (EDIT)
+    // ============================================================
+    @PutMapping("/{id}/telefones")
+    @PreAuthorize("hasAuthority('ASSOCIADO_EDIT') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<TelefoneDTO>> atualizarTelefones(@PathVariable Long id,
+            @Valid @RequestBody List<TelefoneDTO> telefonesDTO) {
+        List<TelefoneDTO> telefonesAtualizados = associadoService.atualizarTelefones(id, telefonesDTO);
+        return ResponseEntity.ok(telefonesAtualizados);
+    }
 
-	@PutMapping("/{id}/telefones")
-	public ResponseEntity<List<TelefoneDTO>> atualizarTelefones(@PathVariable Long id,
-			@Valid @RequestBody List<TelefoneDTO> telefonesDTO) {
-		List<TelefoneDTO> telefonesAtualizados = associadoService.atualizarTelefones(id, telefonesDTO);
-		return ResponseEntity.ok(telefonesAtualizados);
-	}
+    // ============================================================
+    // ATUALIZAR EMAILS (EDIT)
+    // ============================================================
+    @PutMapping("/{id}/emails")
+    @PreAuthorize("hasAuthority('ASSOCIADO_EDIT') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<EmailDTO>> atualizarEmails(@PathVariable Long id,
+            @Valid @RequestBody List<EmailDTO> emailsDTO) {
+        List<EmailDTO> emailsAtualizados = associadoService.atualizarEmails(id, emailsDTO);
+        return ResponseEntity.ok(emailsAtualizados);
+    }
 
-	@PutMapping("/{id}/emails")
-	public ResponseEntity<List<EmailDTO>> atualizarEmails(@PathVariable Long id,
-			@Valid @RequestBody List<EmailDTO> emailsDTO) {
-		List<EmailDTO> emailsAtualizados = associadoService.atualizarEmails(id, emailsDTO);
-		return ResponseEntity.ok(emailsAtualizados);
-	}
+    // ============================================================
+    // BUSCAR ENDEREÇOS (VIEW)
+    // ============================================================
+    @GetMapping("/{id}/enderecos")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<EnderecoDTO>> buscarEnderecos(@PathVariable Long id) {
+        List<EnderecoDTO> enderecos = associadoService.buscarEnderecosPorAssociadoId(id);
+        return ResponseEntity.ok(enderecos);
+    }
 
-	@GetMapping("/{id}/enderecos")
-	public ResponseEntity<List<EnderecoDTO>> buscarEnderecos(@PathVariable Long id) {
-		List<EnderecoDTO> enderecos = associadoService.buscarEnderecosPorAssociadoId(id);
-		return ResponseEntity.ok(enderecos);
-	}
+    // ============================================================
+    // BUSCAR TELEFONES (VIEW)
+    // ============================================================
+    @GetMapping("/{id}/telefones")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<TelefoneDTO>> buscarTelefones(@PathVariable Long id) {
+        List<TelefoneDTO> telefones = associadoService.buscarTelefonesPorAssociadoId(id);
+        return ResponseEntity.ok(telefones);
+    }
 
-	@GetMapping("/{id}/telefones")
-	public ResponseEntity<List<TelefoneDTO>> buscarTelefones(@PathVariable Long id) {
-		List<TelefoneDTO> telefones = associadoService.buscarTelefonesPorAssociadoId(id);
-		return ResponseEntity.ok(telefones);
-	}
+    // ============================================================
+    // BUSCAR EMAILS (VIEW)
+    // ============================================================
+    @GetMapping("/{id}/emails")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<EmailDTO>> buscarEmails(@PathVariable Long id) {
+        List<EmailDTO> emails = associadoService.buscarEmailsPorAssociadoId(id);
+        return ResponseEntity.ok(emails);
+    }
 
-	@GetMapping("/{id}/emails")
-	public ResponseEntity<List<EmailDTO>> buscarEmails(@PathVariable Long id) {
-		List<EmailDTO> emails = associadoService.buscarEmailsPorAssociadoId(id);
-		return ResponseEntity.ok(emails);
-	}
-	
-	// Adicione o endpoint:
-	@GetMapping("/{id}/configuracoes-faturamento")
-	public ResponseEntity<List<AssociadoDefFaturamentoDTO>> buscarConfiguracoesFaturamento(@PathVariable Long id) {
-	    logger.info("📋 Buscando configurações de faturamento do associado ID: {}", id);
-	    
-	    List<AssociadoDefFaturamentoResumoDTO> configs = associadoDefFaturamentoService.listarPorAssociado(id);
-	    
-	    List<AssociadoDefFaturamentoDTO> result = configs.stream().map(config -> {
-	        AssociadoDefFaturamentoDTO dto = new AssociadoDefFaturamentoDTO();
-	        dto.setId(config.getId());
-	        dto.setAssociadoId(id);
-	        dto.setPlanoId(config.getPlanoId());
-	        dto.setDiaEmissao(config.getDiaEmissao());
-	        dto.setDiaVencimento(config.getDiaVencimento());
-	        dto.setValorDef(config.getValorDef());
-	        return dto;
-	    }).collect(Collectors.toList());
-	    
-	    return ResponseEntity.ok(result);
-	}
+    // ============================================================
+    // BUSCAR CONFIGURAÇÕES DE FATURAMENTO (VIEW)
+    // ============================================================
+    @GetMapping("/{id}/configuracoes-faturamento")
+    @PreAuthorize("hasAuthority('ASSOCIADO_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<List<AssociadoDefFaturamentoDTO>> buscarConfiguracoesFaturamento(@PathVariable Long id) {
+        logger.info("📋 Buscando configurações de faturamento do associado ID: {}", id);
+        
+        List<AssociadoDefFaturamentoResumoDTO> configs = associadoDefFaturamentoService.listarPorAssociado(id);
+        
+        List<AssociadoDefFaturamentoDTO> result = configs.stream().map(config -> {
+            AssociadoDefFaturamentoDTO dto = new AssociadoDefFaturamentoDTO();
+            dto.setId(config.getId());
+            dto.setAssociadoId(id);
+            dto.setPlanoId(config.getPlanoId());
+            dto.setDiaEmissao(config.getDiaEmissao());
+            dto.setDiaVencimento(config.getDiaVencimento());
+            dto.setValorDef(config.getValorDef());
+            return dto;
+        }).collect(Collectors.toList());
+        
+        return ResponseEntity.ok(result);
+    }
 
-	public static class HealthResponse {
-		private String status;
-		private String service;
-		private Long totalAssociados;
+    // ============================================================
+    // 🔥 MIGRAR ASSOCIADO PARA RÉGUA (MIGRAR_REGUA)
+    // ============================================================
+    @PostMapping("/{id}/migrar-regua")
+    @PreAuthorize("hasAuthority('ASSOCIADO_MIGRAR_REGUA') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Void> migrarRegua(@PathVariable Long id) {
+        logger.info("📏 Migrando associado ID: {} para régua de faturamento", id);
+        associadoService.migrarParaRegua(id);
+        return ResponseEntity.ok().build();
+    }
 
-		public HealthResponse(String status, String service, Long totalAssociados) {
-			this.status = status;
-			this.service = service;
-			this.totalAssociados = totalAssociados;
-		}
+    // ============================================================
+    // INNER CLASS
+    // ============================================================
+    public static class HealthResponse {
+        private String status;
+        private String service;
+        private Long totalAssociados;
 
-		public String getStatus() {
-			return status;
-		}
+        public HealthResponse(String status, String service, Long totalAssociados) {
+            this.status = status;
+            this.service = service;
+            this.totalAssociados = totalAssociados;
+        }
 
-		public void setStatus(String status) {
-			this.status = status;
-		}
+        public String getStatus() {
+            return status;
+        }
 
-		public String getService() {
-			return service;
-		}
+        public void setStatus(String status) {
+            this.status = status;
+        }
 
-		public void setService(String service) {
-			this.service = service;
-		}
+        public String getService() {
+            return service;
+        }
 
-		public Long getTotalAssociados() {
-			return totalAssociados;
-		}
+        public void setService(String service) {
+            this.service = service;
+        }
 
-		public void setTotalAssociados(Long totalAssociados) {
-			this.totalAssociados = totalAssociados;
-		}
-	}
+        public Long getTotalAssociados() {
+            return totalAssociados;
+        }
+
+        public void setTotalAssociados(Long totalAssociados) {
+            this.totalAssociados = totalAssociados;
+        }
+    }
 }

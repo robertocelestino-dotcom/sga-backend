@@ -21,6 +21,10 @@ public class AssociadoDTO {
 	private String tipoPessoa;
 	private String status = "A";
 
+	private String planoNome; // 🔥 Nome do plano
+	private String categoriaNome; // 🔥 Nome da categoria
+	private Long reguaFaturamentoId;
+
 	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
 	private LocalDateTime dataCadastro;
 
@@ -56,6 +60,10 @@ public class AssociadoDTO {
 	private List<TelefoneDTO> telefones;
 
 	private List<AssociadoDefFaturamentoDTO> definicoesFaturamento = new ArrayList<>();
+
+	// 🔥 NOVO CAMPO
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+	private LocalDateTime dataAtualizacao;
 
 	// 🔥 NOVO CAMPO - Forçar atualização de associados existentes
 	private Boolean forcarAtualizacao = false;
@@ -282,4 +290,37 @@ public class AssociadoDTO {
 	public void setForcarAtualizacao(Boolean forcarAtualizacao) {
 		this.forcarAtualizacao = forcarAtualizacao;
 	}
+
+	public String getPlanoNome() {
+		return planoNome;
+	}
+
+	public void setPlanoNome(String planoNome) {
+		this.planoNome = planoNome;
+	}
+
+	public String getCategoriaNome() {
+		return categoriaNome;
+	}
+
+	public void setCategoriaNome(String categoriaNome) {
+		this.categoriaNome = categoriaNome;
+	}
+
+	public Long getReguaFaturamentoId() {
+		return reguaFaturamentoId;
+	}
+
+	public void setReguaFaturamentoId(Long reguaFaturamentoId) {
+		this.reguaFaturamentoId = reguaFaturamentoId;
+	}
+
+	public LocalDateTime getDataAtualizacao() {
+		return dataAtualizacao;
+	}
+
+	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+		this.dataAtualizacao = dataAtualizacao;
+	}
+
 }

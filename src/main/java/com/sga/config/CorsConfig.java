@@ -13,19 +13,18 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}")
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174}")
     private String allowedOrigins;
 
     @Bean
     public CorsFilter corsFilter() {
-    	
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         
         CorsConfiguration config = new CorsConfiguration();
         
-        // Configura origens a partir das propriedades
+        // 🔥 CONFIGURAR ORIGENS A PARTIR DAS PROPRIEDADES
         List<String> origins = Arrays.asList(allowedOrigins.split(","));
-        config.setAllowedOrigins(origins); // Mudei para setAllowedOrigins (mais moderno)
+        config.setAllowedOrigins(origins);
         
         config.setAllowCredentials(true);
         config.addAllowedHeader("*");
@@ -34,6 +33,7 @@ public class CorsConfig {
         // Headers expostos para o frontend
         config.addExposedHeader("Authorization");
         config.addExposedHeader("Content-Disposition");
+        config.addExposedHeader("X-Total-Count");
         
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
