@@ -606,7 +606,8 @@ public class RmExportService {
         appendAlfa(sb, "", 10);
         
         // CodigoServico (pos 1759-1773) - Alfanumérico
-        appendAlfa(sb, "17.21/829110001", 15);
+        //appendAlfa(sb, "17.21/829110001", 15);
+        appendAlfa(sb, "829110001", 15);
         
         // CodMunServico (pos 1774-1793) - Alfanumérico
         appendAlfa(sb, "04400", 20);

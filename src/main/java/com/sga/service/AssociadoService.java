@@ -1464,5 +1464,26 @@ public class AssociadoService {
 	    return dto;
 	}
 	
+	// ============================================================
+    // 🔥 MÉTODOS PARA INATIVAÇÃO
+    // ============================================================
+
+    /**
+     * Busca associados ATIVOS que não estão na lista de CNPJs/CPFs
+     * Utilizado para identificar quais associados devem ser inativados
+     */
+    public List<com.sga.model.Associado> findAtivosNotInCnpjList(List<String> cnpjs) {
+        logger.info("🔍 Buscando associados ativos não listados em {} CNPJs", cnpjs.size());
+        return associadoRepository.findAtivosNotInCnpjList(cnpjs);
+    }
+
+    /**
+     * Salva uma lista de associados em lote
+     */
+    public List<com.sga.model.Associado> saveAllAssociados(List<com.sga.model.Associado> associados) {
+        logger.info("💾 Salvando {} associados em lote", associados.size());
+        return associadoRepository.saveAll(associados);
+    }
+	
 
 }

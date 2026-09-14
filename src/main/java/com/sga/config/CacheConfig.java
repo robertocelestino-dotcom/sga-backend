@@ -10,11 +10,12 @@ import org.springframework.context.annotation.Configuration;
 @EnableCaching
 public class CacheConfig {
 
-    @Bean
-    public CacheManager cacheManager() {
-        // Usando ConcurrentMapCacheManager (não precisa de Caffeine)
-        ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
-        cacheManager.setAllowNullValues(false);
-        return cacheManager;
-    }
+	@Bean
+	public CacheManager cacheManager() {
+		// Usando ConcurrentMapCacheManager (não precisa de Caffeine)
+		 ConcurrentMapCacheManager cacheManager = new ConcurrentMapCacheManager();
+	        cacheManager.setAllowNullValues(false);
+	        return cacheManager;
+	}
+
 }

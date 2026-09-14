@@ -14,7 +14,7 @@ import com.sga.model.FaturaItem;
 @Component
 public class FranquiaRuleOLD {
 
-	private static final Logger log = LoggerFactory.getLogger(FranquiaRule.class);
+	private static final Logger log = LoggerFactory.getLogger(FranquiaRuleOLD2.class);
 
 	private static final String PREFIXO_FRANQUIA = "FRANQUIA DE CONSULTA";
 

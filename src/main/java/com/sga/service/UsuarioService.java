@@ -69,6 +69,7 @@ public class UsuarioService implements UserDetailsService {
     }
 
     public Usuario criarUsuario(String username, String password, String email, String nome, String role) {
+    	
         Usuario usuario = new Usuario();
         usuario.setUsername(username);
         usuario.setPassword(passwordEncoder.encode(password));

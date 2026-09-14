@@ -1,8 +1,13 @@
 package com.sga.controller;
 
 import java.math.BigDecimal;
+import org.springframework.http.HttpHeaders;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -199,9 +204,21 @@ public class AssociadoController {
         int atualizados = 0;
         int erros = 0;
         int configuracoesCriadas = 0;
+        List<AssociadoDTO> associadosInativados = new ArrayList<>();
 
+        // ===== ETAPA 1: EXTRAIR CNPJs DA LISTA PARA INATIVAÇÃO =====
+        List<String> cnpjsImportados = associados.stream()
+                .map(AssociadoDTO::getCnpjCpf)
+                .filter(cnpj -> cnpj != null && !cnpj.trim().isEmpty())
+                .map(String::trim)
+                .collect(Collectors.toList());
+        
+        logger.info("📋 Extraídos {} CNPJs/CPFs do arquivo para inativação", cnpjsImportados.size());
+
+        // ===== ETAPA 2: PROCESSAR CADA ASSOCIADO (CRIAR/ATUALIZAR) =====
         for (AssociadoDTO dto : associados) {
             try {
+                // VALIDAÇÕES BÁSICAS
                 if (dto.getCnpjCpf() == null || dto.getNomeRazao() == null) {
                     logger.warn("⚠️ Associado ignorado: dados obrigatórios faltando");
                     erros++;
@@ -215,34 +232,45 @@ public class AssociadoController {
                     dto.setForcarAtualizacao(true);
                 }
 
+                // ============================================================
+                // 🔥 PROCESSAMENTO DE FATURAMENTO - PRESERVADO
+                // ============================================================
+                
+                // 1. CRIAR CONFIGURAÇÃO DE FATURAMENTO SE NÃO EXISTIR
                 if (dto.getDefinicoesFaturamento() == null || dto.getDefinicoesFaturamento().isEmpty()) {
                     AssociadoDefFaturamentoDTO faturamento = new AssociadoDefFaturamentoDTO();
-
                     Long planoId = dto.getPlanoId() != null ? dto.getPlanoId() : 5L;
                     faturamento.setPlanoId(planoId);
                     faturamento.setDiaEmissao(26);
                     faturamento.setDiaVencimento(10);
                     faturamento.setValorDef(BigDecimal.valueOf(85.00));
                     faturamento.setObservacao("Configuração padrão - Importação em lote");
-
                     dto.setDefinicoesFaturamento(List.of(faturamento));
-                    logger.info("📅 Configuração de faturamento adicionada para {}", dto.getNomeRazao());
                 }
 
+                // ============================================================
+                // PROCESSAR ASSOCIADO (CRIAR OU ATUALIZAR)
+                // ============================================================
+                
                 AssociadoDTO resultado;
                 boolean associadoExistia = false;
 
                 try {
+                    // Verificar se o associado já existe
                     AssociadoDTO existente = associadoService.buscarPorCnpjCpf(dto.getCnpjCpf());
                     if (existente != null && existente.getId() != null) {
                         associadoExistia = true;
                         dto.setId(existente.getId());
                         
+                        // ATUALIZAR ASSOCIADO
                         var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
                         resultado = associadoService.toDTO(associadoEntity);
                         atualizados++;
                         logger.info("✏️ Associado atualizado: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
 
+                        // ============================================================
+                        // 🔥 VERIFICAR CONFIGURAÇÕES DE FATURAMENTO EXISTENTES
+                        // ============================================================
                         var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(existente.getId());
                         if (configsExistentes == null || configsExistentes.isEmpty()) {
                             AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
@@ -261,27 +289,42 @@ public class AssociadoController {
                         throw new Exception("Associado não encontrado");
                     }
                 } catch (Exception e) {
+                    // ============================================================
+                    // CRIAR NOVO ASSOCIADO
+                    // ============================================================
                     associadoExistia = false;
                     var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
                     resultado = associadoService.toDTO(associadoEntity);
                     criados++;
+                    
+                    // ============================================================
+                    // 🔥 CONFIGURAÇÃO DE FATURAMENTO PARA NOVO ASSOCIADO
+                    // ============================================================
                     configuracoesCriadas++;
-                    logger.info("✅ Associado criado com configuração de faturamento: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
+                    logger.info("✅ Associado criado com configuração de faturamento: {} (ID: {})", 
+                        dto.getNomeRazao(), resultado.getId());
                 }
 
-                if (!associadoExistia && resultado != null && resultado.getId() != null) {
-                    var configsExistentes = associadoDefFaturamentoService.listarPorAssociado(resultado.getId());
-                    if (configsExistentes == null || configsExistentes.isEmpty()) {
-                        AssociadoDefFaturamentoDTO novaConfig = new AssociadoDefFaturamentoDTO();
-                        novaConfig.setAssociadoId(resultado.getId());
-                        novaConfig.setPlanoId(dto.getPlanoId() != null ? dto.getPlanoId() : 5L);
-                        novaConfig.setDiaEmissao(26);
-                        novaConfig.setDiaVencimento(10);
-                        novaConfig.setValorDef(BigDecimal.valueOf(85.00));
-                        novaConfig.setObservacao("Configuração padrão - Criada automaticamente");
+                // ============================================================
+                // 🔥 APLICAR STATUS DO CSV (ATIVO/SUSPENSO)
+                // ============================================================
+                String statusCSV = dto.getStatus();
+                if (statusCSV != null && !statusCSV.isEmpty()) {
+                    String statusNormalizado = normalizarStatusImportacao(statusCSV);
+                    var associadoEntity = associadoService.buscarPorIdEntity(resultado.getId());
+                    String statusAtual = associadoEntity.getStatus();
 
-                        associadoDefFaturamentoService.criar(novaConfig);
-                        logger.info("📅 Configuração de faturamento criada para novo associado ID: {}", resultado.getId());
+                    if (!statusAtual.equals(statusNormalizado)) {
+                        logger.info("🔄 Mudando status de {} para {} para associado {}",
+                            statusAtual, statusNormalizado, associadoEntity.getCnpjCpf());
+                        
+                        associadoEntity.mudarStatus(
+                            statusNormalizado,
+                            dto.getMotivoInativacao(),
+                            dto.getDataFimSuspensao()
+                        );
+                        associadoService.atualizar(resultado.getId(), 
+                            associadoService.toDTO(associadoEntity));
                     }
                 }
 
@@ -293,16 +336,121 @@ public class AssociadoController {
             }
         }
 
-        logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas", 
-            criados, atualizados, erros, configuracoesCriadas);
+        // ============================================================
+        // ETAPA 3: 🔥 INATIVAR ASSOCIADOS ATIVOS NÃO LISTADOS
+        // ============================================================
+        int totalInativados = 0;
+
+        if (!cnpjsImportados.isEmpty()) {
+            logger.info("🔍 Verificando associados ativos para inativação...");
+
+            try {
+                // 🔥 BUSCAR APENAS ASSOCIADOS COM STATUS 'A' (ATIVO)
+                List<com.sga.model.Associado> paraInativar = associadoService.findAtivosNotInCnpjList(cnpjsImportados);
+
+                if (!paraInativar.isEmpty()) {
+                    logger.info("🔄 Inativando {} associados que não estão no arquivo", paraInativar.size());
+
+                    LocalDate dataInativacao = LocalDate.now();
+                    String motivo = "INATIVAÇÃO PROCESSAMENTO AUTOMATICO";
+
+                    for (com.sga.model.Associado associado : paraInativar) {
+                        // 🔥 USAR MÉTODO EXISTENTE mudarStatus() QUE JÁ TRATA TUDO
+                        associado.mudarStatus("I", motivo, null);
+                        associado.setDataAtualizacao(LocalDateTime.now());
+                        
+                        // Converter para DTO para resposta
+                        AssociadoDTO dtoInativado = associadoService.toDTO(associado);
+                        associadosInativados.add(dtoInativado);
+                        
+                        logger.debug("🔴 Associado inativado: {} - {}", 
+                            associado.getCnpjCpf(), associado.getNomeRazao());
+                    }
+
+                    // Salvar todos os inativados em lote
+                    associadoService.saveAllAssociados(paraInativar);
+                    totalInativados = paraInativar.size();
+
+                    logger.info("✅ {} associados inativados com sucesso", totalInativados);
+                } else {
+                    logger.info("ℹ️ Nenhum associado ativo precisa ser inativado");
+                }
+
+            } catch (Exception e) {
+                logger.error("❌ Erro durante inativação: {}", e.getMessage(), e);
+            }
+        }
+
+        // ============================================================
+        // LOG FINAL COM TODAS AS ESTATÍSTICAS
+        // ============================================================
+        logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas, {} inativados", 
+            criados, atualizados, erros, configuracoesCriadas, totalInativados);
+
+        // ============================================================
+        // ETAPA 4: ADICIONAR HEADERS COM ESTATÍSTICAS
+        // ============================================================
+        HttpHeaders headers = new HttpHeaders();
+        headers.add("X-Importacao-Criados", String.valueOf(criados));
+        headers.add("X-Importacao-Atualizados", String.valueOf(atualizados));
+        headers.add("X-Importacao-Erros", String.valueOf(erros));
+        headers.add("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas));
+        headers.add("X-Importacao-Inativados", String.valueOf(totalInativados));
+        headers.add("X-Importacao-Total", String.valueOf(associados.size()));
+
+        // ============================================================
+        // 🔥 INCLUIR LISTA DE INATIVADOS NO HEADER (JSON)
+        // ============================================================
+        if (!associadosInativados.isEmpty()) {
+            try {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                List<Map<String, Object>> inativadosMap = associadosInativados.stream().map(a -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", a.getId());
+                    map.put("cnpjCpf", a.getCnpjCpf());
+                    map.put("nomeRazao", a.getNomeRazao());
+                    map.put("status", a.getStatus());
+                    map.put("dataInativacao", a.getDataInativacao() != null ?
+                        a.getDataInativacao().toString() : null);
+                    map.put("motivoInativacao", a.getMotivoInativacao());
+                    return map;
+                }).collect(Collectors.toList());
+
+                String inativadosJson = mapper.writeValueAsString(inativadosMap);
+                headers.add("X-Importacao-Inativados-List", inativadosJson);
+
+                logger.info("📋 {} associados inativados incluídos no header", associadosInativados.size());
+
+            } catch (Exception e) {
+                logger.warn("⚠️ Erro ao serializar lista de inativados: {}", e.getMessage());
+            }
+        }
+
+        // ============================================================
+        // EXPOSE HEADERS PARA O FRONTEND
+        // ============================================================
+        headers.add("Access-Control-Expose-Headers", 
+            "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, " +
+            "X-Importacao-Configuracoes, X-Importacao-Inativados, X-Importacao-Inativados-List");
 
         return ResponseEntity.ok()
-                .header("X-Importacao-Criados", String.valueOf(criados))
-                .header("X-Importacao-Atualizados", String.valueOf(atualizados))
-                .header("X-Importacao-Erros", String.valueOf(erros))
-                .header("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas))
-                .header("Access-Control-Expose-Headers", "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, X-Importacao-Configuracoes")
+                .headers(headers)
                 .body(associadosImportados);
+    }
+    
+    // ========== 🔥 MÉTODO AUXILIAR DE NORMALIZAÇÃO ==========
+
+    /**
+     * Normaliza o status vindo do CSV para o formato do sistema
+     * "ATIVO" → "A", "SUSPENSO" → "S", "INATIVO" → "I"
+     */
+    private String normalizarStatusImportacao(String status) {
+        if (status == null) return "A";
+        String s = status.trim().toUpperCase();
+        if ("ATIVO".equals(s) || "A".equals(s)) return "A";
+        if ("SUSPENSO".equals(s) || "S".equals(s)) return "S";
+        if ("INATIVO".equals(s) || "I".equals(s)) return "I";
+        return "A";
     }
 
     // ============================================================

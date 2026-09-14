@@ -1,6 +1,8 @@
 package com.sga.repository;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -9,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -97,15 +100,51 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	/**
 	 * Busca associados por lista de IDs com filtros e paginação
 	 */
-	@Query("SELECT a FROM Associado a WHERE a.id IN :ids " +
-	       "AND (:nome IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nome, '%'))) " +
-	       "AND (:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%'))")
-	Page<Associado> findByIdInAndFiltros(@Param("ids") List<Long> ids,
-	                                     @Param("nome") String nome,
-	                                     @Param("cnpjCpf") String cnpjCpf,
-	                                     Pageable pageable);
+	@Query("SELECT a FROM Associado a WHERE a.id IN :ids "
+			+ "AND (:nome IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nome, '%'))) "
+			+ "AND (:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%'))")
+	Page<Associado> findByIdInAndFiltros(@Param("ids") List<Long> ids, @Param("nome") String nome,
+			@Param("cnpjCpf") String cnpjCpf, Pageable pageable);
 
 	
-	
-	
+	// ========== 🔥 NOVOS MÉTODOS PARA INATIVAÇÃO ==========
+
+	/**
+	 * Busca associados com status ATIVO que NÃO estão na lista de CNPJs/CPFs
+	 * Utilizado para identificar quais associados devem ser inativados durante a
+	 * importação em lote.
+	 *
+	 * @param cnpjs Lista de CNPJs/CPFs que estão sendo importados
+	 * @return Lista de associados ativos que não estão na lista
+	 */
+	@Query("SELECT a FROM Associado a WHERE a.status = 'A' AND a.cnpjCpf NOT IN :cnpjs")
+	List<Associado> findAtivosNotInCnpjList(@Param("cnpjs") List<String> cnpjs);
+
+	/**
+	 * Conta quantos associados ATIVOS não estão na lista de CNPJs/CPFs Utilizado
+	 * para estatísticas rápidas
+	 *
+	 * @param cnpjs Lista de CNPJs/CPFs que estão sendo importados
+	 * @return Quantidade de associados ativos que não estão na lista
+	 */
+	@Query("SELECT COUNT(a) FROM Associado a WHERE a.status = 'A' AND a.cnpjCpf NOT IN :cnpjs")
+	long countAtivosNotInCnpjList(@Param("cnpjs") List<String> cnpjs);
+
+	/**
+	 * Inativa em lote todos os associados ATIVOS que não estão na lista de
+	 * CNPJs/CPFs Operação mais eficiente que atualizar um por um.
+	 *
+	 * @param cnpjs           Lista de CNPJs/CPFs que estão sendo importados
+	 * @param dataInativacao  Data da inativação (hoje)
+	 * @param motivo          Motivo da inativação
+	 * @param dataAtualizacao Data/hora da atualização
+	 * @return Número de associados inativados
+	 */
+	@Modifying
+	@Query("UPDATE Associado a SET " + "a.status = 'I', " + "a.dataInativacao = :dataInativacao, "
+			+ "a.motivoInativacao = :motivo, " + "a.dataAtualizacao = :dataAtualizacao "
+			+ "WHERE a.status = 'A' AND a.cnpjCpf NOT IN :cnpjs")
+	int inativarAssociadosEmLote(@Param("cnpjs") List<String> cnpjs, @Param("dataInativacao") LocalDate dataInativacao,
+			@Param("motivo") String motivo, @Param("dataAtualizacao") LocalDateTime dataAtualizacao);
+
 }

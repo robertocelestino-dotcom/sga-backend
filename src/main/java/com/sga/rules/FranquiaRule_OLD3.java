@@ -6,25 +6,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.sga.model.AlertaFranquiaSemCobertura;
 import com.sga.model.Associado;
 import com.sga.model.Fatura;
 import com.sga.model.FaturaItem;
-import com.sga.repository.AlertaFranquiaSemCoberturaRepository;
-import com.sga.service.FranquiaCoberturaCache;
 
 @Component
-public class FranquiaRule {
+public class FranquiaRule_OLD3 {
 
-    private static final Logger log = LoggerFactory.getLogger(FranquiaRule.class);
+    private static final Logger log = LoggerFactory.getLogger(FranquiaRule_OLD3.class);
 
     // ================================================================
     // CONSTANTES
@@ -37,22 +31,7 @@ public class FranquiaRule {
     private static final String PREFIXO_CONTRIBUICAO = "CONTRIBUICAO ASSOCIATIVA";
 
     // ================================================================
-    // INJEÇÃO DE DEPENDÊNCIAS
-    // ================================================================
-
-    private final FranquiaCoberturaCache coberturaCache;
-    private final AlertaFranquiaSemCoberturaRepository alertaRepository;
-
-    public FranquiaRule(
-            FranquiaCoberturaCache coberturaCache,
-            AlertaFranquiaSemCoberturaRepository alertaRepository) {
-        this.coberturaCache = coberturaCache;
-        this.alertaRepository = alertaRepository;
-    }
-
-    // ================================================================
     // MAPEAMENTO ESPECÍFICO DE FRANQUIA PARA NOME BASE
-    // (normaliza o nome base extraído — ex: "SPC MAXI" -> "SPC MAX")
     // ================================================================
 
     private static final Map<String, String> MAPEAMENTO_ESPECIFICO = new HashMap<>();
@@ -88,6 +67,79 @@ public class FranquiaRule {
 
         // CHEQUE
         MAPEAMENTO_ESPECIFICO.put("CHEQUE", "CHEQUE");
+    }
+
+    // ================================================================
+    // MAPEAMENTO DE SINÔNIMOS (CORRESPONDÊNCIA EXATA)
+    // ================================================================
+
+    private static final Map<String, List<String>> MAPEAMENTO_SINONIMOS = new HashMap<>();
+    static {
+        // ===== SPC MIX (apenas SPC MIX) =====
+        MAPEAMENTO_SINONIMOS.put("SPC MIX", Arrays.asList(
+            "SPC MIX",
+            "SPC MIX (SPC + CHEQUE)"
+        ));
+
+        // ===== SPC MIX POSITIVO FOR (separado!) =====
+        MAPEAMENTO_SINONIMOS.put("SPC MIX POSITIVO FOR", Arrays.asList(
+            "SPC MIX POSITIVO FOR"
+        ));
+
+        // ===== SPC MIX POSITIVO (separado!) =====
+        MAPEAMENTO_SINONIMOS.put("SPC MIX POSITIVO", Arrays.asList(
+            "SPC MIX POSITIVO"
+        ));
+
+        // ===== SPC MIX PLUS =====
+        MAPEAMENTO_SINONIMOS.put("SPC MIX PLUS", Arrays.asList(
+            "SPC MIX PLUS"
+        ));
+
+        // ===== SPC MAX =====
+        MAPEAMENTO_SINONIMOS.put("SPC MAX", Arrays.asList(
+            "SPC MAX",
+            "SPC MAXI"
+        ));
+
+        // ===== NOVO SPC MAXI (separado!) =====
+        MAPEAMENTO_SINONIMOS.put("NOVO SPC MAXI", Arrays.asList(
+            "NOVO SPC MAXI"
+        ));
+
+        // ===== SPC PLUS =====
+        MAPEAMENTO_SINONIMOS.put("SPC PLUS", Arrays.asList(
+            "SPC PLUS"
+        ));
+
+        // ===== SPC RELATORIO =====
+        MAPEAMENTO_SINONIMOS.put("SPC RELATORIO", Arrays.asList(
+            "SPC RELATORIO",
+            "SPC RELATORIO COMPLETO"
+        ));
+
+        // ===== SPC RELATORIO COMPLETO =====
+        MAPEAMENTO_SINONIMOS.put("SPC RELATORIO COMPLETO", Arrays.asList(
+            "SPC RELATORIO COMPLETO",
+        	"SPC RELATORIO PJ",
+        	"SPC RELATORIO PF",
+        	"SPC RELATORIO",   
+        	"SPC RELATORIO PJ INTERNET",
+        	"SPC RELATORIO PF INTERNET"
+        ));
+
+        // ===== SPC MIX MAIS =====
+        MAPEAMENTO_SINONIMOS.put("SPC MIX MAIS", Arrays.asList(
+            "SPC MIX MAIS",
+            "NOVO SPC MIX MAIS"
+        ));
+
+        // ===== CHEQUE =====
+        MAPEAMENTO_SINONIMOS.put("CHEQUE", Arrays.asList(
+            "CHEQUE",
+            "SPCHEQUE ANALITICA",
+            "SPCHEQUE SINTETICA"
+        ));
     }
 
     // ================================================================
@@ -135,14 +187,14 @@ public class FranquiaRule {
                 "PLANO 20 SPC RELATORIO COMPLETO 1/1",
                 "Plano 20 SPC RELATORIO COMPLETO"
             ));
-
+        
         // 863 - COMERCIAL UNIMAQ LTDA (SPC: 863)
         MAPEAMENTO_CORRECOES.put("863|FRANQUIA DE CONSULTA NOVO SPC MAXI 1/1",
             new CorrecaoProduto(
                 "04.01.03.94404",
                 "PLANO 50 NOVO SPC MAXI 1/1",
                 "PLANO 50 NOVO SPC MAXI"
-            ));
+            ));        
     }
 
     // ================================================================
@@ -271,6 +323,7 @@ public class FranquiaRule {
         base = base.replaceAll("(?i)\\s+HOST-A-HOST\\s+", " ").trim();
 
         // ===== 4. REMOVER "PLANO - PACOTE ..." =====
+        // Remove sufixos como "PLANO - PACOTE 20 MIX - 53"
         base = base.replaceAll("(?i)\\s*[-–]\\s*PLANO\\s+[-–]\\s+PACOTE\\s+.*$", "").trim();
 
         // ===== 5. LIMPAR ESPAÇOS DUPLOS =====
@@ -319,21 +372,15 @@ public class FranquiaRule {
     }
 
     /**
-     * Obtém a lista de sinônimos para um nome base.
-     *
-     * 🔥 ALTERADO: agora consulta o BANCO (via cache) em vez do mapa hardcoded.
-     * Se não houver cadastro, faz fallback para o próprio nome.
+     * Obtém a lista de sinônimos para um nome base
      */
     private List<String> obterSinonimos(String nomeBase) {
-        List<String> servicos = coberturaCache.obterServicosCobertos(nomeBase);
-
-        if (servicos == null || servicos.isEmpty()) {
-            log.warn("⚠️ Fallback: nenhum sinônimo cadastrado para '{}'. " +
-                     "Usando apenas o próprio nome (comportamento legado).", nomeBase);
-            return Arrays.asList(nomeBase);
+        for (Map.Entry<String, List<String>> entry : MAPEAMENTO_SINONIMOS.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(nomeBase)) {
+                return entry.getValue();
+            }
         }
-
-        return servicos;
+        return Arrays.asList(nomeBase);
     }
 
     // ================================================================
@@ -408,7 +455,7 @@ public class FranquiaRule {
                 continue;
             }
 
-            processarFranquia(fatura, associado, franquiaItem, itensRemover, excedentes);
+            processarFranquia(fatura, franquiaItem, itensRemover, excedentes);
         }
 
         // ================================================================
@@ -446,7 +493,7 @@ public class FranquiaRule {
     // 🔥 MÉTODO CENTRAL - PROCESSAR FRANQUIA
     // ================================================================
 
-    private void processarFranquia(Fatura fatura, Associado associado, FaturaItem franquiaItem,
+    private void processarFranquia(Fatura fatura, FaturaItem franquiaItem,
             List<FaturaItem> itensRemover, List<FaturaItem> excedentes) {
 
         log.info("========================================");
@@ -524,39 +571,8 @@ public class FranquiaRule {
             }
         }
 
-        // ================================================================
-        // 3.1 - ALERTA: NENHUM SERVIÇO ENCONTRADO (possível cobrança indevida)
-        // ================================================================
-
         if (servicosEncontrados.isEmpty()) {
-            log.error("========================================================");
-            log.error("🚨 [ALERTA CRÍTICO] Franquia sem cobertura cadastrada!");
-            log.error("   Associado: {} (SPC: {})",
-                    associado.getNomeRazao(), associado.getCodigoSpc());
-            log.error("   Franquia: {}", franquiaItem.getDescricao());
-            log.error("   Nome base extraído: '{}'", nomeBase);
-            log.error("   Limite: {} | Valor: R$ {}",
-                    limiteFranquia, franquiaItem.getValorTotal());
-            log.error("   ⚠️ O serviço correspondente PODE estar sendo cobrado indevidamente.");
-            log.error("   ⚠️ Verifique tb_franquia_servico_coberto para '{}'.", nomeBase);
-            log.error("========================================================");
-
-            // Registrar alerta no banco
-            List<FaturaItem> suspeitos = encontrarItensSuspeitos(fatura, franquiaItem, nomeBase);
-            BigDecimal valorPotencial = suspeitos.stream()
-                .map(FaturaItem::getValorTotal)
-                .filter(Objects::nonNull)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-            try {
-                registrarAlertaFranquiaSemCobertura(
-                    fatura, associado, franquiaItem, nomeBase, suspeitos, valorPotencial
-                );
-            } catch (Exception e) {
-                log.error("❌ Falha ao registrar alerta de franquia sem cobertura: {}",
-                        e.getMessage(), e);
-            }
-
+            log.warn("❌ Nenhum serviço relacionado encontrado. Apenas a franquia será removida.");
             itensRemover.add(franquiaItem);
             return;
         }
@@ -614,72 +630,5 @@ public class FranquiaRule {
                 franquiaItem.getDescricao(), franquiaItem.getQuantidade());
 
         log.info("========================================");
-    }
-
-    // ================================================================
-    // MÉTODOS AUXILIARES - ALERTA DE FRANQUIA SEM COBERTURA
-    // ================================================================
-
-    /**
-     * Encontra itens potencialmente cobertos pela franquia — heurística.
-     */
-    private List<FaturaItem> encontrarItensSuspeitos(
-            Fatura fatura, FaturaItem franquiaItem, String nomeBase) {
-
-        if (nomeBase == null || nomeBase.isEmpty()) return new ArrayList<>();
-
-        String nomeBaseUpper = nomeBase.toUpperCase();
-        Set<String> palavrasChave = Arrays.stream(nomeBaseUpper.split("\\s+"))
-            .filter(p -> p.length() > 2)
-            .filter(p -> !p.equals("SPC"))
-            .filter(p -> !p.equals("DE"))
-            .filter(p -> !p.equals("CONSULTA"))
-            .collect(Collectors.toSet());
-
-        List<FaturaItem> suspeitos = new ArrayList<>();
-        if (palavrasChave.isEmpty()) return suspeitos;
-
-        for (FaturaItem item : fatura.getItens()) {
-            if (item == franquiaItem) continue;
-            if (isFranquia(item.getDescricao())) continue;
-            if (isPlanoItem(item)) continue;
-
-            String descItemUpper = item.getDescricao().toUpperCase();
-            boolean contemTodas = palavrasChave.stream().allMatch(descItemUpper::contains);
-            if (contemTodas) {
-                suspeitos.add(item);
-            }
-        }
-        return suspeitos;
-    }
-
-    /**
-     * Persiste um alerta quando uma franquia não encontra serviços cobertos.
-     */
-    private void registrarAlertaFranquiaSemCobertura(
-            Fatura fatura, Associado associado, FaturaItem franquiaItem,
-            String nomeBase, List<FaturaItem> suspeitos, BigDecimal valorPotencial) {
-
-        AlertaFranquiaSemCobertura alerta = new AlertaFranquiaSemCobertura();
-        alerta.setFaturaId(fatura.getId());
-
-        // Ajuste conforme o tipo do ID do Associado no seu modelo (Integer ou Long)
-        alerta.setAssociadoId(associado.getId() != null ? associado.getId().longValue() : null);
-
-        alerta.setCodigoSpc(associado.getCodigoSpc());
-        alerta.setFranquiaDescricao(franquiaItem.getDescricao());
-        alerta.setFranquiaNomeBase(nomeBase);
-        alerta.setValorPotencialAfetado(valorPotencial);
-
-        if (!suspeitos.isEmpty()) {
-            String descricoes = suspeitos.stream()
-                .map(i -> i.getDescricao()
-                        + " (Qtd: " + i.getQuantidade()
-                        + ", R$ " + i.getValorTotal() + ")")
-                .collect(Collectors.joining("\n"));
-            alerta.setItensPotencialmenteCobertos(descricoes);
-        }
-
-        alertaRepository.save(alerta);
     }
 }
