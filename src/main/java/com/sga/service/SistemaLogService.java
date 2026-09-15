@@ -105,21 +105,21 @@ public class SistemaLogService {
 	 * REGISTRO DE LOGS SIMPLIFICADOS (métodos que faltam)
 	 */
 	@Async
-	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void logCriacao(String tabelaAfetada, String entidadeId, String descricao) {
 		logSimples(tabelaAfetada, entidadeId != null ? Long.parseLong(entidadeId) : null, "CRIAR", "ASSOCIADO",
 				descricao);
 	}
 
 	@Async
-	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void logAtualizacao(String tabelaAfetada, String entidadeId, String descricao) {
 		logSimples(tabelaAfetada, entidadeId != null ? Long.parseLong(entidadeId) : null, "ATUALIZAR", "ASSOCIADO",
 				descricao);
 	}
 
 	@Async
-	@Transactional(propagation = Propagation.NOT_SUPPORTED)
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public void logExclusao(String tabelaAfetada, String entidadeId, String descricao) {
 		logSimples(tabelaAfetada, entidadeId != null ? Long.parseLong(entidadeId) : null, "EXCLUIR", "ASSOCIADO",
 				descricao);

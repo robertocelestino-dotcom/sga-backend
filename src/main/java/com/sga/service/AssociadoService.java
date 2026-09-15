@@ -1460,7 +1460,43 @@ public class AssociadoService {
 	    if (associado.getReguaFaturamento() != null) {
 	        dto.setReguaFaturamentoId(associado.getReguaFaturamento().getId());
 	    }
+	    
+	    // Endereços
+	    if (associado.getEnderecos() != null && !associado.getEnderecos().isEmpty()) {
+	        List<EnderecoDTO> enderecosDTO = associado.getEnderecos().stream()
+	            .map(this::toEnderecoDTO)
+	            .filter(e -> e != null)
+	            .collect(Collectors.toList());
+	        dto.setEnderecos(enderecosDTO);
+	        logger.debug("📮 {} endereços convertidos para DTO", enderecosDTO.size());
+	    } else {
+	        dto.setEnderecos(new ArrayList<>());
+	    }
 
+	    // Telefones
+	    if (associado.getTelefones() != null && !associado.getTelefones().isEmpty()) {
+	        List<TelefoneDTO> telefonesDTO = associado.getTelefones().stream()
+	            .map(this::toTelefoneDTO)
+	            .filter(t -> t != null)
+	            .collect(Collectors.toList());
+	        dto.setTelefones(telefonesDTO);
+	        logger.debug("📞 {} telefones convertidos para DTO", telefonesDTO.size());
+	    } else {
+	        dto.setTelefones(new ArrayList<>());
+	    }
+
+	    // Emails
+	    if (associado.getEmails() != null && !associado.getEmails().isEmpty()) {
+	        List<EmailDTO> emailsDTO = associado.getEmails().stream()
+	            .map(this::toEmailDTO)
+	            .filter(e -> e != null)
+	            .collect(Collectors.toList());
+	        dto.setEmails(emailsDTO);
+	        logger.debug("📧 {} emails convertidos para DTO", emailsDTO.size());
+	    } else {
+	        dto.setEmails(new ArrayList<>());
+	    }
+	    
 	    return dto;
 	}
 	
