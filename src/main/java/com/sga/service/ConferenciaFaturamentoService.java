@@ -1,6 +1,7 @@
 package com.sga.service;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -102,15 +103,25 @@ public class ConferenciaFaturamentoService {
         }
 
         log.info("📊 Total de faturas processadas: {}", lista.size());
+        
+        // 🔥 Debug: conta status antes do filtro
+        long qtdOK = lista.stream().filter(d -> "OK".equals(d.getStatusConferencia())).count();
+        long qtdDIF = lista.stream().filter(d -> "DIFERENCA".equals(d.getStatusConferencia())).count();
+        log.info("📊 Distribuição antes do filtro: OK={}, DIFERENCA={}, TOTAL={}",
+                qtdOK, qtdDIF, lista.size());
+        
 
+        // 🔥 Filtro por status (aplicado em memória)
         if (statusFiltro != null && !statusFiltro.isEmpty() && !"Todos".equals(statusFiltro)) {
             List<ConferenciaFaturamentoDTO> filtrados = lista.stream()
                     .filter(dto -> statusFiltro.equals(dto.getStatusConferencia()))
                     .collect(Collectors.toList());
-            log.info("📊 Filtro por status '{}' aplicado: {} resultados", statusFiltro, filtrados.size());
+            log.info("📊 Filtro por status '{}' aplicado: {} resultados (antes: {})",
+                    statusFiltro, filtrados.size(), lista.size());
             lista = filtrados;
         }
 
+        // Paginação em memória
         int start = (int) pageable.getOffset();
         int end = Math.min((start + pageable.getPageSize()), lista.size());
         if (start > lista.size()) {
@@ -291,8 +302,8 @@ public class ConferenciaFaturamentoService {
             Long reguaId, LocalDate dataInicio, LocalDate dataFim,
             String codigoSpc, String statusFiltro) {
 
-        log.info("📊 Resumo da conferência com filtros - Régua: {}, Período: {} à {}",
-                reguaId, dataInicio, dataFim);
+        log.info("📊 Resumo da conferência com filtros - Régua: {}, Período: {} à {}, Status: {}",
+                reguaId, dataInicio, dataFim, statusFiltro);
 
         ConferenciaResumoDTO resumo = new ConferenciaResumoDTO();
 
@@ -342,6 +353,157 @@ public class ConferenciaFaturamentoService {
         resumo.setTotalAssociados(totalFaturas);
 
         return resumo;
+    }
+
+    // ============================================================
+    // 🔥 EXPORTAÇÃO CSV
+    // ============================================================
+
+    /**
+     * Exporta conferência para CSV (todos os registros filtrados).
+     */
+    public String exportarCSV(Long reguaId, LocalDate dataInicio, LocalDate dataFim,
+                              String codigoSpcFiltro, String statusFiltro) {
+
+        log.info("📊 [CSV] Exportando conferência - Régua: {}, Período: {} à {}, Código: {}, Status: {}",
+                reguaId, dataInicio, dataFim, codigoSpcFiltro, statusFiltro);
+
+        List<Object[]> resultados = faturaRepository.findConferenciaParaExportacao(
+                reguaId, dataInicio, dataFim, codigoSpcFiltro);
+
+        StringBuilder csv = new StringBuilder();
+        // BOM para Excel reconhecer UTF-8
+        csv.append("\uFEFF");
+        // Cabeçalho
+        csv.append("Associado;Código SPC;Código RM;CNPJ/CPF;");
+        csv.append("Nº Nota Débito;Valor Nota;Data Vencimento;");
+        csv.append("Nº Fatura;Valor Fatura;Data Emissão;");
+        csv.append("Diferença;Status Conferência\n");
+
+        int linhas = 0;
+        if (resultados != null) {
+            for (Object[] row : resultados) {
+                try {
+                    // Índices conforme a query findConferenciaParaExportacao:
+                    // 0=fatura_id, 1=numero_fatura, 2=data_emissao, 3=data_vencimento,
+                    // 4=status_fatura, 5=valor_fatura, 6=nota_id, 7=numero_nota_debito,
+                    // 8=valor_nota, 9=associado_id, 10=codigo_spc, 11=codigo_rm,
+                    // 12=nome_razao, 13=cnpj_cpf
+                    String numeroFatura = CastUtils.toStringSafe(row[1]);
+                    LocalDate dataEmissao = converterParaLocalDate(row[2]);
+                    LocalDate dataVencimento = converterParaLocalDate(row[3]);
+                    BigDecimal valorFatura = CastUtils.toBigDecimal(row[5]);
+                    String numeroNota = CastUtils.toStringSafe(row[7]);
+                    BigDecimal valorNota = CastUtils.toBigDecimal(row[8]);
+                    String codigoSpcRow = CastUtils.toStringSafe(row[10]);
+                    String codigoRmRow = CastUtils.toStringSafe(row[11]);
+                    String nomeRazao = CastUtils.toStringSafe(row[12]);
+                    String cnpjCpf = CastUtils.toStringSafe(row[13]);
+
+                    BigDecimal diff = valorFatura.subtract(valorNota);
+                    String status = diff.abs().compareTo(new BigDecimal("0.01")) <= 0
+                            ? "OK" : "DIFERENCA";
+
+                    // Aplicar filtro de status se houver
+                    if (statusFiltro != null && !statusFiltro.isEmpty()
+                            && !"Todos".equals(statusFiltro)
+                            && !statusFiltro.equals(status)) {
+                        continue;
+                    }
+
+                    csv.append(escaparCSV(nomeRazao)).append(";");
+                    csv.append(escaparCSV(codigoSpcRow)).append(";");
+                    csv.append(escaparCSV(codigoRmRow)).append(";");
+                    csv.append(escaparCSV(cnpjCpf)).append(";");
+                    csv.append(escaparCSV(numeroNota)).append(";");
+                    csv.append(formatarBigDecimal(valorNota)).append(";");
+                    csv.append(dataVencimento != null ? dataVencimento.toString() : "").append(";");
+                    csv.append(escaparCSV(numeroFatura)).append(";");
+                    csv.append(formatarBigDecimal(valorFatura)).append(";");
+                    csv.append(dataEmissao != null ? dataEmissao.toString() : "").append(";");
+                    csv.append(formatarBigDecimal(diff)).append(";");
+                    csv.append(status).append("\n");
+                    linhas++;
+                } catch (Exception e) {
+                    log.error("❌ Erro ao processar linha para CSV: {}", e.getMessage());
+                }
+            }
+        }
+
+        log.info("✅ [CSV] {} linhas exportadas", linhas);
+        return csv.toString();
+    }
+
+    /**
+     * Exporta apenas faturas selecionadas por IDs.
+     */
+    public String exportarCSVSelecionados(List<Long> faturaIds) {
+        log.info("📊 [CSV] Exportando {} faturas selecionadas", faturaIds.size());
+
+        List<Object[]> resultados = faturaRepository.findFaturasParaExportacaoPorIds(faturaIds);
+
+        StringBuilder csv = new StringBuilder();
+        csv.append("\uFEFF");
+        csv.append("Associado;Código SPC;Código RM;CNPJ/CPF;");
+        csv.append("Nº Nota Débito;Valor Nota;Data Vencimento;");
+        csv.append("Nº Fatura;Valor Fatura;Data Emissão;");
+        csv.append("Diferença;Status Conferência\n");
+
+        int linhas = 0;
+        if (resultados != null) {
+            for (Object[] row : resultados) {
+                try {
+                    String numeroFatura = CastUtils.toStringSafe(row[1]);
+                    LocalDate dataEmissao = converterParaLocalDate(row[2]);
+                    LocalDate dataVencimento = converterParaLocalDate(row[3]);
+                    BigDecimal valorFatura = CastUtils.toBigDecimal(row[5]);
+                    String numeroNota = CastUtils.toStringSafe(row[7]);
+                    BigDecimal valorNota = CastUtils.toBigDecimal(row[8]);
+                    String codigoSpcRow = CastUtils.toStringSafe(row[10]);
+                    String codigoRmRow = CastUtils.toStringSafe(row[11]);
+                    String nomeRazao = CastUtils.toStringSafe(row[12]);
+                    String cnpjCpf = CastUtils.toStringSafe(row[13]);
+
+                    BigDecimal diff = valorFatura.subtract(valorNota);
+                    String status = diff.abs().compareTo(new BigDecimal("0.01")) <= 0
+                            ? "OK" : "DIFERENCA";
+
+                    csv.append(escaparCSV(nomeRazao)).append(";");
+                    csv.append(escaparCSV(codigoSpcRow)).append(";");
+                    csv.append(escaparCSV(codigoRmRow)).append(";");
+                    csv.append(escaparCSV(cnpjCpf)).append(";");
+                    csv.append(escaparCSV(numeroNota)).append(";");
+                    csv.append(formatarBigDecimal(valorNota)).append(";");
+                    csv.append(dataVencimento != null ? dataVencimento.toString() : "").append(";");
+                    csv.append(escaparCSV(numeroFatura)).append(";");
+                    csv.append(formatarBigDecimal(valorFatura)).append(";");
+                    csv.append(dataEmissao != null ? dataEmissao.toString() : "").append(";");
+                    csv.append(formatarBigDecimal(diff)).append(";");
+                    csv.append(status).append("\n");
+                    linhas++;
+                } catch (Exception e) {
+                    log.error("❌ Erro ao processar linha (selecionadas): {}", e.getMessage());
+                }
+            }
+        }
+
+        log.info("✅ [CSV] {} linhas exportadas (selecionadas)", linhas);
+        return csv.toString();
+    }
+
+    private String escaparCSV(String valor) {
+        if (valor == null) return "";
+        String v = valor.replace("\"", "\"\"");
+        if (v.contains(";") || v.contains("\n") || v.contains("\"")) {
+            return "\"" + v + "\"";
+        }
+        return v;
+    }
+
+    private String formatarBigDecimal(BigDecimal valor) {
+        if (valor == null) return "0,00";
+        return valor.setScale(2, RoundingMode.HALF_UP)
+                .toString().replace(".", ",");
     }
 
     // ============================================================
@@ -417,15 +579,23 @@ public class ConferenciaFaturamentoService {
     }
 
     private String determinarStatus(ConferenciaFaturamentoDTO dto) {
-        BigDecimal diffValor = dto.getDiferencaValor();
+        BigDecimal diffValor = dto.getDiferencaValor() != null 
+                ? dto.getDiferencaValor() 
+                : BigDecimal.ZERO;
 
-        if (diffValor.compareTo(BigDecimal.ZERO) == 0 && dto.getDiferencaItens() == 0) {
+        Integer difItens = dto.getDiferencaItens() != null ? dto.getDiferencaItens() : 0;
+
+        // 🔥 REGRA ÚNICA: só é OK se AMBOS (valor e itens) forem iguais
+        boolean valorIgual = diffValor.abs().compareTo(new BigDecimal("0.01")) <= 0;
+        boolean itensIguais = difItens == 0;
+
+        if (valorIgual && itensIguais) {
             return "OK";
         }
 
-        if (diffValor.abs().compareTo(new BigDecimal("0.01")) <= 0) {
-            return "OK";
-        }
+        // Log para debug
+        log.debug("🔍 Status DIFERENCA - Fatura {}: diffValor={}, diffItens={}",
+                dto.getFaturaId(), diffValor, difItens);
 
         return "DIFERENCA";
     }

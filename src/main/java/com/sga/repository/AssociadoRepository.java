@@ -147,4 +147,75 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	int inativarAssociadosEmLote(@Param("cnpjs") List<String> cnpjs, @Param("dataInativacao") LocalDate dataInativacao,
 			@Param("motivo") String motivo, @Param("dataAtualizacao") LocalDateTime dataAtualizacao);
 
+	
+	// ============================================================
+	// 🔥 NOVOS MÉTODOS — FILTRO POR NOTA NO PERÍODO
+	// ============================================================
+
+	/**
+	 * 🔥 Busca associados de uma régua que POSSUEM nota de débito no período.
+	 * 
+	 * Critérios:
+	 *  - Associado ativo (status = 'A')
+	 *  - Vinculado à régua informada e ativo na régua
+	 *  - Existe pelo menos 1 nota de débito com:
+	 *      - codigo_socio (com padding de 8 dígitos) = codigospc do associado
+	 *      - data_fim_periodo entre dataInicio e dataFim
+	 * 
+	 * Complexidade: 1 query (usando EXISTS + índices)
+	 */
+	@Query(value = 
+	    "SELECT DISTINCT a.* FROM tb_associado a " +
+	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
+	    "WHERE ar.regua_id = :reguaId " +
+	    "  AND ar.ativo = true " +
+	    "  AND a.status = 'A' " +
+	    "  AND EXISTS ( " +
+	    "      SELECT 1 FROM tb_nota_debito_spc nd " +
+	    "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio " +
+	    "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " +
+	    "  ) " +
+	    "ORDER BY a.nomerazao",
+	    nativeQuery = true)
+	List<Associado> findByReguaComNotaNoPeriodo(
+	    @Param("reguaId") Long reguaId,
+	    @Param("dataInicio") LocalDate dataInicio,
+	    @Param("dataFim") LocalDate dataFim);
+
+	/**
+	 * 🔥 Conta associados da régua que NÃO têm nota no período.
+	 * Usado para exibir aviso ao usuário: "X associados excluídos por não terem nota".
+	 */
+	@Query(value = 
+	    "SELECT COUNT(DISTINCT a.id) FROM tb_associado a " +
+	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
+	    "WHERE ar.regua_id = :reguaId " +
+	    "  AND ar.ativo = true " +
+	    "  AND a.status = 'A' " +
+	    "  AND NOT EXISTS ( " +
+	    "      SELECT 1 FROM tb_nota_debito_spc nd " +
+	    "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio " +
+	    "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " +
+	    "  )",
+	    nativeQuery = true)
+	long countByReguaSemNotaNoPeriodo(
+	    @Param("reguaId") Long reguaId,
+	    @Param("dataInicio") LocalDate dataInicio,
+	    @Param("dataFim") LocalDate dataFim);
+
+	/**
+	 * 🔥 Busca associados de uma régua (sem filtro de nota).
+	 * Mantido para compatibilidade com o comportamento anterior.
+	 */
+	@Query(value = 
+	    "SELECT DISTINCT a.* FROM tb_associado a " +
+	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
+	    "WHERE ar.regua_id = :reguaId " +
+	    "  AND ar.ativo = true " +
+	    "  AND a.status = 'A' " +
+	    "ORDER BY a.nomerazao",
+	    nativeQuery = true)
+	List<Associado> findByReguaAtivos(@Param("reguaId") Long reguaId);
+	
+	
 }

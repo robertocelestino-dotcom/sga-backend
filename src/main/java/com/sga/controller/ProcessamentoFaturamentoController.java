@@ -55,737 +55,779 @@ import com.sga.service.FaturaRmExportService;
 import com.sga.service.FaturaService;
 import com.sga.service.LogFaturaService;
 import com.sga.service.ProcessamentoFaturamentoService;
+import com.sga.service.AssociadoService;
 
 @RestController
 @RequestMapping("/api/faturamento")
 public class ProcessamentoFaturamentoController {
 
-    private static final Logger log = LoggerFactory.getLogger(ProcessamentoFaturamentoController.class);
-
-    @Autowired
-    private ProcessamentoFaturamentoService processamentoFaturamentoService;
-
-    @Autowired
-    private FaturaService faturaService;
-    
-    @Autowired
-    private FaturaRmExportService faturaRmExportService;
-
-    @Autowired
-    private LoteProcessamentoRepository loteProcessamentoRepository;
-
-    // ========== DEPENDÊNCIA PARA LOGS ==========
-    @Autowired
-    private LogFaturaService logFaturaService;
-
-    // 🔥 MAPA PARA ARMAZENAR STATUS DAS TAREFAS ASSÍNCRONAS
-    private final Map<String, ProcessamentoStatus> tarefasStatus = new ConcurrentHashMap<>();
-
-    // ========== PROCESSAMENTO ==========
-
-    @PostMapping("/processar")
-    public ResponseEntity<ResultadoProcessamento> processarFaturamento(@RequestBody ProcessamentoRequest request,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-
-        log.info("🚀 Processando faturamento para {} associados",
-                request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
-
-        ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamento(request);
-
-        return ResponseEntity.ok(resultado);
-    }
-
-    @PostMapping("/simular")
-    public ResponseEntity<ResultadoProcessamento> simularFaturamento(@RequestBody ProcessamentoRequest request) {
-
-        log.info("🔍 Simulando faturamento para {} associados",
-                request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
-
-        request.setSimular(true);
-        ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamento(request);
-
-        return ResponseEntity.ok(resultado);
-    }
-
-    @PostMapping("/processar/{associadoId}")
-    public ResponseEntity<Fatura> processarFaturamentoAssociado(@PathVariable Long associadoId,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEmissao,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-
-        log.info("🚀 Processando faturamento para associado: {} na data: {}", associadoId, dataEmissao);
-
-        Fatura fatura = faturaService.processarFaturamento(associadoId, dataEmissao, usuario);
-
-        return ResponseEntity.ok(fatura);
-    }
-    
-    /**
-     * 🔥 PROCESSAR FATURAMENTO COM NOTIFICAÇÕES
-     */
-    @PostMapping("/processar-com-notificacoes")
-    public ResponseEntity<ResultadoProcessamento> processarFaturamentoComNotificacoes(
-            @RequestBody ProcessamentoRequest request,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-
-        log.info("🚀 Processando faturamento com notificações para {} associados",
-                request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
-
-        ResultadoProcessamento resultado = processamentoFaturamentoService
-                .processarFaturamentoComNotificacoes(request, usuario);
-
-        return ResponseEntity.ok(resultado);
-    }
-
-    // ========== PROCESSAMENTO ASSÍNCRONO ==========
-
-    /**
-     * 🔥 INICIA PROCESSAMENTO ASSÍNCRONO
-     */
-    @PostMapping("/processar-assincrono")
-    public ResponseEntity<Map<String, Object>> processarAssincrono(
-            @RequestBody ProcessamentoRequest request,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-
-        int totalAssociados = request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0;
-        
-        log.info("🚀 Iniciando processamento ASSÍNCRONO - {} associados, usuário: {}", totalAssociados, usuario);
-
-        // 🔥 GERAR ID DA TAREFA
-        String taskId = UUID.randomUUID().toString();
-
-        // 🔥 REGISTRAR STATUS INICIAL
-        ProcessamentoStatus status = new ProcessamentoStatus();
-        status.setTaskId(taskId);
-        status.setStatus("EM_PROCESSAMENTO");
-        status.setProgresso(0);
-        status.setMensagem("Processamento iniciado...");
-        status.setDataInicio(LocalDateTime.now());
-        status.setResultado(null);
-        status.setTotalAssociados(totalAssociados);
-        status.setUsuario(usuario);
-        tarefasStatus.put(taskId, status);
-
-        // 🔥 EXECUTAR ASSINCRONAMENTE
-        CompletableFuture.runAsync(() -> {
-            try {
-                log.info("⚡ Executando processamento assíncrono - Task: {}", taskId);
-                
-                // Atualizar progresso - Início
-                status.setMensagem("Buscando dados das notas...");
-                status.setProgresso(10);
-                
-                // 🔥 PROCESSAMENTO PRINCIPAL
-                ResultadoProcessamento resultado = processamentoFaturamentoService
-                        .processarFaturamento(request);
-                
-                // Atualizar progresso - Conclusão
-                status.setMensagem("Finalizando processamento...");
-                status.setProgresso(90);
-                
-                // 🔥 ATUALIZAR STATUS DE CONCLUSÃO
-                status.setStatus("CONCLUIDO");
-                status.setProgresso(100);
-                status.setMensagem("Processamento concluído com sucesso!");
-                status.setResultado(resultado);
-                status.setDataFim(LocalDateTime.now());
-                
-                log.info("✅ Processamento assíncrono concluído - Task: {}, Faturas: {}", 
-                        taskId, resultado.getTotalNotasGeradas());
-                
-            } catch (Exception e) {
-                log.error("❌ Erro no processamento assíncrono - Task: {}", taskId, e);
-                
-                status.setStatus("ERRO");
-                status.setMensagem("Erro no processamento: " + e.getMessage());
-                status.setDataFim(LocalDateTime.now());
-                status.setResultado(null);
-            }
-        });
-
-        // 🔥 RETORNAR IMEDIATAMENTE
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("taskId", taskId);
-        response.put("status", "PROCESSANDO");
-        response.put("totalAssociados", totalAssociados);
-        response.put("message", "Processamento iniciado em background. Use o ID para verificar o status.");
-        response.put("dataInicio", LocalDateTime.now());
-
-        log.info("📤 Processamento assíncrono iniciado - Task: {}, Total: {}", taskId, totalAssociados);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 🔥 VERIFICAR STATUS DO PROCESSAMENTO
-     */
-    @GetMapping("/processamento-status/{taskId}")
-    public ResponseEntity<ProcessamentoStatus> getProcessamentoStatus(@PathVariable String taskId) {
-        ProcessamentoStatus status = tarefasStatus.get(taskId);
-        
-        if (status == null) {
-            log.warn("⚠️ Task não encontrada: {}", taskId);
-            return ResponseEntity.notFound().build();
-        }
-        
-        log.debug("📊 Status da task {}: {}, Progresso: {}%", 
-                taskId, status.getStatus(), status.getProgresso());
-        
-        return ResponseEntity.ok(status);
-    }
-
-    /**
-     * 🔥 LISTAR TODAS AS TAREFAS EM PROCESSAMENTO
-     */
-    @GetMapping("/processamento-tarefas")
-    public ResponseEntity<Map<String, ProcessamentoStatus>> listarTarefas() {
-        log.info("📋 Listando tarefas em processamento: {}", tarefasStatus.size());
-        return ResponseEntity.ok(tarefasStatus);
-    }
-
-    /**
-     * 🔥 CANCELAR TAREFA EM PROCESSAMENTO
-     */
-    @PostMapping("/processamento-cancelar/{taskId}")
-    public ResponseEntity<Map<String, Object>> cancelarTarefa(@PathVariable String taskId) {
-        ProcessamentoStatus status = tarefasStatus.get(taskId);
-        
-        if (status == null) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        if ("CONCLUIDO".equals(status.getStatus()) || "ERRO".equals(status.getStatus())) {
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", "Tarefa já foi concluída ou está em erro");
-            return ResponseEntity.badRequest().body(response);
-        }
-        
-        status.setStatus("CANCELADO");
-        status.setMensagem("Processamento cancelado pelo usuário");
-        status.setDataFim(LocalDateTime.now());
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("message", "Processamento cancelado com sucesso");
-        response.put("taskId", taskId);
-        
-        log.info("🗑️ Processamento cancelado - Task: {}", taskId);
-        
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * 🔥 LIMPAR TAREFAS FINALIZADAS (MANUTENÇÃO)
-     */
-    @PostMapping("/processamento-limpar")
-    public ResponseEntity<Map<String, Object>> limparTarefas() {
-        int removidas = 0;
-        List<String> keysToRemove = new ArrayList<>();
-        
-        for (Map.Entry<String, ProcessamentoStatus> entry : tarefasStatus.entrySet()) {
-            ProcessamentoStatus status = entry.getValue();
-            if ("CONCLUIDO".equals(status.getStatus()) || 
-                "ERRO".equals(status.getStatus()) || 
-                "CANCELADO".equals(status.getStatus())) {
-                keysToRemove.add(entry.getKey());
-                removidas++;
-            }
-        }
-        
-        for (String key : keysToRemove) {
-            tarefasStatus.remove(key);
-        }
-        
-        Map<String, Object> response = new HashMap<>();
-        response.put("success", true);
-        response.put("removidas", removidas);
-        response.put("restantes", tarefasStatus.size());
-        
-        log.info("🧹 Limpeza de tarefas: {} removidas, {} restantes", removidas, tarefasStatus.size());
-        
-        return ResponseEntity.ok(response);
-    }
-
-    // ========== CONSULTAS DE FATURAS ==========
-
-    /**
-     * 🔥 Lista faturas com filtros - INCLUINDO FILTRO POR RÉGUA
-     */
-    @GetMapping("/faturas")
-    public ResponseEntity<Page<FaturaResumoDTO>> listarFaturas(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String sort,
-            @RequestParam(defaultValue = "desc") String direction,
-            @RequestParam(required = false) Integer mes,
-            @RequestParam(required = false) Integer ano,
-            @RequestParam(required = false) String numeroFatura,
-            @RequestParam(required = false) String associadoNome,
-            @RequestParam(required = false) String status,
-            @RequestParam(required = false) Long associadoId,
-            @RequestParam(required = false) Long reguaId) {
-
-        log.info("📋 Listando faturas com filtros:");
-        log.info("  - página: {}, tamanho: {}", page, size);
-        log.info("  - mês: {}, ano: {}", mes, ano);
-        log.info("  - numeroFatura: '{}'", numeroFatura);
-        log.info("  - associadoNome: '{}'", associadoNome);
-        log.info("  - status: '{}'", status);
-        log.info("  - associadoId: {}", associadoId);
-        log.info("  - reguaId: {}", reguaId);
-
-        String campoOrdenacao = "id";
-        if (sort != null && !sort.isEmpty()) {
-            switch (sort) {
-                case "dataEmissao": campoOrdenacao = "dataEmissao"; break;
-                case "valorTotal": campoOrdenacao = "valorTotal"; break;
-                case "numeroFatura": campoOrdenacao = "numeroFatura"; break;
-                default: campoOrdenacao = "id";
-            }
-        }
-
-        Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, campoOrdenacao));
-
-        Page<FaturaResumoDTO> faturas = faturaService.listarFaturasComFiltros(
-            numeroFatura, associadoNome, status, mes, ano, associadoId, reguaId, pageable);
-        
-        if (faturas.hasContent()) {
-            FaturaResumoDTO first = faturas.getContent().get(0);
-            log.info("🔍 Primeira fatura retornada: ID={}, notaDebitoId={}, numeroFatura={}", 
-                first.getId(), first.getNotaDebitoId(), first.getNumeroFatura());
-        }
-
-        log.info("✅ Total de faturas encontradas: {}", faturas.getTotalElements());
-
-        return ResponseEntity.ok(faturas);
-    }
-    
-    @GetMapping("/faturas/associado/{associadoId}")
-    public ResponseEntity<Page<Fatura>> listarFaturasPorAssociado(@PathVariable Long associadoId,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-
-        log.info("📋 Listando faturas do associado: {} - página: {}", associadoId, page);
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("dataEmissao").descending());
-        Page<Fatura> faturas = faturaService.listarPorAssociado(associadoId, pageable);
-
-        return ResponseEntity.ok(faturas);
-    }
-
-    @GetMapping("/faturas/lote/{loteId}")
-    public ResponseEntity<Page<Fatura>> listarFaturasPorLote(@PathVariable Long loteId,
-            @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-
-        log.info("📋 Listando faturas do lote: {} - página: {}", loteId, page);
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("dataEmissao").descending());
-        Page<Fatura> faturas = faturaService.listarPorLoteProcessamento(loteId, pageable);
-
-        return ResponseEntity.ok(faturas);
-    }
-
-    @GetMapping("/faturas/pendentes-rm")
-    public ResponseEntity<List<Fatura>> listarFaturasPendentesRM() {
-        log.info("📋 Listando faturas pendentes de integração com RM");
-
-        List<Fatura> faturas = faturaService.listarFaturasPendentesRM();
-
-        return ResponseEntity.ok(faturas);
-    }
-
-    @GetMapping("/faturas/{id}")
-    public ResponseEntity<FaturaDetalheDTO> buscarFaturaPorId(@PathVariable Long id) {
-        log.info("🔍 Buscando fatura ID: {}", id);
-
-        FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-
-        return ResponseEntity.ok(fatura);
-    }
-
-    // ============================================================
-    // 🔥 ENDPOINTS PARA LOGS - CORRIGIDOS COM DTO
-    // ============================================================
-
-    /**
-     * 🔥 BUSCAR LOGS DE UMA FATURA
-     */
-    @GetMapping("/faturas/{id}/logs")
-    public ResponseEntity<?> buscarLogsFatura(@PathVariable Long id) {
-        log.info("📝 Buscando logs da fatura ID: {}", id);
-        
-        try {
-            // Verificar se a fatura existe
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                log.warn("⚠️ Fatura não encontrada: {}", id);
-                return ResponseEntity.notFound().build();
-            }
-            
-            // 🔥 USAR O MÉTODO QUE RETORNA DTO
-            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaDTO(id);
-            log.info("📊 Encontrados {} logs para a fatura {}", logs.size(), id);
-            
-            return ResponseEntity.ok(logs);
-            
-        } catch (EntityNotFoundException e) {
-            log.warn("⚠️ Fatura não encontrada: {}", id);
-            return ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            log.error("❌ Erro ao buscar logs da fatura {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 🔥 BUSCAR APENAS LOGS DE ERRO (WARN E ERROR) DE UMA FATURA
-     */
-    @GetMapping("/faturas/{id}/logs/erros")
-    public ResponseEntity<?> buscarLogsErrosFatura(@PathVariable Long id) {
-        log.info("📝 Buscando logs de erro da fatura ID: {}", id);
-        
-        try {
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // 🔥 USAR O MÉTODO QUE RETORNA DTO
-            List<LogFaturaDTO> logs = logFaturaService.buscarErrosPorFaturaDTO(id);
-            log.info("📊 Encontrados {} logs de erro para a fatura {}", logs.size(), id);
-            
-            return ResponseEntity.ok(logs);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao buscar logs de erro da fatura {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR NÍVEL
-     */
-    @GetMapping("/faturas/{id}/logs/nivel/{nivel}")
-    public ResponseEntity<?> buscarLogsFaturaPorNivel(
-            @PathVariable Long id,
-            @PathVariable String nivel) {
-        
-        log.info("📝 Buscando logs da fatura ID: {} com nível: {}", id, nivel);
-        
-        try {
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // 🔥 USAR O MÉTODO QUE RETORNA DTO
-            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaENivelDTO(id, nivel.toUpperCase());
-            log.info("📊 Encontrados {} logs com nível {} para a fatura {}", logs.size(), nivel, id);
-            
-            return ResponseEntity.ok(logs);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao buscar logs da fatura {} com nível {}: {}", id, nivel, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR PASSO
-     */
-    @GetMapping("/faturas/{id}/logs/passo/{passo}")
-    public ResponseEntity<?> buscarLogsFaturaPorPasso(
-            @PathVariable Long id,
-            @PathVariable String passo) {
-        
-        log.info("📝 Buscando logs da fatura ID: {} com passo: {}", id, passo);
-        
-        try {
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            // 🔥 USAR O MÉTODO QUE RETORNA DTO
-            List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaEPassoDTO(id, passo.toUpperCase());
-            log.info("📊 Encontrados {} logs com passo {} para a fatura {}", logs.size(), passo, id);
-            
-            return ResponseEntity.ok(logs);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao buscar logs da fatura {} com passo {}: {}", id, passo, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 🔥 CONTAR LOGS DE UMA FATURA
-     */
-    @GetMapping("/faturas/{id}/logs/count")
-    public ResponseEntity<?> contarLogsFatura(@PathVariable Long id) {
-        log.info("📊 Contando logs da fatura ID: {}", id);
-        
-        try {
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            long total = logFaturaService.contarLogsPorFatura(id);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("faturaId", id);
-            response.put("totalLogs", total);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao contar logs da fatura {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao contar logs: " + e.getMessage()));
-        }
-    }
-
-    /**
-     * 🔥 LIMPAR LOGS DE UMA FATURA
-     */
-    @DeleteMapping("/faturas/{id}/logs")
-    public ResponseEntity<?> limparLogsFatura(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("🗑️ Limpando logs da fatura ID: {} pelo usuário: {}", id, usuario);
-        
-        try {
-            FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-            
-            if (fatura == null) {
-                return ResponseEntity.notFound().build();
-            }
-            
-            long total = logFaturaService.contarLogsPorFatura(id);
-            logFaturaService.limparLogs(id);
-            
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("faturaId", id);
-            response.put("logsRemovidos", total);
-            response.put("mensagem", "Logs da fatura " + id + " removidos com sucesso");
-            response.put("usuario", usuario);
-            
-            log.info("✅ Logs da fatura {} removidos. Total: {}", id, total);
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao limpar logs da fatura {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Erro ao limpar logs: " + e.getMessage()));
-        }
-    }
-
-    // ========== EXPORTAÇÃO RM ==========
-
-    @PostMapping("/faturas/{id}/exportar-rm")
-    public ResponseEntity<byte[]> exportarRmFatura(
-            @PathVariable Long id,
-            @RequestParam Integer ultimoNumeroRps,
-            @RequestParam(required = false) Long reguaId,
-            @RequestParam(required = false) LocalDate mesReferencia,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("📤 Exportando RM para fatura ID: {}", id);
-        
-        byte[] arquivo = faturaService.exportarRmFatura(id, ultimoNumeroRps, usuario, reguaId, mesReferencia);
-        
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=fatura_" + id + ".rm")
-                .contentType(MediaType.TEXT_PLAIN)
-                .body(arquivo);
-    }
-
-    @PostMapping("/faturas/exportar-rm-lote")
-    public ResponseEntity<byte[]> exportarRmLote(
-            @RequestBody ExportacaoRmRequest request,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("📤 Exportando RM lote para {} faturas", request.getFaturaIds().size());
-        
-        byte[] arquivo = faturaService.exportarRmLote(
-            request.getFaturaIds(), 
-            request.getUltimoNumeroRps(), 
-            usuario,
-            request.getReguaId(),
-            request.getMesReferencia() != null ? LocalDate.parse(request.getMesReferencia()) : null
-        );
-        
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=exportacao_rm_lote.rm")
-                .contentType(MediaType.TEXT_PLAIN)
-                .body(arquivo);
-    }
-
-    @PostMapping("/faturas/exportar-rm-lote-metadados")
-    public ResponseEntity<?> exportarRmLoteMetadados(
-            @RequestBody ExportacaoRmRequest request,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("📤 Exportando RM lote com metadados para {} faturas", 
-            request.getFaturaIds() != null ? request.getFaturaIds().size() : 0);
-        
-        try {
-            if (request.getFaturaIds() == null || request.getFaturaIds().isEmpty()) {
-                return ResponseEntity.badRequest()
-                    .body(Map.of("success", false, "message", "Nenhuma fatura selecionada"));
-            }
-            
-            LocalDate mesRef = request.getMesReferencia() != null ? 
-                LocalDate.parse(request.getMesReferencia() + "-01") : LocalDate.now();
-            
-            byte[] arquivo = faturaService.exportarRmLote(
-                request.getFaturaIds(), 
-                request.getUltimoNumeroRps(), 
-                usuario,
-                request.getReguaId(),
-                mesRef
-            );
-            
-            List<Map<String, Object>> detalhesDTO = new ArrayList<>();
-            BigDecimal valorTotal = BigDecimal.ZERO;
-            
-            for (Long id : request.getFaturaIds()) {
-                try {
-                    FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
-                    Map<String, Object> faturaMap = new LinkedHashMap<>();
-                    faturaMap.put("faturaId", fatura.getId());
-                    faturaMap.put("numeroFatura", fatura.getNumeroFatura());
-                    faturaMap.put("numeroRps", fatura.getNumeroRps());
-                    faturaMap.put("status", "SUCESSO");
-                    faturaMap.put("mensagem", null);
-                    faturaMap.put("associadoNome", fatura.getAssociadoNome());
-                    faturaMap.put("codigoRm", null);
-                    faturaMap.put("codigoSpc", fatura.getCodigoSpc());
-                    faturaMap.put("cnpjCpf", fatura.getCnpjCpf());
-                    faturaMap.put("valorTotal", fatura.getValorTotal());
-                    faturaMap.put("dataEmissao", fatura.getDataEmissao().toString());
-                    faturaMap.put("dataVencimento", fatura.getDataVencimento().toString());
-                    
-                    if (fatura.getItens() != null) {
-                        List<Map<String, Object>> itensDTO = new ArrayList<>();
-                        for (FaturaItemDTO item : fatura.getItens()) {
-                            Map<String, Object> itemMap = new LinkedHashMap<>();
-                            itemMap.put("codigoProduto", item.getCodigoProduto());
-                            itemMap.put("descricao", item.getDescricao());
-                            itemMap.put("quantidade", item.getQuantidade());
-                            itemMap.put("valorUnitario", item.getValorUnitario());
-                            itemMap.put("valorTotal", item.getValorTotal());
-                            itensDTO.add(itemMap);
-                        }
-                        faturaMap.put("itens", itensDTO);
-                    }
-                    detalhesDTO.add(faturaMap);
-                    valorTotal = valorTotal.add(fatura.getValorTotal() != null ? fatura.getValorTotal() : BigDecimal.ZERO);
-                    
-                } catch (Exception e) {
-                    log.warn("⚠️ Erro ao buscar detalhes da fatura {}", id, e);
-                    Map<String, Object> fallback = new LinkedHashMap<>();
-                    fallback.put("faturaId", id);
-                    fallback.put("numeroFatura", "FAT-" + id);
-                    fallback.put("numeroRps", 0);
-                    fallback.put("status", "ERRO");
-                    fallback.put("mensagem", e.getMessage());
-                    fallback.put("associadoNome", "N/A");
-                    fallback.put("cnpjCpf", "");
-                    fallback.put("valorTotal", 0);
-                    fallback.put("itens", new ArrayList<>());
-                    detalhesDTO.add(fallback);
-                }
-            }
-            
-            Map<String, Object> response = new LinkedHashMap<>();
-            response.put("success", true);
-            response.put("loteId", System.currentTimeMillis());
-            response.put("totalFaturas", request.getFaturaIds().size());
-            response.put("faturasProcessadas", request.getFaturaIds().size());
-            response.put("faturasComErro", 0);
-            response.put("faturasIgnoradas", 0);
-            response.put("faturasIgnoradasIds", new ArrayList<>());
-            response.put("valorTotalIgnorado", 0);
-            response.put("primeiroNumeroRps", request.getUltimoNumeroRps() + 1);
-            response.put("ultimoNumeroRps", request.getUltimoNumeroRps() + request.getFaturaIds().size());
-            response.put("dataProcessamento", LocalDateTime.now().toString());
-            response.put("valorTotal", valorTotal);
-            response.put("detalhes", detalhesDTO);
-            response.put("arquivoBase64", Base64.getEncoder().encodeToString(arquivo));
-            
-            log.info("✅ Exportação RM com metadados concluída: {} faturas", request.getFaturaIds().size());
-            
-            return ResponseEntity.ok(response);
-            
-        } catch (Exception e) {
-            log.error("❌ Erro ao exportar RM lote com metadados", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("success", false, "message", e.getMessage()));
-        }
-    }
-    
-    // ========== EDIÇÃO DE ITENS ==========
-
-    @PostMapping("/faturas/{faturaId}/itens")
-    public ResponseEntity<FaturaItemResponseDTO> adicionarItemFatura(
-            @PathVariable Long faturaId,
-            @RequestBody FaturaItemDTO itemDTO,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("➕ Adicionando item à fatura ID: {}", faturaId);
-        FaturaItemResponseDTO item = faturaService.adicionarItemFatura(faturaId, itemDTO, usuario);
-        return ResponseEntity.status(HttpStatus.CREATED).body(item);
-    }
-
-    @DeleteMapping("/faturas/{faturaId}/itens/{itemId}")
-    public ResponseEntity<Void> removerItemFatura(
-            @PathVariable Long faturaId,
-            @PathVariable Long itemId,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("🗑️ Removendo item {} da fatura {}", itemId, faturaId);
-        faturaService.removerItemFatura(faturaId, itemId, usuario);
-        return ResponseEntity.noContent().build();
-    }
-    
-    @PutMapping("/faturas/{faturaId}/itens/{itemId}")
-    public ResponseEntity<FaturaItemResponseDTO> atualizarItemFatura(
-            @PathVariable Long faturaId,
-            @PathVariable Long itemId,
-            @RequestBody FaturaItemDTO itemDTO,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("✏️ Atualizando item {} da fatura {}", itemId, faturaId);
-        FaturaItemResponseDTO item = faturaService.atualizarItemFatura(faturaId, itemId, itemDTO, usuario);
-        return ResponseEntity.ok(item);
-    }
-    
-    /**
-     * 🔥 EXCLUIR FATURA
-     * Apenas faturas com status PENDENTE ou SIMULADO podem ser excluídas
-     */
-    @DeleteMapping("/faturas/{id}")
-    public ResponseEntity<Void> excluirFatura(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
-        
-        log.info("🗑️ Excluindo fatura ID: {} pelo usuário: {}", id, usuario);
-        faturaService.excluirFatura(id, usuario);
-        return ResponseEntity.noContent().build();
-    }
+	private static final Logger log = LoggerFactory.getLogger(ProcessamentoFaturamentoController.class);
+
+	@Autowired
+	private ProcessamentoFaturamentoService processamentoFaturamentoService;
+
+	@Autowired
+	private FaturaService faturaService;
+
+	@Autowired
+	private FaturaRmExportService faturaRmExportService;
+
+	@Autowired
+	private LoteProcessamentoRepository loteProcessamentoRepository;
+	
+	@Autowired
+    private AssociadoService associadoService;
+
+	// ========== DEPENDÊNCIA PARA LOGS ==========
+	@Autowired
+	private LogFaturaService logFaturaService;
+
+	// 🔥 MAPA PARA ARMAZENAR STATUS DAS TAREFAS ASSÍNCRONAS
+	private final Map<String, ProcessamentoStatus> tarefasStatus = new ConcurrentHashMap<>();
+
+	// ========== PROCESSAMENTO ==========
+
+	@PostMapping("/processar")
+	public ResponseEntity<ResultadoProcessamento> processarFaturamento(@RequestBody ProcessamentoRequest request,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🚀 Processando faturamento para {} associados",
+				request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
+
+		ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamento(request);
+
+		return ResponseEntity.ok(resultado);
+	}
+
+	@PostMapping("/simular")
+	public ResponseEntity<ResultadoProcessamento> simularFaturamento(@RequestBody ProcessamentoRequest request) {
+
+		log.info("🔍 Simulando faturamento para {} associados",
+				request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
+
+		request.setSimular(true);
+		ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamento(request);
+
+		return ResponseEntity.ok(resultado);
+	}
+
+	// ============================================================
+	// 🔥 NOVO ENDPOINT — ASSOCIADOS DA RÉGUA (COM OU SEM FILTRO)
+	// ============================================================
+
+	/**
+	 * 🔥 Lista associados de uma régua, opcionalmente filtrando pelos que têm nota.
+	 * 
+	 * @param reguaId        ID da régua
+	 * @param dataInicio     Data de início do período (opcional — obrigatória se
+	 *                       somenteComNota=true)
+	 * @param dataFim        Data de fim do período (opcional — obrigatória se
+	 *                       somenteComNota=true)
+	 * @param somenteComNota Se true, filtra apenas associados com nota (default:
+	 *                       true)
+	 * 
+	 * @return Map com: - associados: lista dos associados - total: total de
+	 *         associados retornados - totalSemNota: quantidade de associados
+	 *         excluídos por não terem nota - somenteComNota: flag indicando o modo
+	 */
+	@GetMapping("/associados-da-regua")
+	public ResponseEntity<Map<String, Object>> associadosDaRegua(@RequestParam Long reguaId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+			@RequestParam(defaultValue = "true") boolean somenteComNota) {
+
+		log.info("📋 Buscando associados da régua {} (dataInicio={}, dataFim={}, somenteComNota={})", reguaId,
+				dataInicio, dataFim, somenteComNota);
+
+		long inicio = System.currentTimeMillis();
+
+		List<com.sga.model.Associado> associados;
+		long totalSemNota = 0;
+
+		if (somenteComNota && dataInicio != null && dataFim != null) {
+			// 🔥 MODO FILTRADO: apenas associados com nota
+			associados = associadoService.buscarPorReguaComNotaNoPeriodo(reguaId, dataInicio, dataFim);
+			totalSemNota = associadoService.contarPorReguaSemNotaNoPeriodo(reguaId, dataInicio, dataFim);
+		} else {
+			// 🔥 MODO COMPLETO: todos os associados ativos da régua
+			associados = associadoService.buscarPorRegua(reguaId);
+		}
+
+		long tempo = System.currentTimeMillis() - inicio;
+		log.info("✅ {} associados retornados ({} sem nota excluídos) em {} ms", associados.size(), totalSemNota, tempo);
+
+		// 🔥 Mapear para DTO enxuto
+		List<Map<String, Object>> associadosDTO = new ArrayList<>();
+		for (com.sga.model.Associado a : associados) {
+			Map<String, Object> dto = new HashMap<>();
+			dto.put("id", a.getId());
+			dto.put("codigoSpc", a.getCodigoSpc());
+			dto.put("codigoRm", a.getCodigoRm());
+			dto.put("nomeRazao", a.getNomeRazao());
+			dto.put("nomeFantasia", a.getNomeFantasia());
+			dto.put("cnpjCpf", a.getCnpjCpf());
+			dto.put("status", a.getStatus());
+			associadosDTO.add(dto);
+		}
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("associados", associadosDTO);
+		response.put("total", associadosDTO.size());
+		response.put("totalSemNota", totalSemNota);
+		response.put("somenteComNota", somenteComNota);
+		response.put("tempoMs", tempo);
+
+		return ResponseEntity.ok(response);
+	}
+
+	@PostMapping("/processar/{associadoId}")
+	public ResponseEntity<Fatura> processarFaturamentoAssociado(@PathVariable Long associadoId,
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataEmissao,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🚀 Processando faturamento para associado: {} na data: {}", associadoId, dataEmissao);
+
+		Fatura fatura = faturaService.processarFaturamento(associadoId, dataEmissao, usuario);
+
+		return ResponseEntity.ok(fatura);
+	}
+
+	/**
+	 * 🔥 PROCESSAR FATURAMENTO COM NOTIFICAÇÕES
+	 */
+	@PostMapping("/processar-com-notificacoes")
+	public ResponseEntity<ResultadoProcessamento> processarFaturamentoComNotificacoes(
+			@RequestBody ProcessamentoRequest request,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🚀 Processando faturamento com notificações para {} associados",
+				request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0);
+
+		ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamentoComNotificacoes(request,
+				usuario);
+
+		return ResponseEntity.ok(resultado);
+	}
+
+	// ========== PROCESSAMENTO ASSÍNCRONO ==========
+
+	/**
+	 * 🔥 INICIA PROCESSAMENTO ASSÍNCRONO
+	 */
+	@PostMapping("/processar-assincrono")
+	public ResponseEntity<Map<String, Object>> processarAssincrono(@RequestBody ProcessamentoRequest request,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		int totalAssociados = request.getAssociadosIds() != null ? request.getAssociadosIds().size() : 0;
+
+		log.info("🚀 Iniciando processamento ASSÍNCRONO - {} associados, usuário: {}", totalAssociados, usuario);
+
+		// 🔥 GERAR ID DA TAREFA
+		String taskId = UUID.randomUUID().toString();
+
+		// 🔥 REGISTRAR STATUS INICIAL
+		ProcessamentoStatus status = new ProcessamentoStatus();
+		status.setTaskId(taskId);
+		status.setStatus("EM_PROCESSAMENTO");
+		status.setProgresso(0);
+		status.setMensagem("Processamento iniciado...");
+		status.setDataInicio(LocalDateTime.now());
+		status.setResultado(null);
+		status.setTotalAssociados(totalAssociados);
+		status.setUsuario(usuario);
+		tarefasStatus.put(taskId, status);
+
+		// 🔥 EXECUTAR ASSINCRONAMENTE
+		CompletableFuture.runAsync(() -> {
+			try {
+				log.info("⚡ Executando processamento assíncrono - Task: {}", taskId);
+
+				// Atualizar progresso - Início
+				status.setMensagem("Buscando dados das notas...");
+				status.setProgresso(10);
+
+				// 🔥 PROCESSAMENTO PRINCIPAL
+				ResultadoProcessamento resultado = processamentoFaturamentoService.processarFaturamento(request);
+
+				// Atualizar progresso - Conclusão
+				status.setMensagem("Finalizando processamento...");
+				status.setProgresso(90);
+
+				// 🔥 ATUALIZAR STATUS DE CONCLUSÃO
+				status.setStatus("CONCLUIDO");
+				status.setProgresso(100);
+				status.setMensagem("Processamento concluído com sucesso!");
+				status.setResultado(resultado);
+				status.setDataFim(LocalDateTime.now());
+
+				log.info("✅ Processamento assíncrono concluído - Task: {}, Faturas: {}", taskId,
+						resultado.getTotalNotasGeradas());
+
+			} catch (Exception e) {
+				log.error("❌ Erro no processamento assíncrono - Task: {}", taskId, e);
+
+				status.setStatus("ERRO");
+				status.setMensagem("Erro no processamento: " + e.getMessage());
+				status.setDataFim(LocalDateTime.now());
+				status.setResultado(null);
+			}
+		});
+
+		// 🔥 RETORNAR IMEDIATAMENTE
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("taskId", taskId);
+		response.put("status", "PROCESSANDO");
+		response.put("totalAssociados", totalAssociados);
+		response.put("message", "Processamento iniciado em background. Use o ID para verificar o status.");
+		response.put("dataInicio", LocalDateTime.now());
+
+		log.info("📤 Processamento assíncrono iniciado - Task: {}, Total: {}", taskId, totalAssociados);
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 🔥 VERIFICAR STATUS DO PROCESSAMENTO
+	 */
+	@GetMapping("/processamento-status/{taskId}")
+	public ResponseEntity<ProcessamentoStatus> getProcessamentoStatus(@PathVariable String taskId) {
+		ProcessamentoStatus status = tarefasStatus.get(taskId);
+
+		if (status == null) {
+			log.warn("⚠️ Task não encontrada: {}", taskId);
+			return ResponseEntity.notFound().build();
+		}
+
+		log.debug("📊 Status da task {}: {}, Progresso: {}%", taskId, status.getStatus(), status.getProgresso());
+
+		return ResponseEntity.ok(status);
+	}
+
+	/**
+	 * 🔥 LISTAR TODAS AS TAREFAS EM PROCESSAMENTO
+	 */
+	@GetMapping("/processamento-tarefas")
+	public ResponseEntity<Map<String, ProcessamentoStatus>> listarTarefas() {
+		log.info("📋 Listando tarefas em processamento: {}", tarefasStatus.size());
+		return ResponseEntity.ok(tarefasStatus);
+	}
+
+	/**
+	 * 🔥 CANCELAR TAREFA EM PROCESSAMENTO
+	 */
+	@PostMapping("/processamento-cancelar/{taskId}")
+	public ResponseEntity<Map<String, Object>> cancelarTarefa(@PathVariable String taskId) {
+		ProcessamentoStatus status = tarefasStatus.get(taskId);
+
+		if (status == null) {
+			return ResponseEntity.notFound().build();
+		}
+
+		if ("CONCLUIDO".equals(status.getStatus()) || "ERRO".equals(status.getStatus())) {
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", false);
+			response.put("message", "Tarefa já foi concluída ou está em erro");
+			return ResponseEntity.badRequest().body(response);
+		}
+
+		status.setStatus("CANCELADO");
+		status.setMensagem("Processamento cancelado pelo usuário");
+		status.setDataFim(LocalDateTime.now());
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("message", "Processamento cancelado com sucesso");
+		response.put("taskId", taskId);
+
+		log.info("🗑️ Processamento cancelado - Task: {}", taskId);
+
+		return ResponseEntity.ok(response);
+	}
+
+	/**
+	 * 🔥 LIMPAR TAREFAS FINALIZADAS (MANUTENÇÃO)
+	 */
+	@PostMapping("/processamento-limpar")
+	public ResponseEntity<Map<String, Object>> limparTarefas() {
+		int removidas = 0;
+		List<String> keysToRemove = new ArrayList<>();
+
+		for (Map.Entry<String, ProcessamentoStatus> entry : tarefasStatus.entrySet()) {
+			ProcessamentoStatus status = entry.getValue();
+			if ("CONCLUIDO".equals(status.getStatus()) || "ERRO".equals(status.getStatus())
+					|| "CANCELADO".equals(status.getStatus())) {
+				keysToRemove.add(entry.getKey());
+				removidas++;
+			}
+		}
+
+		for (String key : keysToRemove) {
+			tarefasStatus.remove(key);
+		}
+
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
+		response.put("removidas", removidas);
+		response.put("restantes", tarefasStatus.size());
+
+		log.info("🧹 Limpeza de tarefas: {} removidas, {} restantes", removidas, tarefasStatus.size());
+
+		return ResponseEntity.ok(response);
+	}
+
+	// ========== CONSULTAS DE FATURAS ==========
+
+	/**
+	 * 🔥 Lista faturas com filtros - INCLUINDO FILTRO POR RÉGUA
+	 */
+	@GetMapping("/faturas")
+	public ResponseEntity<Page<FaturaResumoDTO>> listarFaturas(@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size, @RequestParam(required = false) String sort,
+			@RequestParam(defaultValue = "desc") String direction, @RequestParam(required = false) Integer mes,
+			@RequestParam(required = false) Integer ano, @RequestParam(required = false) String numeroFatura,
+			@RequestParam(required = false) String associadoNome, @RequestParam(required = false) String status,
+			@RequestParam(required = false) Long associadoId, @RequestParam(required = false) Long reguaId) {
+
+		log.info("📋 Listando faturas com filtros:");
+		log.info("  - página: {}, tamanho: {}", page, size);
+		log.info("  - mês: {}, ano: {}", mes, ano);
+		log.info("  - numeroFatura: '{}'", numeroFatura);
+		log.info("  - associadoNome: '{}'", associadoNome);
+		log.info("  - status: '{}'", status);
+		log.info("  - associadoId: {}", associadoId);
+		log.info("  - reguaId: {}", reguaId);
+
+		String campoOrdenacao = "id";
+		if (sort != null && !sort.isEmpty()) {
+			switch (sort) {
+			case "dataEmissao":
+				campoOrdenacao = "dataEmissao";
+				break;
+			case "valorTotal":
+				campoOrdenacao = "valorTotal";
+				break;
+			case "numeroFatura":
+				campoOrdenacao = "numeroFatura";
+				break;
+			default:
+				campoOrdenacao = "id";
+			}
+		}
+
+		Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
+		Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, campoOrdenacao));
+
+		Page<FaturaResumoDTO> faturas = faturaService.listarFaturasComFiltros(numeroFatura, associadoNome, status, mes,
+				ano, associadoId, reguaId, pageable);
+
+		if (faturas.hasContent()) {
+			FaturaResumoDTO first = faturas.getContent().get(0);
+			log.info("🔍 Primeira fatura retornada: ID={}, notaDebitoId={}, numeroFatura={}", first.getId(),
+					first.getNotaDebitoId(), first.getNumeroFatura());
+		}
+
+		log.info("✅ Total de faturas encontradas: {}", faturas.getTotalElements());
+
+		return ResponseEntity.ok(faturas);
+	}
+
+	@GetMapping("/faturas/associado/{associadoId}")
+	public ResponseEntity<Page<Fatura>> listarFaturasPorAssociado(@PathVariable Long associadoId,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+
+		log.info("📋 Listando faturas do associado: {} - página: {}", associadoId, page);
+
+		Pageable pageable = PageRequest.of(page, size, Sort.by("dataEmissao").descending());
+		Page<Fatura> faturas = faturaService.listarPorAssociado(associadoId, pageable);
+
+		return ResponseEntity.ok(faturas);
+	}
+
+	@GetMapping("/faturas/lote/{loteId}")
+	public ResponseEntity<Page<Fatura>> listarFaturasPorLote(@PathVariable Long loteId,
+			@RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+
+		log.info("📋 Listando faturas do lote: {} - página: {}", loteId, page);
+
+		Pageable pageable = PageRequest.of(page, size, Sort.by("dataEmissao").descending());
+		Page<Fatura> faturas = faturaService.listarPorLoteProcessamento(loteId, pageable);
+
+		return ResponseEntity.ok(faturas);
+	}
+
+	@GetMapping("/faturas/pendentes-rm")
+	public ResponseEntity<List<Fatura>> listarFaturasPendentesRM() {
+		log.info("📋 Listando faturas pendentes de integração com RM");
+
+		List<Fatura> faturas = faturaService.listarFaturasPendentesRM();
+
+		return ResponseEntity.ok(faturas);
+	}
+
+	@GetMapping("/faturas/{id}")
+	public ResponseEntity<FaturaDetalheDTO> buscarFaturaPorId(@PathVariable Long id) {
+		log.info("🔍 Buscando fatura ID: {}", id);
+
+		FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+		return ResponseEntity.ok(fatura);
+	}
+
+	// ============================================================
+	// 🔥 ENDPOINTS PARA LOGS - CORRIGIDOS COM DTO
+	// ============================================================
+
+	/**
+	 * 🔥 BUSCAR LOGS DE UMA FATURA
+	 */
+	@GetMapping("/faturas/{id}/logs")
+	public ResponseEntity<?> buscarLogsFatura(@PathVariable Long id) {
+		log.info("📝 Buscando logs da fatura ID: {}", id);
+
+		try {
+			// Verificar se a fatura existe
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				log.warn("⚠️ Fatura não encontrada: {}", id);
+				return ResponseEntity.notFound().build();
+			}
+
+			// 🔥 USAR O MÉTODO QUE RETORNA DTO
+			List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaDTO(id);
+			log.info("📊 Encontrados {} logs para a fatura {}", logs.size(), id);
+
+			return ResponseEntity.ok(logs);
+
+		} catch (EntityNotFoundException e) {
+			log.warn("⚠️ Fatura não encontrada: {}", id);
+			return ResponseEntity.notFound().build();
+		} catch (Exception e) {
+			log.error("❌ Erro ao buscar logs da fatura {}: {}", id, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 🔥 BUSCAR APENAS LOGS DE ERRO (WARN E ERROR) DE UMA FATURA
+	 */
+	@GetMapping("/faturas/{id}/logs/erros")
+	public ResponseEntity<?> buscarLogsErrosFatura(@PathVariable Long id) {
+		log.info("📝 Buscando logs de erro da fatura ID: {}", id);
+
+		try {
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			// 🔥 USAR O MÉTODO QUE RETORNA DTO
+			List<LogFaturaDTO> logs = logFaturaService.buscarErrosPorFaturaDTO(id);
+			log.info("📊 Encontrados {} logs de erro para a fatura {}", logs.size(), id);
+
+			return ResponseEntity.ok(logs);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao buscar logs de erro da fatura {}: {}", id, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR NÍVEL
+	 */
+	@GetMapping("/faturas/{id}/logs/nivel/{nivel}")
+	public ResponseEntity<?> buscarLogsFaturaPorNivel(@PathVariable Long id, @PathVariable String nivel) {
+
+		log.info("📝 Buscando logs da fatura ID: {} com nível: {}", id, nivel);
+
+		try {
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			// 🔥 USAR O MÉTODO QUE RETORNA DTO
+			List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaENivelDTO(id, nivel.toUpperCase());
+			log.info("📊 Encontrados {} logs com nível {} para a fatura {}", logs.size(), nivel, id);
+
+			return ResponseEntity.ok(logs);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao buscar logs da fatura {} com nível {}: {}", id, nivel, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 🔥 BUSCAR LOGS DE UMA FATURA FILTRADOS POR PASSO
+	 */
+	@GetMapping("/faturas/{id}/logs/passo/{passo}")
+	public ResponseEntity<?> buscarLogsFaturaPorPasso(@PathVariable Long id, @PathVariable String passo) {
+
+		log.info("📝 Buscando logs da fatura ID: {} com passo: {}", id, passo);
+
+		try {
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			// 🔥 USAR O MÉTODO QUE RETORNA DTO
+			List<LogFaturaDTO> logs = logFaturaService.buscarLogsPorFaturaEPassoDTO(id, passo.toUpperCase());
+			log.info("📊 Encontrados {} logs com passo {} para a fatura {}", logs.size(), passo, id);
+
+			return ResponseEntity.ok(logs);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao buscar logs da fatura {} com passo {}: {}", id, passo, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao buscar logs: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 🔥 CONTAR LOGS DE UMA FATURA
+	 */
+	@GetMapping("/faturas/{id}/logs/count")
+	public ResponseEntity<?> contarLogsFatura(@PathVariable Long id) {
+		log.info("📊 Contando logs da fatura ID: {}", id);
+
+		try {
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			long total = logFaturaService.contarLogsPorFatura(id);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("faturaId", id);
+			response.put("totalLogs", total);
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao contar logs da fatura {}: {}", id, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao contar logs: " + e.getMessage()));
+		}
+	}
+
+	/**
+	 * 🔥 LIMPAR LOGS DE UMA FATURA
+	 */
+	@DeleteMapping("/faturas/{id}/logs")
+	public ResponseEntity<?> limparLogsFatura(@PathVariable Long id,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🗑️ Limpando logs da fatura ID: {} pelo usuário: {}", id, usuario);
+
+		try {
+			FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+
+			if (fatura == null) {
+				return ResponseEntity.notFound().build();
+			}
+
+			long total = logFaturaService.contarLogsPorFatura(id);
+			logFaturaService.limparLogs(id);
+
+			Map<String, Object> response = new HashMap<>();
+			response.put("success", true);
+			response.put("faturaId", id);
+			response.put("logsRemovidos", total);
+			response.put("mensagem", "Logs da fatura " + id + " removidos com sucesso");
+			response.put("usuario", usuario);
+
+			log.info("✅ Logs da fatura {} removidos. Total: {}", id, total);
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao limpar logs da fatura {}: {}", id, e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("error", "Erro ao limpar logs: " + e.getMessage()));
+		}
+	}
+
+	// ========== EXPORTAÇÃO RM ==========
+
+	@PostMapping("/faturas/{id}/exportar-rm")
+	public ResponseEntity<byte[]> exportarRmFatura(@PathVariable Long id, @RequestParam Integer ultimoNumeroRps,
+			@RequestParam(required = false) Long reguaId, @RequestParam(required = false) LocalDate mesReferencia,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("📤 Exportando RM para fatura ID: {}", id);
+
+		byte[] arquivo = faturaService.exportarRmFatura(id, ultimoNumeroRps, usuario, reguaId, mesReferencia);
+
+		return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=fatura_" + id + ".rm")
+				.contentType(MediaType.TEXT_PLAIN).body(arquivo);
+	}
+
+	@PostMapping("/faturas/exportar-rm-lote")
+	public ResponseEntity<byte[]> exportarRmLote(@RequestBody ExportacaoRmRequest request,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("📤 Exportando RM lote para {} faturas", request.getFaturaIds().size());
+
+		byte[] arquivo = faturaService.exportarRmLote(request.getFaturaIds(), request.getUltimoNumeroRps(), usuario,
+				request.getReguaId(),
+				request.getMesReferencia() != null ? LocalDate.parse(request.getMesReferencia()) : null);
+
+		return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=exportacao_rm_lote.rm")
+				.contentType(MediaType.TEXT_PLAIN).body(arquivo);
+	}
+
+	@PostMapping("/faturas/exportar-rm-lote-metadados")
+	public ResponseEntity<?> exportarRmLoteMetadados(@RequestBody ExportacaoRmRequest request,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("📤 Exportando RM lote com metadados para {} faturas",
+				request.getFaturaIds() != null ? request.getFaturaIds().size() : 0);
+
+		try {
+			if (request.getFaturaIds() == null || request.getFaturaIds().isEmpty()) {
+				return ResponseEntity.badRequest()
+						.body(Map.of("success", false, "message", "Nenhuma fatura selecionada"));
+			}
+
+			LocalDate mesRef = request.getMesReferencia() != null ? LocalDate.parse(request.getMesReferencia() + "-01")
+					: LocalDate.now();
+
+			byte[] arquivo = faturaService.exportarRmLote(request.getFaturaIds(), request.getUltimoNumeroRps(), usuario,
+					request.getReguaId(), mesRef);
+
+			List<Map<String, Object>> detalhesDTO = new ArrayList<>();
+			BigDecimal valorTotal = BigDecimal.ZERO;
+
+			for (Long id : request.getFaturaIds()) {
+				try {
+					FaturaDetalheDTO fatura = faturaService.buscarFaturaDetalheDTO(id);
+					Map<String, Object> faturaMap = new LinkedHashMap<>();
+					faturaMap.put("faturaId", fatura.getId());
+					faturaMap.put("numeroFatura", fatura.getNumeroFatura());
+					faturaMap.put("numeroRps", fatura.getNumeroRps());
+					faturaMap.put("status", "SUCESSO");
+					faturaMap.put("mensagem", null);
+					faturaMap.put("associadoNome", fatura.getAssociadoNome());
+					faturaMap.put("codigoRm", null);
+					faturaMap.put("codigoSpc", fatura.getCodigoSpc());
+					faturaMap.put("cnpjCpf", fatura.getCnpjCpf());
+					faturaMap.put("valorTotal", fatura.getValorTotal());
+					faturaMap.put("dataEmissao", fatura.getDataEmissao().toString());
+					faturaMap.put("dataVencimento", fatura.getDataVencimento().toString());
+
+					if (fatura.getItens() != null) {
+						List<Map<String, Object>> itensDTO = new ArrayList<>();
+						for (FaturaItemDTO item : fatura.getItens()) {
+							Map<String, Object> itemMap = new LinkedHashMap<>();
+							itemMap.put("codigoProduto", item.getCodigoProduto());
+							itemMap.put("descricao", item.getDescricao());
+							itemMap.put("quantidade", item.getQuantidade());
+							itemMap.put("valorUnitario", item.getValorUnitario());
+							itemMap.put("valorTotal", item.getValorTotal());
+							itensDTO.add(itemMap);
+						}
+						faturaMap.put("itens", itensDTO);
+					}
+					detalhesDTO.add(faturaMap);
+					valorTotal = valorTotal
+							.add(fatura.getValorTotal() != null ? fatura.getValorTotal() : BigDecimal.ZERO);
+
+				} catch (Exception e) {
+					log.warn("⚠️ Erro ao buscar detalhes da fatura {}", id, e);
+					Map<String, Object> fallback = new LinkedHashMap<>();
+					fallback.put("faturaId", id);
+					fallback.put("numeroFatura", "FAT-" + id);
+					fallback.put("numeroRps", 0);
+					fallback.put("status", "ERRO");
+					fallback.put("mensagem", e.getMessage());
+					fallback.put("associadoNome", "N/A");
+					fallback.put("cnpjCpf", "");
+					fallback.put("valorTotal", 0);
+					fallback.put("itens", new ArrayList<>());
+					detalhesDTO.add(fallback);
+				}
+			}
+
+			Map<String, Object> response = new LinkedHashMap<>();
+			response.put("success", true);
+			response.put("loteId", System.currentTimeMillis());
+			response.put("totalFaturas", request.getFaturaIds().size());
+			response.put("faturasProcessadas", request.getFaturaIds().size());
+			response.put("faturasComErro", 0);
+			response.put("faturasIgnoradas", 0);
+			response.put("faturasIgnoradasIds", new ArrayList<>());
+			response.put("valorTotalIgnorado", 0);
+			response.put("primeiroNumeroRps", request.getUltimoNumeroRps() + 1);
+			response.put("ultimoNumeroRps", request.getUltimoNumeroRps() + request.getFaturaIds().size());
+			response.put("dataProcessamento", LocalDateTime.now().toString());
+			response.put("valorTotal", valorTotal);
+			response.put("detalhes", detalhesDTO);
+			response.put("arquivoBase64", Base64.getEncoder().encodeToString(arquivo));
+
+			log.info("✅ Exportação RM com metadados concluída: {} faturas", request.getFaturaIds().size());
+
+			return ResponseEntity.ok(response);
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao exportar RM lote com metadados", e);
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(Map.of("success", false, "message", e.getMessage()));
+		}
+	}
+
+	// ========== EDIÇÃO DE ITENS ==========
+
+	@PostMapping("/faturas/{faturaId}/itens")
+	public ResponseEntity<FaturaItemResponseDTO> adicionarItemFatura(@PathVariable Long faturaId,
+			@RequestBody FaturaItemDTO itemDTO,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("➕ Adicionando item à fatura ID: {}", faturaId);
+		FaturaItemResponseDTO item = faturaService.adicionarItemFatura(faturaId, itemDTO, usuario);
+		return ResponseEntity.status(HttpStatus.CREATED).body(item);
+	}
+
+	@DeleteMapping("/faturas/{faturaId}/itens/{itemId}")
+	public ResponseEntity<Void> removerItemFatura(@PathVariable Long faturaId, @PathVariable Long itemId,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🗑️ Removendo item {} da fatura {}", itemId, faturaId);
+		faturaService.removerItemFatura(faturaId, itemId, usuario);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PutMapping("/faturas/{faturaId}/itens/{itemId}")
+	public ResponseEntity<FaturaItemResponseDTO> atualizarItemFatura(@PathVariable Long faturaId,
+			@PathVariable Long itemId, @RequestBody FaturaItemDTO itemDTO,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("✏️ Atualizando item {} da fatura {}", itemId, faturaId);
+		FaturaItemResponseDTO item = faturaService.atualizarItemFatura(faturaId, itemId, itemDTO, usuario);
+		return ResponseEntity.ok(item);
+	}
+
+	/**
+	 * 🔥 EXCLUIR FATURA Apenas faturas com status PENDENTE ou SIMULADO podem ser
+	 * excluídas
+	 */
+	@DeleteMapping("/faturas/{id}")
+	public ResponseEntity<Void> excluirFatura(@PathVariable Long id,
+			@RequestHeader(value = "X-Usuario", defaultValue = "SISTEMA") String usuario) {
+
+		log.info("🗑️ Excluindo fatura ID: {} pelo usuário: {}", id, usuario);
+		faturaService.excluirFatura(id, usuario);
+		return ResponseEntity.noContent().build();
+	}
 }

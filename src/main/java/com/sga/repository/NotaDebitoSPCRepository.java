@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -125,11 +126,19 @@ public interface NotaDebitoSPCRepository extends JpaRepository<NotaDebitoSPC, Lo
 			@Param("ano") Integer ano);
 
 	/**
-	 * 🔥 BUSCA POR CÓDIGO SPC COM PADDING (8 DÍGITOS) Formata o código recebido
-	 * para 8 dígitos com zeros à esquerda Ex: "236" -> "00000236"
+	 * 🔥 OTIMIZADO: Busca notas por código SPC COM OS ITENS já carregados (JOIN FETCH).
+	 * Evita N+1 ao acessar nota.getItens().
 	 */
+	@EntityGraph(attributePaths = {"itens"})
 	@Query("SELECT n FROM NotaDebitoSPC n WHERE n.codigoSocio = LPAD(:codigoSpc, 8, '0')")
 	List<NotaDebitoSPC> findByCodigoSocioWithPadding(@Param("codigoSpc") String codigoSpc);
+	
+	/**
+	 * 🔥 OTIMIZADO: Busca notas por lista de IDs COM OS ITENS já carregados.
+	 */
+	@EntityGraph(attributePaths = {"itens"})
+	@Query("SELECT n FROM NotaDebitoSPC n WHERE n.id IN :ids")
+	List<NotaDebitoSPC> findByIdInWithItens(@Param("ids") List<Long> ids);
 
 	/**
 	 * Retorna os IDs dos associados que possuem notas no arquivo consolidado

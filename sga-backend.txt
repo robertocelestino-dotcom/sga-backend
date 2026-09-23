@@ -3,36 +3,46 @@
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend
 
-03/09/2026  15:54    <DIR>          .
+14/09/2026  10:21    <DIR>          .
 03/09/2026  15:49    <DIR>          ..
-10/09/2026  09:39             2.035 .classpath
-10/09/2026  09:39               288 .factorypath
+16/09/2026  17:36             2.035 .classpath
+16/09/2026  17:36               288 .factorypath
 03/09/2026  15:47                40 .gitattributes
 03/09/2026  15:47               427 .gitignore
 03/09/2026  15:47    <DIR>          .mvn
 03/09/2026  15:55               727 .project
 03/09/2026  15:54    <DIR>          .settings
-03/09/2026  15:47    <DIR>          bd
-03/09/2026  15:47           139.467 hs_err_pid16104.log
-03/09/2026  15:47            15.510 hs_err_pid23624.log
-03/09/2026  15:47           106.991 hs_err_pid29724.log
-03/09/2026  15:47            52.998 hs_err_pid30244.log
-03/09/2026  15:47            48.763 hs_err_pid37984.log
-03/09/2026  15:47            15.510 hs_err_pid4740.log
+10/09/2026  10:23    <DIR>          bd
 03/09/2026  15:47    <DIR>          integracao
 03/09/2026  15:47            11.790 mvnw
 03/09/2026  15:47             8.481 mvnw.cmd
-03/09/2026  15:47             6.630 pom.xml
+10/09/2026  13:51             6.756 pom.xml
 03/09/2026  15:47               217 README.md
-10/09/2026  10:02                 0 sga-backend.txt
+17/09/2026  13:30                 0 sga-backend.txt
 03/09/2026  15:47    <DIR>          src
-10/09/2026  09:39    <DIR>          target
-              16 arquivo(s)        409.874 bytes
+16/09/2026  17:36    <DIR>          target
+              10 arquivo(s)         30.761 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\.git
+
+14/09/2026  10:21    <DIR>          ..
+15/09/2026  15:44               902 COMMIT_EDITMSG
+14/09/2026  14:13               313 config
+03/09/2026  15:47                73 description
+03/09/2026  15:47                21 HEAD
+03/09/2026  15:47    <DIR>          hooks
+15/09/2026  15:44            37.971 index
+03/09/2026  15:47    <DIR>          info
+03/09/2026  15:47    <DIR>          logs
+15/09/2026  15:44    <DIR>          objects
+03/09/2026  15:47               112 packed-refs
+03/09/2026  15:47    <DIR>          refs
+               6 arquivo(s)         39.392 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:54    <DIR>          ..
+14/09/2026  10:21    <DIR>          ..
 03/09/2026  15:47    <DIR>          main
 03/09/2026  15:47    <DIR>          test
                0 arquivo(s)              0 bytes
@@ -56,43 +66,44 @@
 
 03/09/2026  15:47    <DIR>          .
 03/09/2026  15:47    <DIR>          ..
-03/09/2026  15:47    <DIR>          sga
+10/09/2026  14:44    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga
 
-03/09/2026  15:47    <DIR>          .
+10/09/2026  14:44    <DIR>          .
 03/09/2026  15:47    <DIR>          ..
 03/09/2026  15:47    <DIR>          aop
 03/09/2026  15:47    <DIR>          config
-09/09/2026  15:07    <DIR>          controller
+10/09/2026  13:52    <DIR>          controller
 09/09/2026  15:30    <DIR>          dto
 03/09/2026  15:47    <DIR>          enums
 03/09/2026  15:47    <DIR>          exception
-03/09/2026  15:47    <DIR>          model
-03/09/2026  15:47    <DIR>          repository
-08/09/2026  14:53    <DIR>          rules
+10/09/2026  13:46    <DIR>          model
+10/09/2026  14:56    <DIR>          repository
+10/09/2026  13:58    <DIR>          rules
 03/09/2026  15:47    <DIR>          scheduler
 03/09/2026  15:47    <DIR>          security
-09/09/2026  14:52    <DIR>          service
+10/09/2026  13:48    <DIR>          service
 03/09/2026  15:47               547 SgaApplication.java
 03/09/2026  15:47               853 test_conexao.sh
+10/09/2026  14:44    <DIR>          util
                2 arquivo(s)          1.400 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\aop
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47             7.736 SistemaLogAspect.java
                1 arquivo(s)          7.736 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\config
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47               660 AppProperties.java
 03/09/2026  15:47             1.800 AsyncConfig.java
-03/09/2026  15:47               681 CacheConfig.java
+10/09/2026  14:04               665 CacheConfig.java
 03/09/2026  15:47             1.551 CorsConfig.java
 03/09/2026  15:47             4.353 DatabaseConfig.java
 03/09/2026  15:47               614 DataSourceConfig.java
@@ -102,12 +113,12 @@
 03/09/2026  15:47               303 NotificacaoSchedulerConfig.java
 03/09/2026  15:47             5.471 SecurityConfig.java
 03/09/2026  15:47               678 WebConfig.java
-              12 arquivo(s)         18.179 bytes
+              12 arquivo(s)         18.163 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\controller
 
-09/09/2026  15:07    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  13:52    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
 04/09/2026  10:46            29.521 AssociadoController.java
 03/09/2026  15:47             7.569 AssociadoDefFaturamentoController.java
 03/09/2026  15:47             2.386 AssociadoPlanoController.java
@@ -118,6 +129,7 @@
 10/09/2026  09:34             6.142 ConferenciaFaturamentoController.java
 03/09/2026  15:47             2.913 ConsumoFranquiaController.java
 03/09/2026  15:47             5.379 EstatisticasImportacaoController.java
+10/09/2026  13:57             3.106 FranquiaCoberturaController.java
 03/09/2026  15:47             7.429 ImportacaoSPCController.java
 03/09/2026  15:47             2.743 IntegracaoRmController.java
 03/09/2026  15:47               736 LogProcessamentoController.java
@@ -139,12 +151,12 @@
 03/09/2026  15:47            13.416 VendedorController.java
 03/09/2026  15:47             7.221 VendedorTipoController.java
 03/09/2026  15:47            12.774 VerificacaoImportacaoController.java
-              31 arquivo(s)        281.605 bytes
+              32 arquivo(s)        284.711 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\dto
 
 09/09/2026  15:30    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47             3.128 AssociadoDefFaturamentoDTO.java
 03/09/2026  15:47             2.379 AssociadoDefFaturamentoResumoDTO.java
 03/09/2026  15:47             1.178 AssociadoDefNotificacaoDTO.java
@@ -224,21 +236,22 @@
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\enums
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47             1.665 TipoArquivoFaturamento.java
                1 arquivo(s)          1.665 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\exception
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47               302 ResourceNotFoundException.java
                1 arquivo(s)            302 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\model
 
-03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  13:46    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
+10/09/2026  13:46             3.738 AlertaFranquiaSemCobertura.java
 03/09/2026  15:47            14.492 Associado.java
 03/09/2026  15:47             2.935 AssociadoDefFaturamento.java
 03/09/2026  15:47             4.439 AssociadoDefNotificacao.java
@@ -257,6 +270,7 @@
 03/09/2026  15:47             9.369 Fatura.java
 03/09/2026  15:47             6.838 FaturaItem.java
 03/09/2026  15:47             2.225 Faturamento.java
+10/09/2026  13:45             3.078 FranquiaServicoCoberto.java
 03/09/2026  15:47             4.987 HeaderSPC.java
 03/09/2026  15:47             3.415 HistoricoIntegracaoRm.java
 03/09/2026  15:47             2.744 HistoricoIntegracaoRmApi.java
@@ -293,19 +307,20 @@
 03/09/2026  15:47             7.908 Usuario.java
 03/09/2026  15:47             2.557 Vendedor.java
 03/09/2026  15:47             1.133 VendedorTipo.java
-              53 arquivo(s)        234.525 bytes
+              55 arquivo(s)        241.341 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\model\notificacao
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  13:46    <DIR>          ..
 03/09/2026  15:47             4.541 NotificacaoSumarizada.java
                1 arquivo(s)          4.541 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\repository
 
-03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:56    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
+10/09/2026  13:56               765 AlertaFranquiaSemCoberturaRepository.java
 03/09/2026  15:47             1.877 AssociadoDefFaturamentoRepository.java
 03/09/2026  15:47             1.225 AssociadoPlanoRepository.java
 03/09/2026  15:47             2.448 AssociadoProdutoRepository.java
@@ -322,7 +337,8 @@
 03/09/2026  15:47               468 EnderecoRepository.java
 03/09/2026  15:47             1.328 FaturaItemRepository.java
 03/09/2026  15:47             1.186 FaturamentoRepository.java
-10/09/2026  09:32            15.203 FaturaRepository.java
+10/09/2026  15:42            16.515 FaturaRepository.java
+10/09/2026  13:56             1.346 FranquiaServicoCobertoRepository.java
 03/09/2026  15:47               275 HeaderSPCRepository.java
 03/09/2026  15:47               764 HistoricoIntegracaoRmRepository.java
 03/09/2026  15:47             2.881 HistoricoMigracaoReguaRepository.java
@@ -334,7 +350,7 @@
 03/09/2026  15:47             2.809 LoteProcessamentoRepository.java
 03/09/2026  15:47             1.083 MenuRepository.java
 03/09/2026  15:47            11.307 NotaDebitoSPCRepository.java
-03/09/2026  15:47    <DIR>          notificacao
+10/09/2026  15:17    <DIR>          notificacao
 03/09/2026  15:47             3.094 NotificacaoAssociadoRepository.java
 03/09/2026  15:47             3.065 ParametrosSPCRepository.java
 03/09/2026  15:47               976 PerfilRepository.java
@@ -342,6 +358,7 @@
 03/09/2026  15:47             2.699 PlanoProdutoFranquiaRepository.java
 03/09/2026  15:47             1.208 PlanosRepository.java
 03/09/2026  15:47             6.725 ProdutoRepository.java
+10/09/2026  15:25    <DIR>          projection
 03/09/2026  15:47             1.789 ReguaFaturamentoRepository.java
 03/09/2026  15:47             1.505 SessaoUsuarioRepository.java
 03/09/2026  15:47             1.875 SincronizacaoNotificacaoRepository.java
@@ -353,60 +370,77 @@
 03/09/2026  15:47             1.489 UsuarioRepository.java
 03/09/2026  15:47             4.168 VendedorRepository.java
 03/09/2026  15:47             1.037 VendedorTipoRepository.java
-              46 arquivo(s)        115.936 bytes
+              48 arquivo(s)        119.359 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\repository\notificacao
 
-03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  15:17    <DIR>          .
+10/09/2026  14:56    <DIR>          ..
 03/09/2026  15:47            25.203 NotificacaoSumarizadaRepository.java
                1 arquivo(s)         25.203 bytes
 
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\repository\projection
+
+10/09/2026  15:25    <DIR>          .
+10/09/2026  14:56    <DIR>          ..
+10/09/2026  14:56             1.685 ConferenciaFaturaDetalheProjection.java
+10/09/2026  15:24             2.619 ConferenciaFaturaDetalheResult.java
+10/09/2026  15:32             6.276 ConferenciaFaturamentoMapping.java
+10/09/2026  14:57             1.076 ConferenciaFaturamentoProjection.java
+10/09/2026  15:24             4.113 ConferenciaFaturamentoResult.java
+10/09/2026  14:58               550 ItemComparacaoProjection.java
+10/09/2026  15:25             1.111 ItemComparacaoResult.java
+10/09/2026  14:58               574 ResumoConferenciaProjection.java
+10/09/2026  15:25             1.721 ResumoConferenciaResult.java
+               9 arquivo(s)         19.725 bytes
+
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\rules
 
-08/09/2026  14:53    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  13:58    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47            12.025 FaturamentoMinimoRule.java
-08/09/2026  15:40            25.007 FranquiaRule.java
+10/09/2026  13:59            28.460 FranquiaRule.java
 08/09/2026  14:52             5.642 FranquiaRuleOLD.java
 08/09/2026  14:52            23.422 FranquiaRuleOLD2.java
-               4 arquivo(s)         66.096 bytes
+10/09/2026  13:58            25.185 FranquiaRule_OLD3.java
+               5 arquivo(s)         94.734 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\scheduler
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47             2.964 NotificacaoScheduler.java
                1 arquivo(s)          2.964 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\security
 
 03/09/2026  15:47    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47             3.364 JwtAuthenticationFilter.java
 03/09/2026  15:47             2.569 JwtService.java
                2 arquivo(s)          5.933 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\service
 
-09/09/2026  14:52    <DIR>          .
-03/09/2026  15:47    <DIR>          ..
+10/09/2026  13:48    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
 03/09/2026  15:47            11.738 AssociadoDefFaturamentoService.java
 03/09/2026  15:47             4.262 AssociadoPlanoService.java
 03/09/2026  15:47            11.958 AssociadoProdutoService.java
-04/09/2026  10:47            56.673 AssociadoService.java
-03/09/2026  15:47             9.479 CacheService.java
+15/09/2026  14:47            58.164 AssociadoService.java
+17/09/2026  13:21            13.762 CacheService.java
 03/09/2026  15:47             7.408 CancelamentoImportacaoService.java
 03/09/2026  15:47            11.099 CancelamentoService.java
 03/09/2026  15:47             4.022 CategoriaService.java
-10/09/2026  09:33            24.655 ConferenciaFaturamentoService.java
+10/09/2026  15:39            21.399 ConferenciaFaturamentoService.java
 03/09/2026  15:47             1.695 ConfiguracaoRmService.java
 03/09/2026  15:47             6.839 ConsumoFranquiaService.java
 03/09/2026  15:47             5.200 FaturaBatchService.java
-08/09/2026  14:54            63.107 FaturaGeracaoService.java
+17/09/2026  13:25            70.545 FaturaGeracaoService.java
 03/09/2026  15:47            15.894 FaturamentoExtemporaneoService.java
 03/09/2026  15:47            35.503 FaturaRmExportService.java
 03/09/2026  15:47            28.797 FaturaService.java
+10/09/2026  13:48             1.412 FranquiaCoberturaCache.java
 03/09/2026  15:47             2.308 ImportacaoFaturamentoService.java
 03/09/2026  15:47            20.398 ImportacaoSPService.java
 03/09/2026  15:47             4.344 IntegracaoRmService.java
@@ -430,16 +464,23 @@
 03/09/2026  15:47             5.355 RmApiConfigService.java
 03/09/2026  15:47            32.167 RmApiIntegracaoService.java
 03/09/2026  15:47             4.279 RmExportBatchService.java
-03/09/2026  15:47            35.957 RmExportService.java
+11/09/2026  14:51            36.001 RmExportService.java
 03/09/2026  15:47             2.427 SessaoService.java
 03/09/2026  15:47             8.849 SincronizacaoNotificacaoService.java
-03/09/2026  15:47            20.113 SistemaLogService.java
+15/09/2026  15:02            20.110 SistemaLogService.java
 03/09/2026  15:47             4.566 TipoEnvioService.java
 04/09/2026  10:48             9.824 UsuarioService.java
 03/09/2026  15:47            16.200 VendedorService.java
 03/09/2026  15:47             7.351 VendedorTipoService.java
 03/09/2026  15:47            66.267 VerificacaoImportacaoService.java
-              48 arquivo(s)        747.317 bytes
+              49 arquivo(s)        758.726 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\java\com\sga\util
+
+10/09/2026  14:44    <DIR>          .
+10/09/2026  14:44    <DIR>          ..
+10/09/2026  14:44             3.770 CastUtils.java
+               1 arquivo(s)          3.770 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\src\main\resources
 
@@ -487,514 +528,546 @@
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target
 
-10/09/2026  09:39    <DIR>          .
-03/09/2026  15:54    <DIR>          ..
-10/09/2026  09:39    <DIR>          classes
-10/09/2026  09:39    <DIR>          generated-sources
-10/09/2026  09:39    <DIR>          generated-test-sources
-10/09/2026  09:39    <DIR>          test-classes
+16/09/2026  17:36    <DIR>          .
+14/09/2026  10:21    <DIR>          ..
+16/09/2026  17:36    <DIR>          classes
+16/09/2026  17:36    <DIR>          generated-sources
+16/09/2026  17:36    <DIR>          generated-test-sources
+16/09/2026  17:36    <DIR>          test-classes
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39                 0 application.properties
-10/09/2026  09:39    <DIR>          com
-10/09/2026  09:39    <DIR>          META-INF
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36                 0 application.properties
+16/09/2026  17:36    <DIR>          com
+16/09/2026  17:36    <DIR>          META-INF
                1 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          sga
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          aop
-10/09/2026  09:39    <DIR>          config
-10/09/2026  09:39    <DIR>          controller
-10/09/2026  09:39    <DIR>          dto
-10/09/2026  09:39    <DIR>          enums
-10/09/2026  09:39    <DIR>          exception
-10/09/2026  09:39    <DIR>          model
-10/09/2026  09:39    <DIR>          repository
-10/09/2026  09:39    <DIR>          rules
-10/09/2026  09:39    <DIR>          scheduler
-10/09/2026  09:39    <DIR>          security
-10/09/2026  09:39    <DIR>          service
-10/09/2026  09:39               900 SgaApplication.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          aop
+16/09/2026  17:36    <DIR>          config
+16/09/2026  17:36    <DIR>          controller
+16/09/2026  17:36    <DIR>          dto
+16/09/2026  17:36    <DIR>          enums
+16/09/2026  17:36    <DIR>          exception
+16/09/2026  17:36    <DIR>          model
+16/09/2026  17:36    <DIR>          repository
+16/09/2026  17:36    <DIR>          rules
+16/09/2026  17:36    <DIR>          scheduler
+16/09/2026  17:36    <DIR>          security
+16/09/2026  17:36    <DIR>          service
+16/09/2026  17:36               900 SgaApplication.class
 03/09/2026  15:47               853 test_conexao.sh
+16/09/2026  17:36    <DIR>          util
                2 arquivo(s)          1.753 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\aop
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             1.771 SistemaLogAspect$1.class
-10/09/2026  09:39             7.102 SistemaLogAspect.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             1.771 SistemaLogAspect$1.class
+16/09/2026  17:36             7.102 SistemaLogAspect.class
                2 arquivo(s)          8.873 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\config
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39               483 AppProperties$File.class
-10/09/2026  09:39               455 AppProperties$Jwt.class
-10/09/2026  09:39               888 AppProperties.class
-10/09/2026  09:39             1.576 AsyncConfig.class
-10/09/2026  09:39               831 CacheConfig.class
-10/09/2026  09:39             2.156 CorsConfig.class
-10/09/2026  09:39             4.658 DatabaseConfig.class
-10/09/2026  09:39               996 DataSourceConfig.class
-10/09/2026  09:39             1.097 JwtConfig.class
-10/09/2026  09:39             1.288 MultipartConfig.class
-10/09/2026  09:39               470 NotificacaoConfig.class
-10/09/2026  09:39               497 NotificacaoSchedulerConfig.class
-10/09/2026  09:39            11.078 SecurityConfig.class
-10/09/2026  09:39             1.189 WebConfig.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36               483 AppProperties$File.class
+16/09/2026  17:36               455 AppProperties$Jwt.class
+16/09/2026  17:36               888 AppProperties.class
+16/09/2026  17:36             1.576 AsyncConfig.class
+16/09/2026  17:36               831 CacheConfig.class
+16/09/2026  17:36             2.156 CorsConfig.class
+16/09/2026  17:36             4.658 DatabaseConfig.class
+16/09/2026  17:36               996 DataSourceConfig.class
+16/09/2026  17:36             1.097 JwtConfig.class
+16/09/2026  17:36             1.288 MultipartConfig.class
+16/09/2026  17:36               470 NotificacaoConfig.class
+16/09/2026  17:36               497 NotificacaoSchedulerConfig.class
+16/09/2026  17:36            11.078 SecurityConfig.class
+16/09/2026  17:36             1.189 WebConfig.class
               14 arquivo(s)         27.662 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\controller
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             1.375 AssociadoController$HealthResponse.class
-10/09/2026  09:39            24.532 AssociadoController.class
-10/09/2026  09:39            10.333 AssociadoDefFaturamentoController.class
-10/09/2026  09:39             3.716 AssociadoPlanoController.class
-10/09/2026  09:39             9.844 AssociadoProdutoController.class
-10/09/2026  09:39             2.351 AuthController$AuthResponse.class
-10/09/2026  09:39               932 AuthController$LoginRequest.class
-10/09/2026  09:39             2.846 AuthController$MenuDTO.class
-10/09/2026  09:39             1.550 AuthController$RegistrarRequest.class
-10/09/2026  09:39             3.274 AuthController$UsuarioDTO.class
-10/09/2026  09:39            18.792 AuthController.class
-10/09/2026  09:39             3.888 CancelamentoImportacaoController.class
-10/09/2026  09:39             6.097 CategoriaController.class
-10/09/2026  09:39             7.913 ConferenciaFaturamentoController.class
-10/09/2026  09:39             4.241 ConsumoFranquiaController.class
-10/09/2026  09:39             8.372 EstatisticasImportacaoController.class
-10/09/2026  09:39            10.225 ImportacaoSPCController.class
-10/09/2026  09:39             5.391 IntegracaoRmController.class
-10/09/2026  09:39             1.779 LogProcessamentoController.class
-10/09/2026  09:39             2.276 MenuController.class
-10/09/2026  09:39             5.670 NotaDebitoSPCController.class
-10/09/2026  09:39            11.194 NotasController.class
-10/09/2026  09:39            16.975 NotificacaoController.class
-10/09/2026  09:39             6.969 PerfilController.class
-10/09/2026  09:39             6.701 PlanoProdutoFranquiaController.class
-10/09/2026  09:39             5.680 PlanosController.class
-10/09/2026  09:39            33.493 ProcessamentoFaturamentoController.class
-10/09/2026  09:39            16.733 ProdutoController.class
-10/09/2026  09:39            21.537 ReguaFaturamentoController.class
-10/09/2026  09:39            12.161 RmApiController.class
-10/09/2026  09:39             6.485 SincronizacaoController.class
-10/09/2026  09:39             9.171 SistemaLogController.class
-10/09/2026  09:39             6.878 TipoEnvioController.class
-10/09/2026  09:39             8.669 UsuarioController.class
-10/09/2026  09:39            12.864 VendedorController.class
-10/09/2026  09:39             8.470 VendedorTipoController.class
-10/09/2026  09:39            13.529 VerificacaoImportacaoController.class
-              37 arquivo(s)        332.906 bytes
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             1.375 AssociadoController$HealthResponse.class
+16/09/2026  17:36            24.532 AssociadoController.class
+16/09/2026  17:36            10.333 AssociadoDefFaturamentoController.class
+16/09/2026  17:36             3.716 AssociadoPlanoController.class
+16/09/2026  17:36             9.844 AssociadoProdutoController.class
+16/09/2026  17:36             2.351 AuthController$AuthResponse.class
+16/09/2026  17:36               932 AuthController$LoginRequest.class
+16/09/2026  17:36             2.846 AuthController$MenuDTO.class
+16/09/2026  17:36             1.550 AuthController$RegistrarRequest.class
+16/09/2026  17:36             3.274 AuthController$UsuarioDTO.class
+16/09/2026  17:36            18.792 AuthController.class
+16/09/2026  17:36             3.888 CancelamentoImportacaoController.class
+16/09/2026  17:36             6.097 CategoriaController.class
+16/09/2026  17:36             7.913 ConferenciaFaturamentoController.class
+16/09/2026  17:36             4.241 ConsumoFranquiaController.class
+16/09/2026  17:36             8.372 EstatisticasImportacaoController.class
+16/09/2026  17:36             6.401 FranquiaCoberturaController.class
+16/09/2026  17:36            10.225 ImportacaoSPCController.class
+16/09/2026  17:36             5.391 IntegracaoRmController.class
+16/09/2026  17:36             1.779 LogProcessamentoController.class
+16/09/2026  17:36             2.276 MenuController.class
+16/09/2026  17:36             5.670 NotaDebitoSPCController.class
+16/09/2026  17:36            11.194 NotasController.class
+16/09/2026  17:36            16.975 NotificacaoController.class
+16/09/2026  17:36             6.969 PerfilController.class
+16/09/2026  17:36             6.701 PlanoProdutoFranquiaController.class
+16/09/2026  17:36             5.680 PlanosController.class
+16/09/2026  17:36            33.493 ProcessamentoFaturamentoController.class
+16/09/2026  17:36            16.733 ProdutoController.class
+16/09/2026  17:36            21.537 ReguaFaturamentoController.class
+16/09/2026  17:36            12.161 RmApiController.class
+16/09/2026  17:36             6.485 SincronizacaoController.class
+16/09/2026  17:36             9.171 SistemaLogController.class
+16/09/2026  17:36             6.878 TipoEnvioController.class
+16/09/2026  17:36             8.669 UsuarioController.class
+16/09/2026  17:36            12.864 VendedorController.class
+16/09/2026  17:36             8.470 VendedorTipoController.class
+16/09/2026  17:36            13.529 VerificacaoImportacaoController.class
+              38 arquivo(s)        339.307 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\dto
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             3.574 AssociadoDefFaturamentoDTO.class
-10/09/2026  09:39             2.980 AssociadoDefFaturamentoResumoDTO.class
-10/09/2026  09:39             1.781 AssociadoDefNotificacaoDTO.class
-10/09/2026  09:39             8.979 AssociadoDTO.class
-10/09/2026  09:39             3.388 AssociadoFiltroDTO.class
-10/09/2026  09:39             3.248 AssociadoPlanoDTO.class
-10/09/2026  09:39             6.685 AssociadoProcessamentoDTO.class
-10/09/2026  09:39             4.478 AssociadoProdutoDTO.class
-10/09/2026  09:39             3.198 AssociadoProdutoResumoDTO.class
-10/09/2026  09:39             4.041 AssociadoReguaDTO.class
-10/09/2026  09:39             6.471 AssociadoResumoDTO.class
-10/09/2026  09:39             2.830 CancelamentoImportacaoDTO.class
-10/09/2026  09:39             2.885 CancelamentoProcessadoDTO.class
-10/09/2026  09:39             2.630 CategoriaDTO.class
-10/09/2026  09:39             1.799 CategoriaResumoDTO.class
-10/09/2026  09:39             2.089 ConferenciaFaturaDetalheDTO$ItemComparacaoDTO.class
-10/09/2026  09:39             6.261 ConferenciaFaturaDetalheDTO.class
-10/09/2026  09:39             5.704 ConferenciaFaturamentoDTO.class
-10/09/2026  09:39             3.908 ConferenciaResumoDTO.class
-10/09/2026  09:39             5.401 ConsumoFranquiaDTO.class
-10/09/2026  09:39             1.364 EmailDTO.class
-10/09/2026  09:39             2.469 EnderecoDTO.class
-10/09/2026  09:39             1.639 ExportacaoRmRequest.class
-10/09/2026  09:39             4.696 FaturaDetalheDTO.class
-10/09/2026  09:39             3.923 FaturaItemDTO.class
-10/09/2026  09:39             3.675 FaturaItemResponseDTO.class
-10/09/2026  09:39             4.246 FaturaResumoDTO.class
-10/09/2026  09:39             4.355 HistoricoMigracaoDTO.class
-10/09/2026  09:39             5.342 ImportacaoResponseDTO.class
-10/09/2026  09:39             2.152 ImportacaoResumoDTO.class
-10/09/2026  09:39             2.513 LogAcaoDTO.class
-10/09/2026  09:39             2.320 LogAcessoDTO.class
-10/09/2026  09:39             2.306 LogFaturaDTO.class
-10/09/2026  09:39               576 LoginRequest.class
-10/09/2026  09:39             2.630 MenuDTO.class
-10/09/2026  09:39             1.885 MigracaoReguaRequest.class
-10/09/2026  09:39             4.403 MigracaoReguaResponse.class
-10/09/2026  09:39             2.505 NotaDebitoDetalheDTO.class
-10/09/2026  09:39             3.838 NotaDebitoResumoDTO.class
-10/09/2026  09:39             2.653 NotaDetalheDTO.class
-10/09/2026  09:39             2.384 NotaFaturamentoGridDTO.class
-10/09/2026  09:39             5.145 NotificacaoAssociadoDTO.class
-10/09/2026  09:39               502 NotificacaoSincronizacaoRequest.class
-10/09/2026  09:39             3.994 NotificacaoSumarizadaDTO.class
-10/09/2026  09:39             2.147 PerfilDTO.class
-10/09/2026  09:39             2.140 PerfilRequest.class
-10/09/2026  09:39             1.417 PermissaoDTO.class
-10/09/2026  09:39             2.966 PlanoDTO.class
-10/09/2026  09:39             3.680 PlanoProdutoFranquiaDTO.class
-10/09/2026  09:39             2.355 PlanoResumoDTO.class
-10/09/2026  09:39             6.445 ProcessamentoRequest.class
-10/09/2026  09:39             7.461 ProdutoDTO.class
-10/09/2026  09:39               769 ProdutoFiltroDTO.class
-10/09/2026  09:39             3.983 ProdutoResumoDTO.class
-10/09/2026  09:39             7.819 ReguaFaturamentoDTO.class
-10/09/2026  09:39            12.601 ReguaFaturamentoProcessamentoDTO.class
-10/09/2026  09:39             3.499 ResultadoProcessamento.class
-10/09/2026  09:39             5.035 RmApiConfigDTO.class
-10/09/2026  09:39             1.348 RmApiIntegracaoRequest.class
-10/09/2026  09:39             1.622 RmApiIntegracaoResponse$ItemResponse.class
-10/09/2026  09:39             2.287 RmApiIntegracaoResponse.class
-10/09/2026  09:39             1.151 SenhaRequest.class
-10/09/2026  09:39             1.792 TelefoneDTO.class
-10/09/2026  09:39             3.545 TipoArquivoReguaDTO.class
-10/09/2026  09:39             2.410 TipoEnvioDTO.class
-10/09/2026  09:39             1.631 TipoEnvioResumoDTO.class
-10/09/2026  09:39               609 UsuarioAuthResponse.class
-10/09/2026  09:39             2.620 UsuarioDTO.class
-10/09/2026  09:39             2.494 UsuarioRequest.class
-10/09/2026  09:39             1.762 UsuarioUpdateRequest.class
-10/09/2026  09:39             2.461 VendedorDTO.class
-10/09/2026  09:39             1.941 VendedorResumoDTO.class
-10/09/2026  09:39             1.000 VendedorTipoDTO.class
-10/09/2026  09:39               824 VerificacaoAssociadosCompletoDTO$DivergenciaAssociadoDTO.class
-10/09/2026  09:39               647 VerificacaoAssociadosCompletoDTO$NotaBasicaDTO.class
-10/09/2026  09:39             2.821 VerificacaoAssociadosCompletoDTO.class
-10/09/2026  09:39             3.613 VerificacaoAssociadosDTO$AssociadoDivergenteDTO.class
-10/09/2026  09:39             3.196 VerificacaoAssociadosDTO.class
-10/09/2026  09:39             3.131 VerificacaoResultadoDTO.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             3.574 AssociadoDefFaturamentoDTO.class
+16/09/2026  17:36             2.980 AssociadoDefFaturamentoResumoDTO.class
+16/09/2026  17:36             1.781 AssociadoDefNotificacaoDTO.class
+16/09/2026  17:36             8.979 AssociadoDTO.class
+16/09/2026  17:36             3.388 AssociadoFiltroDTO.class
+16/09/2026  17:36             3.248 AssociadoPlanoDTO.class
+16/09/2026  17:36             6.685 AssociadoProcessamentoDTO.class
+16/09/2026  17:36             4.478 AssociadoProdutoDTO.class
+16/09/2026  17:36             3.198 AssociadoProdutoResumoDTO.class
+16/09/2026  17:36             4.041 AssociadoReguaDTO.class
+16/09/2026  17:36             6.471 AssociadoResumoDTO.class
+16/09/2026  17:36             2.830 CancelamentoImportacaoDTO.class
+16/09/2026  17:36             2.885 CancelamentoProcessadoDTO.class
+16/09/2026  17:36             2.630 CategoriaDTO.class
+16/09/2026  17:36             1.799 CategoriaResumoDTO.class
+16/09/2026  17:36             2.089 ConferenciaFaturaDetalheDTO$ItemComparacaoDTO.class
+16/09/2026  17:36             6.261 ConferenciaFaturaDetalheDTO.class
+16/09/2026  17:36             5.704 ConferenciaFaturamentoDTO.class
+16/09/2026  17:36             3.908 ConferenciaResumoDTO.class
+16/09/2026  17:36             5.401 ConsumoFranquiaDTO.class
+16/09/2026  17:36             1.364 EmailDTO.class
+16/09/2026  17:36             2.469 EnderecoDTO.class
+16/09/2026  17:36             1.639 ExportacaoRmRequest.class
+16/09/2026  17:36             4.696 FaturaDetalheDTO.class
+16/09/2026  17:36             3.923 FaturaItemDTO.class
+16/09/2026  17:36             3.675 FaturaItemResponseDTO.class
+16/09/2026  17:36             4.246 FaturaResumoDTO.class
+16/09/2026  17:36             4.355 HistoricoMigracaoDTO.class
+16/09/2026  17:36             5.342 ImportacaoResponseDTO.class
+16/09/2026  17:36             2.152 ImportacaoResumoDTO.class
+16/09/2026  17:36             2.513 LogAcaoDTO.class
+16/09/2026  17:36             2.320 LogAcessoDTO.class
+16/09/2026  17:36             2.306 LogFaturaDTO.class
+16/09/2026  17:36               576 LoginRequest.class
+16/09/2026  17:36             2.630 MenuDTO.class
+16/09/2026  17:36             1.885 MigracaoReguaRequest.class
+16/09/2026  17:36             4.403 MigracaoReguaResponse.class
+16/09/2026  17:36             2.505 NotaDebitoDetalheDTO.class
+16/09/2026  17:36             3.838 NotaDebitoResumoDTO.class
+16/09/2026  17:36             2.653 NotaDetalheDTO.class
+16/09/2026  17:36             2.384 NotaFaturamentoGridDTO.class
+16/09/2026  17:36             5.145 NotificacaoAssociadoDTO.class
+16/09/2026  17:36               502 NotificacaoSincronizacaoRequest.class
+16/09/2026  17:36             3.994 NotificacaoSumarizadaDTO.class
+16/09/2026  17:36             2.147 PerfilDTO.class
+16/09/2026  17:36             2.140 PerfilRequest.class
+16/09/2026  17:36             1.417 PermissaoDTO.class
+16/09/2026  17:36             2.966 PlanoDTO.class
+16/09/2026  17:36             3.680 PlanoProdutoFranquiaDTO.class
+16/09/2026  17:36             2.355 PlanoResumoDTO.class
+16/09/2026  17:36             6.445 ProcessamentoRequest.class
+16/09/2026  17:36             7.461 ProdutoDTO.class
+16/09/2026  17:36               769 ProdutoFiltroDTO.class
+16/09/2026  17:36             3.983 ProdutoResumoDTO.class
+16/09/2026  17:36             7.819 ReguaFaturamentoDTO.class
+16/09/2026  17:36            12.601 ReguaFaturamentoProcessamentoDTO.class
+16/09/2026  17:36             3.499 ResultadoProcessamento.class
+16/09/2026  17:36             5.035 RmApiConfigDTO.class
+16/09/2026  17:36             1.348 RmApiIntegracaoRequest.class
+16/09/2026  17:36             1.622 RmApiIntegracaoResponse$ItemResponse.class
+16/09/2026  17:36             2.287 RmApiIntegracaoResponse.class
+16/09/2026  17:36             1.151 SenhaRequest.class
+16/09/2026  17:36             1.792 TelefoneDTO.class
+16/09/2026  17:36             3.545 TipoArquivoReguaDTO.class
+16/09/2026  17:36             2.410 TipoEnvioDTO.class
+16/09/2026  17:36             1.631 TipoEnvioResumoDTO.class
+16/09/2026  17:36               609 UsuarioAuthResponse.class
+16/09/2026  17:36             2.620 UsuarioDTO.class
+16/09/2026  17:36             2.494 UsuarioRequest.class
+16/09/2026  17:36             1.762 UsuarioUpdateRequest.class
+16/09/2026  17:36             2.461 VendedorDTO.class
+16/09/2026  17:36             1.941 VendedorResumoDTO.class
+16/09/2026  17:36             1.000 VendedorTipoDTO.class
+16/09/2026  17:36               824 VerificacaoAssociadosCompletoDTO$DivergenciaAssociadoDTO.class
+16/09/2026  17:36               647 VerificacaoAssociadosCompletoDTO$NotaBasicaDTO.class
+16/09/2026  17:36             2.821 VerificacaoAssociadosCompletoDTO.class
+16/09/2026  17:36             3.613 VerificacaoAssociadosDTO$AssociadoDivergenteDTO.class
+16/09/2026  17:36             3.196 VerificacaoAssociadosDTO.class
+16/09/2026  17:36             3.131 VerificacaoResultadoDTO.class
               79 arquivo(s)        259.067 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\enums
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             2.235 TipoArquivoFaturamento.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             2.235 TipoArquivoFaturamento.class
                1 arquivo(s)          2.235 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\exception
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39               629 ResourceNotFoundException.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36               629 ResourceNotFoundException.class
                1 arquivo(s)            629 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\model
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39            14.776 Associado.class
-10/09/2026  09:39             3.821 AssociadoDefFaturamento.class
-10/09/2026  09:39             5.420 AssociadoDefNotificacao.class
-10/09/2026  09:39             3.921 AssociadoPlano.class
-10/09/2026  09:39             7.313 AssociadoProduto.class
-10/09/2026  09:39             4.789 AssociadoRegua.class
-10/09/2026  09:39             7.070 CancelamentoImportacao.class
-10/09/2026  09:39             3.052 CancelamentoProcessado.class
-10/09/2026  09:39             6.633 Categoria.class
-10/09/2026  09:39             5.466 ConfiguracaoRm.class
-10/09/2026  09:39             5.975 ConfiguracaoRmApi.class
-10/09/2026  09:39             3.789 ConfiguracaoRmParametro.class
-10/09/2026  09:39             5.408 ConsumoFranquia.class
-10/09/2026  09:39             2.687 Email.class
-10/09/2026  09:39             4.506 Endereco.class
-10/09/2026  09:39            11.876 Fatura.class
-10/09/2026  09:39             7.595 FaturaItem.class
-10/09/2026  09:39             2.917 Faturamento.class
-10/09/2026  09:39             5.910 HeaderSPC.class
-10/09/2026  09:39             4.183 HistoricoIntegracaoRm.class
-10/09/2026  09:39             3.335 HistoricoIntegracaoRmApi.class
-10/09/2026  09:39             5.781 HistoricoMigracaoRegua.class
-10/09/2026  09:39             4.943 ImportacaoSPC.class
-10/09/2026  09:39             6.389 ItemSPC.class
-10/09/2026  09:39             4.206 LogAcao.class
-10/09/2026  09:39             4.004 LogAcesso.class
-10/09/2026  09:39             3.204 LogFatura.class
-10/09/2026  09:39             4.809 LoteProcessamento.class
-10/09/2026  09:39             4.894 Menu.class
-10/09/2026  09:39             7.824 NotaDebitoSPC.class
-10/09/2026  09:39    <DIR>          notificacao
-10/09/2026  09:39            12.317 NotificacaoAssociado.class
-10/09/2026  09:39             6.638 ParametrosSPC.class
-10/09/2026  09:39             4.451 Perfil.class
-10/09/2026  09:39             2.628 PerfilMenu.class
-10/09/2026  09:39             2.688 PerfilPermissao.class
-10/09/2026  09:39             2.995 Permissao.class
-10/09/2026  09:39             4.649 PlanoProdutoFranquia.class
-10/09/2026  09:39             2.728 Planos.class
-10/09/2026  09:39             1.983 PlanosModelo.class
-10/09/2026  09:39             2.898 ProcessamentoStatus.class
-10/09/2026  09:39            12.756 Produto.class
-10/09/2026  09:39             3.586 ProdutoFaixa.class
-10/09/2026  09:39               749 ReguaFaturamento$1.class
-10/09/2026  09:39               744 ReguaFaturamento$2.class
-10/09/2026  09:39            11.738 ReguaFaturamento.class
-10/09/2026  09:39             3.890 SessaoUsuario.class
-10/09/2026  09:39             3.846 SincronizacaoNotificacao.class
-10/09/2026  09:39             5.653 SistemaLog.class
-10/09/2026  09:39             3.174 Telefone.class
-10/09/2026  09:39             3.453 TipoArquivoRegua.class
-10/09/2026  09:39             3.045 TipoEnvio.class
-10/09/2026  09:39             2.676 TraillerSPC.class
-10/09/2026  09:39             8.477 Usuario.class
-10/09/2026  09:39             3.206 Vendedor.class
-10/09/2026  09:39             1.421 VendedorTipo.class
-              55 arquivo(s)        278.885 bytes
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             4.446 AlertaFranquiaSemCobertura.class
+16/09/2026  17:36            14.776 Associado.class
+16/09/2026  17:36             3.821 AssociadoDefFaturamento.class
+16/09/2026  17:36             5.420 AssociadoDefNotificacao.class
+16/09/2026  17:36             3.921 AssociadoPlano.class
+16/09/2026  17:36             7.313 AssociadoProduto.class
+16/09/2026  17:36             4.789 AssociadoRegua.class
+16/09/2026  17:36             7.070 CancelamentoImportacao.class
+16/09/2026  17:36             3.052 CancelamentoProcessado.class
+16/09/2026  17:36             6.633 Categoria.class
+16/09/2026  17:36             5.466 ConfiguracaoRm.class
+16/09/2026  17:36             5.975 ConfiguracaoRmApi.class
+16/09/2026  17:36             3.789 ConfiguracaoRmParametro.class
+16/09/2026  17:36             5.408 ConsumoFranquia.class
+16/09/2026  17:36             2.687 Email.class
+16/09/2026  17:36             4.506 Endereco.class
+16/09/2026  17:36            11.876 Fatura.class
+16/09/2026  17:36             7.595 FaturaItem.class
+16/09/2026  17:36             2.917 Faturamento.class
+16/09/2026  17:36             3.974 FranquiaServicoCoberto.class
+16/09/2026  17:36             5.910 HeaderSPC.class
+16/09/2026  17:36             4.183 HistoricoIntegracaoRm.class
+16/09/2026  17:36             3.335 HistoricoIntegracaoRmApi.class
+16/09/2026  17:36             5.781 HistoricoMigracaoRegua.class
+16/09/2026  17:36             4.943 ImportacaoSPC.class
+16/09/2026  17:36             6.389 ItemSPC.class
+16/09/2026  17:36             4.206 LogAcao.class
+16/09/2026  17:36             4.004 LogAcesso.class
+16/09/2026  17:36             3.204 LogFatura.class
+16/09/2026  17:36             4.809 LoteProcessamento.class
+16/09/2026  17:36             4.894 Menu.class
+16/09/2026  17:36             7.824 NotaDebitoSPC.class
+16/09/2026  17:36    <DIR>          notificacao
+16/09/2026  17:36            12.317 NotificacaoAssociado.class
+16/09/2026  17:36             6.638 ParametrosSPC.class
+16/09/2026  17:36             4.451 Perfil.class
+16/09/2026  17:36             2.628 PerfilMenu.class
+16/09/2026  17:36             2.688 PerfilPermissao.class
+16/09/2026  17:36             2.995 Permissao.class
+16/09/2026  17:36             4.649 PlanoProdutoFranquia.class
+16/09/2026  17:36             2.728 Planos.class
+16/09/2026  17:36             1.983 PlanosModelo.class
+16/09/2026  17:36             2.898 ProcessamentoStatus.class
+16/09/2026  17:36            12.756 Produto.class
+16/09/2026  17:36             3.586 ProdutoFaixa.class
+16/09/2026  17:36               749 ReguaFaturamento$1.class
+16/09/2026  17:36               744 ReguaFaturamento$2.class
+16/09/2026  17:36            11.738 ReguaFaturamento.class
+16/09/2026  17:36             3.890 SessaoUsuario.class
+16/09/2026  17:36             3.846 SincronizacaoNotificacao.class
+16/09/2026  17:36             5.653 SistemaLog.class
+16/09/2026  17:36             3.174 Telefone.class
+16/09/2026  17:36             3.453 TipoArquivoRegua.class
+16/09/2026  17:36             3.045 TipoEnvio.class
+16/09/2026  17:36             2.676 TraillerSPC.class
+16/09/2026  17:36             8.477 Usuario.class
+16/09/2026  17:36             3.206 Vendedor.class
+16/09/2026  17:36             1.421 VendedorTipo.class
+              57 arquivo(s)        287.305 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\model\notificacao
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             4.729 NotificacaoSumarizada.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             4.729 NotificacaoSumarizada.class
                1 arquivo(s)          4.729 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\repository
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             2.500 AssociadoDefFaturamentoRepository.class
-10/09/2026  09:39             1.732 AssociadoPlanoRepository.class
-10/09/2026  09:39             2.632 AssociadoProdutoRepository.class
-10/09/2026  09:39             7.825 AssociadoReguaRepository.class
-10/09/2026  09:39             6.218 AssociadoRepository.class
-10/09/2026  09:39             2.539 CancelamentoImportacaoRepository.class
-10/09/2026  09:39               463 CancelamentoProcessadoRepository.class
-10/09/2026  09:39               884 CategoriaRepository.class
-10/09/2026  09:39               689 ConfiguracaoRmApiRepository.class
-10/09/2026  09:39             1.141 ConfiguracaoRmParametroRepository.class
-10/09/2026  09:39             1.064 ConfiguracaoRmRepository.class
-10/09/2026  09:39             3.345 ConsumoFranquiaRepository.class
-10/09/2026  09:39               745 EmailRepository.class
-10/09/2026  09:39               757 EnderecoRepository.class
-10/09/2026  09:39             1.777 FaturaItemRepository.class
-10/09/2026  09:39             1.372 FaturamentoRepository.class
-10/09/2026  09:39            15.055 FaturaRepository.class
-10/09/2026  09:39               424 HeaderSPCRepository.class
-10/09/2026  09:39             1.285 HistoricoIntegracaoRmRepository.class
-10/09/2026  09:39             2.735 HistoricoMigracaoReguaRepository.class
-10/09/2026  09:39               932 ImportacaoSPCRepository.class
-10/09/2026  09:39             2.139 ItemSPCRepository.class
-10/09/2026  09:39             2.715 LogAcaoRepository.class
-10/09/2026  09:39             2.513 LogAcessoRepository.class
-10/09/2026  09:39             1.597 LogFaturaRepository.class
-10/09/2026  09:39             3.366 LoteProcessamentoRepository.class
-10/09/2026  09:39             1.413 MenuRepository.class
-10/09/2026  09:39            10.222 NotaDebitoSPCRepository.class
-10/09/2026  09:39    <DIR>          notificacao
-10/09/2026  09:39             3.194 NotificacaoAssociadoRepository.class
-10/09/2026  09:39             2.663 ParametrosSPCRepository.class
-10/09/2026  09:39             1.417 PerfilRepository.class
-10/09/2026  09:39             1.513 PermissaoRepository.class
-10/09/2026  09:39             2.336 PlanoProdutoFranquiaRepository.class
-10/09/2026  09:39             1.239 PlanosRepository.class
-10/09/2026  09:39             6.470 ProdutoRepository.class
-10/09/2026  09:39             2.320 ReguaFaturamentoRepository.class
-10/09/2026  09:39             1.743 SessaoUsuarioRepository.class
-10/09/2026  09:39             1.754 SincronizacaoNotificacaoRepository.class
-10/09/2026  09:39             6.227 SistemaLogRepository.class
-10/09/2026  09:39               757 TelefoneRepository.class
-10/09/2026  09:39             1.108 TipoArquivoReguaRepository.class
-10/09/2026  09:39             1.496 TipoEnvioRepository.class
-10/09/2026  09:39               430 TraillerSPCRepository.class
-10/09/2026  09:39             1.751 UsuarioRepository.class
-10/09/2026  09:39             4.034 VendedorRepository.class
-10/09/2026  09:39             1.137 VendedorTipoRepository.class
-              46 arquivo(s)        121.668 bytes
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             1.094 AlertaFranquiaSemCoberturaRepository.class
+16/09/2026  17:36             2.500 AssociadoDefFaturamentoRepository.class
+16/09/2026  17:36             1.732 AssociadoPlanoRepository.class
+16/09/2026  17:36             2.632 AssociadoProdutoRepository.class
+16/09/2026  17:36             7.825 AssociadoReguaRepository.class
+16/09/2026  17:36             6.218 AssociadoRepository.class
+16/09/2026  17:36             2.539 CancelamentoImportacaoRepository.class
+16/09/2026  17:36               463 CancelamentoProcessadoRepository.class
+16/09/2026  17:36               884 CategoriaRepository.class
+16/09/2026  17:36               689 ConfiguracaoRmApiRepository.class
+16/09/2026  17:36             1.141 ConfiguracaoRmParametroRepository.class
+16/09/2026  17:36             1.064 ConfiguracaoRmRepository.class
+16/09/2026  17:36             3.345 ConsumoFranquiaRepository.class
+16/09/2026  17:36               745 EmailRepository.class
+16/09/2026  17:36               757 EnderecoRepository.class
+16/09/2026  17:36             1.777 FaturaItemRepository.class
+16/09/2026  17:36             1.372 FaturamentoRepository.class
+16/09/2026  17:36            15.362 FaturaRepository.class
+16/09/2026  17:36             1.618 FranquiaServicoCobertoRepository.class
+16/09/2026  17:36               424 HeaderSPCRepository.class
+16/09/2026  17:36             1.285 HistoricoIntegracaoRmRepository.class
+16/09/2026  17:36             2.735 HistoricoMigracaoReguaRepository.class
+16/09/2026  17:36               932 ImportacaoSPCRepository.class
+16/09/2026  17:36             2.139 ItemSPCRepository.class
+16/09/2026  17:36             2.715 LogAcaoRepository.class
+16/09/2026  17:36             2.513 LogAcessoRepository.class
+16/09/2026  17:36             1.597 LogFaturaRepository.class
+16/09/2026  17:36             3.366 LoteProcessamentoRepository.class
+16/09/2026  17:36             1.413 MenuRepository.class
+16/09/2026  17:36            10.222 NotaDebitoSPCRepository.class
+16/09/2026  17:36    <DIR>          notificacao
+16/09/2026  17:36             3.194 NotificacaoAssociadoRepository.class
+16/09/2026  17:36             2.663 ParametrosSPCRepository.class
+16/09/2026  17:36             1.417 PerfilRepository.class
+16/09/2026  17:36             1.513 PermissaoRepository.class
+16/09/2026  17:36             2.336 PlanoProdutoFranquiaRepository.class
+16/09/2026  17:36             1.239 PlanosRepository.class
+16/09/2026  17:36             6.470 ProdutoRepository.class
+16/09/2026  17:36    <DIR>          projection
+16/09/2026  17:36             2.320 ReguaFaturamentoRepository.class
+16/09/2026  17:36             1.743 SessaoUsuarioRepository.class
+16/09/2026  17:36             1.754 SincronizacaoNotificacaoRepository.class
+16/09/2026  17:36             6.227 SistemaLogRepository.class
+16/09/2026  17:36               757 TelefoneRepository.class
+16/09/2026  17:36             1.108 TipoArquivoReguaRepository.class
+16/09/2026  17:36             1.496 TipoEnvioRepository.class
+16/09/2026  17:36               430 TraillerSPCRepository.class
+16/09/2026  17:36             1.751 UsuarioRepository.class
+16/09/2026  17:36             4.034 VendedorRepository.class
+16/09/2026  17:36             1.137 VendedorTipoRepository.class
+              48 arquivo(s)        124.687 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\repository\notificacao
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39            19.160 NotificacaoSumarizadaRepository.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36            19.160 NotificacaoSumarizadaRepository.class
                1 arquivo(s)         19.160 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\repository\projection
+
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36               594 ConferenciaFaturaDetalheProjection.class
+16/09/2026  17:36             2.564 ConferenciaFaturaDetalheResult.class
+16/09/2026  17:36             2.726 ConferenciaFaturamentoMapping.class
+16/09/2026  17:36               755 ConferenciaFaturamentoProjection.class
+16/09/2026  17:36             3.400 ConferenciaFaturamentoResult.class
+16/09/2026  17:36               327 ItemComparacaoProjection.class
+16/09/2026  17:36             1.232 ItemComparacaoResult.class
+16/09/2026  17:36               426 ResumoConferenciaProjection.class
+16/09/2026  17:36             1.635 ResumoConferenciaResult.class
+               9 arquivo(s)         13.659 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\rules
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39            11.115 FaturamentoMinimoRule.class
-10/09/2026  09:39               974 FranquiaRule$CorrecaoProduto.class
-10/09/2026  09:39            15.506 FranquiaRule.class
-10/09/2026  09:39             6.311 FranquiaRuleOLD.class
-10/09/2026  09:39               990 FranquiaRuleOLD2$CorrecaoProduto.class
-10/09/2026  09:39            14.971 FranquiaRuleOLD2.class
-               6 arquivo(s)         49.867 bytes
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36            11.115 FaturamentoMinimoRule.class
+16/09/2026  17:36               974 FranquiaRule$CorrecaoProduto.class
+16/09/2026  17:36            21.025 FranquiaRule.class
+16/09/2026  17:36             6.311 FranquiaRuleOLD.class
+16/09/2026  17:36               990 FranquiaRuleOLD2$CorrecaoProduto.class
+16/09/2026  17:36            14.971 FranquiaRuleOLD2.class
+16/09/2026  17:36               994 FranquiaRule_OLD3$CorrecaoProduto.class
+16/09/2026  17:36            15.697 FranquiaRule_OLD3.class
+               8 arquivo(s)         72.077 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\scheduler
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             3.233 NotificacaoScheduler.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             3.233 NotificacaoScheduler.class
                1 arquivo(s)          3.233 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\security
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39             4.674 JwtAuthenticationFilter.class
-10/09/2026  09:39             5.477 JwtService.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             4.674 JwtAuthenticationFilter.class
+16/09/2026  17:36             5.477 JwtService.class
                2 arquivo(s)         10.151 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\service
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39            14.085 AssociadoDefFaturamentoService.class
-10/09/2026  09:39             7.131 AssociadoPlanoService.class
-10/09/2026  09:39            14.374 AssociadoProdutoService.class
-10/09/2026  09:39            43.413 AssociadoService.class
-10/09/2026  09:39            10.519 CacheService.class
-10/09/2026  09:39             9.185 CancelamentoImportacaoService.class
-10/09/2026  09:39            10.465 CancelamentoService.class
-10/09/2026  09:39             6.672 CategoriaService.class
-10/09/2026  09:39            20.426 ConferenciaFaturamentoService.class
-10/09/2026  09:39             2.766 ConfiguracaoRmService.class
-10/09/2026  09:39             9.463 ConsumoFranquiaService.class
-10/09/2026  09:39             6.022 FaturaBatchService.class
-10/09/2026  09:39               842 FaturaGeracaoService$LogEntry.class
-10/09/2026  09:39               773 FaturaGeracaoService$ProdutoNotificacaoInfo.class
-10/09/2026  09:39            57.180 FaturaGeracaoService.class
-10/09/2026  09:39            14.249 FaturamentoExtemporaneoService.class
-10/09/2026  09:39             3.397 FaturaRmExportService$ExportacaoRmResultado$FaturaExportada.class
-10/09/2026  09:39             1.490 FaturaRmExportService$ExportacaoRmResultado$ItemFatura.class
-10/09/2026  09:39             3.459 FaturaRmExportService$ExportacaoRmResultado.class
-10/09/2026  09:39            27.542 FaturaRmExportService.class
-10/09/2026  09:39            28.390 FaturaService.class
-10/09/2026  09:39             3.528 ImportacaoFaturamentoService.class
-10/09/2026  09:39            21.784 ImportacaoSPService.class
-10/09/2026  09:39             5.627 IntegracaoRmService.class
-10/09/2026  09:39             3.554 LogAcaoService.class
-10/09/2026  09:39             4.894 LogAcessoService.class
-10/09/2026  09:39             7.736 LogFaturaService.class
-10/09/2026  09:39             2.413 LoteProcessamentoService.class
-10/09/2026  09:39             5.963 MenuService.class
-10/09/2026  09:39            18.556 MigracaoReguaService.class
-10/09/2026  09:39             7.355 NotaDebitoService.class
-10/09/2026  09:39             5.186 NotaDebitoSPCService.class
-10/09/2026  09:39            24.349 NotificacaoIntegracaoService.class
-10/09/2026  09:39             1.608 PdfBatchService$PdfResultado.class
-10/09/2026  09:39             7.937 PdfBatchService.class
-10/09/2026  09:39            14.560 PdfExportService.class
-10/09/2026  09:39            10.206 PerfilService.class
-10/09/2026  09:39            11.163 PlanoProdutoFranquiaService.class
-10/09/2026  09:39             8.129 PlanosService.class
-10/09/2026  09:39            29.425 ProcessamentoFaturamentoService.class
-10/09/2026  09:39            21.009 ProdutoService.class
-10/09/2026  09:39            28.432 ReguaFaturamentoService.class
-10/09/2026  09:39             8.718 RmApiConfigService.class
-10/09/2026  09:39            29.110 RmApiIntegracaoService.class
-10/09/2026  09:39               883 RmExportBatchService$RmExportResultado.class
-10/09/2026  09:39             5.512 RmExportBatchService.class
-10/09/2026  09:39            16.656 RmExportService.class
-10/09/2026  09:39             4.596 SessaoService.class
-10/09/2026  09:39             8.834 SincronizacaoNotificacaoService.class
-10/09/2026  09:39            24.779 SistemaLogService.class
-10/09/2026  09:39             7.666 TipoEnvioService.class
-10/09/2026  09:39            11.981 UsuarioService.class
-10/09/2026  09:39            14.657 VendedorService.class
-10/09/2026  09:39             7.716 VendedorTipoService.class
-10/09/2026  09:39            58.728 VerificacaoImportacaoService.class
-              55 arquivo(s)        735.093 bytes
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36            14.085 AssociadoDefFaturamentoService.class
+16/09/2026  17:36             7.131 AssociadoPlanoService.class
+16/09/2026  17:36            14.374 AssociadoProdutoService.class
+16/09/2026  17:36            44.590 AssociadoService.class
+17/09/2026  13:21            13.126 CacheService.class
+16/09/2026  17:36             9.185 CancelamentoImportacaoService.class
+16/09/2026  17:36            10.465 CancelamentoService.class
+16/09/2026  17:36             6.672 CategoriaService.class
+16/09/2026  17:36            19.104 ConferenciaFaturamentoService.class
+16/09/2026  17:36             2.766 ConfiguracaoRmService.class
+16/09/2026  17:36             9.463 ConsumoFranquiaService.class
+16/09/2026  17:36             6.022 FaturaBatchService.class
+17/09/2026  13:25               842 FaturaGeracaoService$LogEntry.class
+17/09/2026  13:25               773 FaturaGeracaoService$ProdutoNotificacaoInfo.class
+17/09/2026  13:25            59.138 FaturaGeracaoService.class
+16/09/2026  17:36            14.249 FaturamentoExtemporaneoService.class
+16/09/2026  17:36             3.397 FaturaRmExportService$ExportacaoRmResultado$FaturaExportada.class
+16/09/2026  17:36             1.490 FaturaRmExportService$ExportacaoRmResultado$ItemFatura.class
+16/09/2026  17:36             3.459 FaturaRmExportService$ExportacaoRmResultado.class
+16/09/2026  17:36            27.542 FaturaRmExportService.class
+16/09/2026  17:36            28.390 FaturaService.class
+16/09/2026  17:36             2.309 FranquiaCoberturaCache.class
+16/09/2026  17:36             3.528 ImportacaoFaturamentoService.class
+16/09/2026  17:36            21.784 ImportacaoSPService.class
+16/09/2026  17:36             5.627 IntegracaoRmService.class
+16/09/2026  17:36             3.554 LogAcaoService.class
+16/09/2026  17:36             4.894 LogAcessoService.class
+16/09/2026  17:36             7.736 LogFaturaService.class
+16/09/2026  17:36             2.413 LoteProcessamentoService.class
+16/09/2026  17:36             5.963 MenuService.class
+16/09/2026  17:36            18.556 MigracaoReguaService.class
+16/09/2026  17:36             7.355 NotaDebitoService.class
+16/09/2026  17:36             5.186 NotaDebitoSPCService.class
+16/09/2026  17:36            24.349 NotificacaoIntegracaoService.class
+16/09/2026  17:36             1.608 PdfBatchService$PdfResultado.class
+16/09/2026  17:36             7.937 PdfBatchService.class
+16/09/2026  17:36            14.560 PdfExportService.class
+16/09/2026  17:36            10.206 PerfilService.class
+16/09/2026  17:36            11.163 PlanoProdutoFranquiaService.class
+16/09/2026  17:36             8.129 PlanosService.class
+16/09/2026  17:36            29.425 ProcessamentoFaturamentoService.class
+16/09/2026  17:36            21.009 ProdutoService.class
+16/09/2026  17:36            28.432 ReguaFaturamentoService.class
+16/09/2026  17:36             8.718 RmApiConfigService.class
+16/09/2026  17:36            29.110 RmApiIntegracaoService.class
+16/09/2026  17:36               883 RmExportBatchService$RmExportResultado.class
+16/09/2026  17:36             5.512 RmExportBatchService.class
+16/09/2026  17:36            16.650 RmExportService.class
+16/09/2026  17:36             4.596 SessaoService.class
+16/09/2026  17:36             8.834 SincronizacaoNotificacaoService.class
+16/09/2026  17:36            24.779 SistemaLogService.class
+16/09/2026  17:36             7.666 TipoEnvioService.class
+16/09/2026  17:36            11.981 UsuarioService.class
+16/09/2026  17:36            14.657 VendedorService.class
+16/09/2026  17:36             7.716 VendedorTipoService.class
+16/09/2026  17:36            58.728 VerificacaoImportacaoService.class
+              56 arquivo(s)        741.816 bytes
+
+ Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\com\sga\util
+
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36             2.943 CastUtils.class
+               1 arquivo(s)          2.943 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\META-INF
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39               165 MANIFEST.MF
-10/09/2026  09:39    <DIR>          maven
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+17/09/2026  13:25               165 MANIFEST.MF
+16/09/2026  17:36    <DIR>          maven
                1 arquivo(s)            165 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\META-INF\maven
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          com.sistema
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          com.sistema
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\META-INF\maven\com.sistema
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          faturamento-associados
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+17/09/2026  13:25    <DIR>          faturamento-associados
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\classes\META-INF\maven\com.sistema\faturamento-associados
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39               286 pom.properties
-10/09/2026  09:39             6.630 pom.xml
-               2 arquivo(s)          6.916 bytes
+17/09/2026  13:25    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+17/09/2026  13:25               286 pom.properties
+17/09/2026  13:25             6.756 pom.xml
+               2 arquivo(s)          7.042 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\generated-sources
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          annotations
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          annotations
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\generated-sources\annotations
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\generated-test-sources
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          test-annotations
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          test-annotations
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\generated-test-sources\test-annotations
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\test-classes
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          com
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          com
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\test-classes\com
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39    <DIR>          sga
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36    <DIR>          sga
                0 arquivo(s)              0 bytes
 
  Pasta de E:\Users\roberto\Documents\Desenvolvimento\Web\sga-stable\sga-backend\target\test-classes\com\sga
 
-10/09/2026  09:39    <DIR>          .
-10/09/2026  09:39    <DIR>          ..
-10/09/2026  09:39               510 SgaApplicationTests.class
+16/09/2026  17:36    <DIR>          .
+16/09/2026  17:36    <DIR>          ..
+16/09/2026  17:36               510 SgaApplicationTests.class
                1 arquivo(s)            510 bytes
 
      Total de Arquivos na Lista:
-             641 arquivo(s)     31.470.261 bytes
-             223 pasta(s)   24.251.060.224 bytes dispon¡veis
+             738 arquivo(s)     48.440.762 bytes
+             403 pasta(s)   22.956.089.344 bytes dispon¡veis

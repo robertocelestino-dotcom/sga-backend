@@ -1153,6 +1153,58 @@ public class AssociadoService {
 		return associadoRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
 	}
+	
+	// ============================================================
+	// 🔥 NOVOS MÉTODOS — FILTRO POR NOTA NO PERÍODO
+	// ============================================================
+
+	/**
+	 * 🔥 Busca associados de uma régua que possuem nota no período.
+	 */
+	@Transactional(readOnly = true)
+	public List<Associado> buscarPorReguaComNotaNoPeriodo(
+	        Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
+	    
+	    logger.info("🔍 Buscando associados da régua {} com nota entre {} e {}", 
+	        reguaId, dataInicio, dataFim);
+	    
+	    long inicio = System.currentTimeMillis();
+	    List<Associado> associados = associadoRepository
+	        .findByReguaComNotaNoPeriodo(reguaId, dataInicio, dataFim);
+	    long tempo = System.currentTimeMillis() - inicio;
+	    
+	    logger.info("✅ {} associados com nota encontrados em {} ms", associados.size(), tempo);
+	    return associados;
+	}
+
+	/**
+	 * 🔥 Conta associados da régua que NÃO têm nota no período.
+	 */
+	@Transactional(readOnly = true)
+	public long contarPorReguaSemNotaNoPeriodo(
+	        Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
+	    
+	    logger.info("🔍 Contando associados da régua {} SEM nota entre {} e {}", 
+	        reguaId, dataInicio, dataFim);
+	    
+	    long count = associadoRepository
+	        .countByReguaSemNotaNoPeriodo(reguaId, dataInicio, dataFim);
+	    
+	    logger.info("📊 {} associados sem nota no período", count);
+	    return count;
+	}
+
+	/**
+	 * 🔥 Busca associados de uma régua (sem filtro de nota).
+	 */
+	@Transactional(readOnly = true)
+	public List<Associado> buscarPorRegua(Long reguaId) {
+	    logger.info("🔍 Buscando associados da régua {}", reguaId);
+	    List<Associado> associados = associadoRepository.findByReguaAtivos(reguaId);
+	    logger.info("✅ {} associados encontrados", associados.size());
+	    return associados;
+	}
+	
 
 	/**
 	 * Busca associado pelo código SPC

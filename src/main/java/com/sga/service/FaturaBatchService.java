@@ -116,6 +116,7 @@ public class FaturaBatchService {
      */
     @Transactional
     public void salvarFaturasComItens(List<Fatura> faturas) {
+    	
         if (faturas == null || faturas.isEmpty()) {
             return;
         }

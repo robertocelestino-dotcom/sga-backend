@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -112,19 +114,59 @@ public class ConferenciaFaturamentoController {
     }
 
     /**
-     * Exportar CSV com os dados da conferência
+     * Exportar CSV com os dados da conferência (todos os filtrados)
      */
     @GetMapping("/exportar-csv")
     @PreAuthorize("hasAuthority('FATURA_VIEW') or hasRole('SUPER_ADMIN')")
-    public ResponseEntity<?> exportarCSV(
+    public ResponseEntity<byte[]> exportarCSV(
             @RequestParam(required = false) Long reguaId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
-            @RequestParam(required = false) String codigoSpc) {
+            @RequestParam(required = false) String codigoSpc,
+            @RequestParam(required = false) String status) {
 
-        log.info("📊 Exportando CSV da conferência - Régua: {}, Período: {} à {}", reguaId, dataInicio, dataFim);
+        log.info("📊 Exportando CSV da conferência - Régua: {}, Período: {} à {}, Status: {}",
+                reguaId, dataInicio, dataFim, status);
 
-        // TODO: Implementar exportação CSV
-        return ResponseEntity.ok().build();
+        String csv = conferenciaService.exportarCSV(reguaId, dataInicio, dataFim, codigoSpc, status);
+
+        byte[] bytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        String nomeArquivo = "conferencia_faturamento_" +
+                java.time.LocalDate.now().toString() + ".csv";
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + nomeArquivo)
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .body(bytes);
+    }
+
+    /**
+     * 🔥 Exportar CSV apenas das faturas selecionadas
+     */
+    @PostMapping("/exportar-csv-selecionados")
+    @PreAuthorize("hasAuthority('FATURA_VIEW') or hasRole('SUPER_ADMIN')")
+    public ResponseEntity<byte[]> exportarCSVSelecionados(
+            @RequestBody java.util.Map<String, java.util.List<Long>> body) {
+
+        java.util.List<Long> faturaIds = body.get("faturaIds");
+
+        log.info("📊 Exportando CSV de {} faturas selecionadas",
+                faturaIds != null ? faturaIds.size() : 0);
+
+        if (faturaIds == null || faturaIds.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String csv = conferenciaService.exportarCSVSelecionados(faturaIds);
+        byte[] bytes = csv.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+        String nomeArquivo = "conferencia_selecionadas_" +
+                java.time.LocalDate.now().toString() + ".csv";
+
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + nomeArquivo)
+                .header("Content-Type", "text/csv; charset=UTF-8")
+                .body(bytes);
     }
 }

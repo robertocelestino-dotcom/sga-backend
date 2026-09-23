@@ -345,4 +345,72 @@ public interface FaturaRepository extends JpaRepository<Fatura, Long> {
             @Param("dataFim") LocalDate dataFim,
             @Param("codigoSpc") String codigoSpc);
 
+    // ============================================================
+    // 🔥 MÉTODOS PARA EXPORTAÇÃO CSV
+    // ============================================================
+
+    /**
+     * Busca faturas para exportação CSV (sem paginação).
+     * Retorna todos os dados necessários em uma linha.
+     */
+    @Query(value =
+        "SELECT " +
+        "   ft.id AS fatura_id, " +
+        "   ft.numero_fatura AS numero_fatura, " +
+        "   ft.data_emissao AS data_emissao, " +
+        "   ft.data_vencimento AS data_vencimento, " +
+        "   ft.status AS status_fatura, " +
+        "   ft.valor_total AS valor_fatura, " +
+        "   nd.id AS nota_id, " +
+        "   nd.numero_nota_debito AS numero_nota_debito, " +
+        "   nd.valor_nota AS valor_nota, " +
+        "   a.id AS associado_id, " +
+        "   a.codigospc AS codigo_spc, " +
+        "   a.codigorm AS codigo_rm, " +
+        "   a.nomerazao AS nome_razao, " +
+        "   a.cnpjcpf AS cnpj_cpf " +
+        "FROM tb_fatura ft " +
+        "INNER JOIN tb_associado a ON ft.associado_id = a.id " +
+        "INNER JOIN tb_nota_debito_spc nd ON ft.nota_debito_id = nd.id " +
+        "LEFT JOIN tb_associado_regua ar ON a.id = ar.associado_id " +
+        "WHERE ft.status != 'CANCELADA' " +
+        "  AND (ar.regua_id = COALESCE(:reguaId, ar.regua_id)) " +
+        "  AND (ft.data_emissao >= COALESCE(:dataInicio, ft.data_emissao)) " +
+        "  AND (ft.data_emissao <= COALESCE(:dataFim, ft.data_emissao)) " +
+        "  AND (a.codigospc = COALESCE(:codigoSpc, a.codigospc)) " +
+        "ORDER BY ft.data_emissao DESC",
+        nativeQuery = true)
+    List<Object[]> findConferenciaParaExportacao(
+            @Param("reguaId") Long reguaId,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim,
+            @Param("codigoSpc") String codigoSpc);
+
+    /**
+     * Busca faturas por lista de IDs para exportação CSV.
+     */
+    @Query(value =
+        "SELECT " +
+        "   ft.id AS fatura_id, " +
+        "   ft.numero_fatura AS numero_fatura, " +
+        "   ft.data_emissao AS data_emissao, " +
+        "   ft.data_vencimento AS data_vencimento, " +
+        "   ft.status AS status_fatura, " +
+        "   ft.valor_total AS valor_fatura, " +
+        "   nd.id AS nota_id, " +
+        "   nd.numero_nota_debito AS numero_nota_debito, " +
+        "   nd.valor_nota AS valor_nota, " +
+        "   a.id AS associado_id, " +
+        "   a.codigospc AS codigo_spc, " +
+        "   a.codigorm AS codigo_rm, " +
+        "   a.nomerazao AS nome_razao, " +
+        "   a.cnpjcpf AS cnpj_cpf " +
+        "FROM tb_fatura ft " +
+        "INNER JOIN tb_associado a ON ft.associado_id = a.id " +
+        "INNER JOIN tb_nota_debito_spc nd ON ft.nota_debito_id = nd.id " +
+        "WHERE ft.id IN (:faturaIds) " +
+        "ORDER BY ft.data_emissao DESC",
+        nativeQuery = true)
+    List<Object[]> findFaturasParaExportacaoPorIds(@Param("faturaIds") List<Long> faturaIds);
+    
 }
