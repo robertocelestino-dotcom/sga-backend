@@ -183,7 +183,7 @@ public interface NotaDebitoSPCRepository extends JpaRepository<NotaDebitoSPC, Lo
      */
     List<NotaDebitoSPC> findByIdIn(List<Long> ids);
     
- // ============================================================
+    // ============================================================
     // 🔥 MÉTODO PARA BUSCAR NOTAS POR IDs DE FATURAS (CORRIGIDO)
     // ============================================================
     
@@ -202,5 +202,17 @@ public interface NotaDebitoSPCRepository extends JpaRepository<NotaDebitoSPC, Lo
         // 🔥 Buscar notas pelos IDs (que correspondem aos notaDebitoId das faturas)
         return findByIdIn(faturaIds);
     }
-    
+   
+	/**
+	 * 🔥 OTIMIZADO: Busca TODAS as notas de VÁRIOS códigos SPC de uma só vez,
+	 * COM OS ITENS já carregados.
+	 * 
+	 * Usado no processamento de faturamento para eliminar N+1 de notas.
+	 * Normaliza os códigos com LPAD para garantir matching.
+	 */
+	@Query("SELECT DISTINCT n FROM NotaDebitoSPC n " +
+	       "LEFT JOIN FETCH n.itens " +
+	       "WHERE n.codigoSocio IN :codigosSpc")
+	List<NotaDebitoSPC> findByCodigoSocioInWithItens(@Param("codigosSpc") List<String> codigosSpc);
+	
 }

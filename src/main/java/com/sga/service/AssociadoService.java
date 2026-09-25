@@ -72,7 +72,7 @@ public class AssociadoService {
 
 	@Autowired
 	private SistemaLogService sistemaLogService;
-	
+
 	@Autowired
 	private ReguaFaturamentoRepository reguaFaturamentoRepository;
 
@@ -80,15 +80,15 @@ public class AssociadoService {
 
 	@Transactional(readOnly = true)
 	public Page<AssociadoResumoDTO> listarComFiltros(Pageable pageable, String codigoSpc, String nome, String cnpjCpf,
-	        String status) {
-	    logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
-	            cnpjCpf, status, codigoSpc);
+			String status) {
+		logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
+				cnpjCpf, status, codigoSpc);
 
-	    Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
-	            pageable);
+		Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
+				pageable);
 
-	    // 🔥 CORRIGIDO: Usar toResumoDTO em vez de toDTO
-	    return associados.map(this::toResumoDTO);
+		// 🔥 CORRIGIDO: Usar toResumoDTO em vez de toDTO
+		return associados.map(this::toResumoDTO);
 	}
 
 	@Transactional(readOnly = true)
@@ -103,13 +103,13 @@ public class AssociadoService {
 
 	@Transactional(readOnly = true)
 	public AssociadoDTO buscarPorCnpjCpf(String cnpjCpf) {
-	    logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
+		logger.info("Buscando associado por CNPJ/CPF: {}", cnpjCpf);
 
-	    Optional<Associado> associado = associadoRepository.findByCnpjCpf(cnpjCpf);
+		Optional<Associado> associado = associadoRepository.findByCnpjCpf(cnpjCpf);
 
-	    // 🔥 CORRIGIDO: Usar toDTO diretamente
-	    return associado.map(this::toDTO)
-	            .orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf));
+		// 🔥 CORRIGIDO: Usar toDTO diretamente
+		return associado.map(this::toDTO)
+				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com CNPJ/CPF: " + cnpjCpf));
 	}
 
 	@Transactional
@@ -225,7 +225,6 @@ public class AssociadoService {
 		return dto;
 	}
 
-	
 	// ========== MÉTODOS DE CONVERSÃO PARA SUB-ENTIDADES ==========
 
 	private EnderecoDTO toEnderecoDTO(Endereco endereco) {
@@ -472,69 +471,70 @@ public class AssociadoService {
 	// ========== VALIDAÇÕES DE STATUS ==========
 
 	private void validarMudancaStatus(Associado associado, String novoStatus) {
-	    String statusAtual = associado.getStatus();
-	    
-	    // Se não mudou, não precisa validar
-	    if (statusAtual.equals(novoStatus)) {
-	        return;
-	    }
-	    
-	    logger.info("🔍 Validando mudança de status: {} → {}", statusAtual, novoStatus);
-	    
-	    // Regras de negócio para mudanças de status
-	    if ("I".equals(statusAtual) && !"A".equals(novoStatus)) {
-	        throw new IllegalStateException("Associado inativo só pode ser reativado para status 'Ativo'");
-	    }
-	    
-	    if ("S".equals(statusAtual) && "I".equals(novoStatus)) {
-	        throw new IllegalStateException("Associado suspenso não pode ser inativado diretamente. Reative primeiro.");
-	    }
-	    
-	    // Validação específica por novo status
-	    if ("I".equals(novoStatus)) {
-	        validarInativacao(associado);
-	    } else if ("S".equals(novoStatus)) {
-	        validarSuspensao(associado);
-	    }
-	    
-	    logger.info("✅ Mudança de status validada com sucesso");
+		String statusAtual = associado.getStatus();
+
+		// Se não mudou, não precisa validar
+		if (statusAtual.equals(novoStatus)) {
+			return;
+		}
+
+		logger.info("🔍 Validando mudança de status: {} → {}", statusAtual, novoStatus);
+
+		// Regras de negócio para mudanças de status
+		if ("I".equals(statusAtual) && !"A".equals(novoStatus)) {
+			throw new IllegalStateException("Associado inativo só pode ser reativado para status 'Ativo'");
+		}
+
+		if ("S".equals(statusAtual) && "I".equals(novoStatus)) {
+			throw new IllegalStateException("Associado suspenso não pode ser inativado diretamente. Reative primeiro.");
+		}
+
+		// Validação específica por novo status
+		if ("I".equals(novoStatus)) {
+			validarInativacao(associado);
+		} else if ("S".equals(novoStatus)) {
+			validarSuspensao(associado);
+		}
+
+		logger.info("✅ Mudança de status validada com sucesso");
 	}
 
 	private void validarInativacao(Associado associado) {
-	    // Garantir data de inativação
-	    if (associado.getDataInativacao() == null) {
-	        associado.setDataInativacao(LocalDate.now());
-	    }
+		// Garantir data de inativação
+		if (associado.getDataInativacao() == null) {
+			associado.setDataInativacao(LocalDate.now());
+		}
 
-	    // 🔥 VALIDAÇÃO ROBUSTA DO MOTIVO
-	    String motivo = associado.getMotivoInativacao();
-	    
-	    // Verificar se o motivo é null ou vazio
-	    if (motivo == null || motivo.trim().isEmpty()) {
-	        logger.error("❌ Tentativa de inativar associado {} sem motivo", associado.getId());
-	        throw new IllegalArgumentException("Motivo da inativação é obrigatório");
-	    }
-	    
-	    // Verificar tamanho mínimo
-	    if (motivo.trim().length() < 3) {
-	        logger.warn("⚠️ Motivo de inativação muito curto: '{}'", motivo);
-	        throw new IllegalArgumentException("Motivo da inativação deve ter pelo menos 3 caracteres");
-	    }
-	    
-	    // 🔥 VERIFICAÇÃO ADICIONAL: Se o motivo é apenas números ou caracteres especiais
-	    String motivoLimpo = motivo.trim().replaceAll("[^\\p{L}\\p{N}\\s]", "").trim();
-	    if (motivoLimpo.length() < 3) {
-	        logger.warn("⚠️ Motivo de inativação contém apenas caracteres inválidos: '{}'", motivo);
-	        throw new IllegalArgumentException("Motivo da inativação deve conter texto descritivo");
-	    }
-	    
-	    // Limpar campos de suspensão
-	    associado.setDataInicioSuspensao(null);
-	    associado.setDataFimSuspensao(null);
-	    associado.setMotivoSuspensao(null);
-	    
-	    logger.info("✅ Inativação validada para associado {}: motivo='{}'", 
-	        associado.getId(), associado.getMotivoInativacao());
+		// 🔥 VALIDAÇÃO ROBUSTA DO MOTIVO
+		String motivo = associado.getMotivoInativacao();
+
+		// Verificar se o motivo é null ou vazio
+		if (motivo == null || motivo.trim().isEmpty()) {
+			logger.error("❌ Tentativa de inativar associado {} sem motivo", associado.getId());
+			throw new IllegalArgumentException("Motivo da inativação é obrigatório");
+		}
+
+		// Verificar tamanho mínimo
+		if (motivo.trim().length() < 3) {
+			logger.warn("⚠️ Motivo de inativação muito curto: '{}'", motivo);
+			throw new IllegalArgumentException("Motivo da inativação deve ter pelo menos 3 caracteres");
+		}
+
+		// 🔥 VERIFICAÇÃO ADICIONAL: Se o motivo é apenas números ou caracteres
+		// especiais
+		String motivoLimpo = motivo.trim().replaceAll("[^\\p{L}\\p{N}\\s]", "").trim();
+		if (motivoLimpo.length() < 3) {
+			logger.warn("⚠️ Motivo de inativação contém apenas caracteres inválidos: '{}'", motivo);
+			throw new IllegalArgumentException("Motivo da inativação deve conter texto descritivo");
+		}
+
+		// Limpar campos de suspensão
+		associado.setDataInicioSuspensao(null);
+		associado.setDataFimSuspensao(null);
+		associado.setMotivoSuspensao(null);
+
+		logger.info("✅ Inativação validada para associado {}: motivo='{}'", associado.getId(),
+				associado.getMotivoInativacao());
 	}
 
 	private void validarSuspensao(Associado associado) {
@@ -576,150 +576,148 @@ public class AssociadoService {
 	// ========== MÉTODO updateEntityFromDTO CORRIGIDO ==========
 
 	private void updateEntityFromDTO(Associado associado, AssociadoDTO dto) {
-	    logger.info("🔄 Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
-	    logger.debug("📋 DTO completo: {}", dto);
+		logger.info("🔄 Atualizando entidade a partir do DTO para: {}", dto.getNomeRazao());
+		logger.debug("📋 DTO completo: {}", dto);
 
-	    try {
-	        // 1. DADOS BÁSICOS - COM TRATAMENTO DE NULL
-	        associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
-	        associado.setCodigoRm(limparString(dto.getCodigoRm()));
-	        associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
+		try {
+			// 1. DADOS BÁSICOS - COM TRATAMENTO DE NULL
+			associado.setCodigoSpc(limparString(dto.getCodigoSpc()));
+			associado.setCodigoRm(limparString(dto.getCodigoRm()));
+			associado.setNomeFantasia(limparString(dto.getNomeFantasia()));
 
-	        // Campos obrigatórios
-	        if (dto.getCnpjCpf() != null) {
-	            associado.setCnpjCpf(dto.getCnpjCpf().trim());
-	        }
-	        if (dto.getNomeRazao() != null) {
-	            associado.setNomeRazao(dto.getNomeRazao().trim());
-	        }
-	        if (dto.getTipoPessoa() != null) {
-	            associado.setTipoPessoa(dto.getTipoPessoa());
-	        }
+			// Campos obrigatórios
+			if (dto.getCnpjCpf() != null) {
+				associado.setCnpjCpf(dto.getCnpjCpf().trim());
+			}
+			if (dto.getNomeRazao() != null) {
+				associado.setNomeRazao(dto.getNomeRazao().trim());
+			}
+			if (dto.getTipoPessoa() != null) {
+				associado.setTipoPessoa(dto.getTipoPessoa());
+			}
 
-	        // Status - com preservação para validação posterior
-	        String novoStatus = (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) 
-	            ? dto.getStatus().trim() 
-	            : "A";
-	        associado.setStatus(novoStatus);
+			// Status - com preservação para validação posterior
+			String novoStatus = (dto.getStatus() != null && !dto.getStatus().trim().isEmpty()) ? dto.getStatus().trim()
+					: "A";
+			associado.setStatus(novoStatus);
 
-	        // 2. DATAS - COM TRATAMENTO DE NULL
-	        if (dto.getDataCadastro() != null) {
-	            associado.setDataCadastro(dto.getDataCadastro());
-	        } else if (associado.getDataCadastro() == null) {
-	            associado.setDataCadastro(LocalDateTime.now());
-	        }
+			// 2. DATAS - COM TRATAMENTO DE NULL
+			if (dto.getDataCadastro() != null) {
+				associado.setDataCadastro(dto.getDataCadastro());
+			} else if (associado.getDataCadastro() == null) {
+				associado.setDataCadastro(LocalDateTime.now());
+			}
 
-	        // 🔥 DATAS DE STATUS - PRESERVAR SE VIEREM NULL
-	        associado.setDataFiliacao(dto.getDataFiliacao());
-	        
-	        // Tratamento especial para datas de status
-	        if (dto.getDataInativacao() != null) {
-	            associado.setDataInativacao(dto.getDataInativacao());
-	        }
-	        // Se o status for I e não veio data, será setada na validação
-	        
-	        if (dto.getDataInicioSuspensao() != null) {
-	            associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
-	        }
-	        
-	        if (dto.getDataFimSuspensao() != null) {
-	            associado.setDataFimSuspensao(dto.getDataFimSuspensao());
-	        }
+			// 🔥 DATAS DE STATUS - PRESERVAR SE VIEREM NULL
+			associado.setDataFiliacao(dto.getDataFiliacao());
 
-	        // 🔥 MOTIVOS - PRESERVAR VALORES
-	        if (dto.getMotivoInativacao() != null && !dto.getMotivoInativacao().trim().isEmpty()) {
-	            associado.setMotivoInativacao(dto.getMotivoInativacao().trim());
-	        } else if ("I".equals(novoStatus) && associado.getMotivoInativacao() == null) {
-	            // Se está inativando e o motivo veio vazio, manter como está
-	            // A validação posterior vai exigir, mas pode ser preenchido na validação
-	        }
-	        
-	        if (dto.getMotivoSuspensao() != null && !dto.getMotivoSuspensao().trim().isEmpty()) {
-	            associado.setMotivoSuspensao(dto.getMotivoSuspensao().trim());
-	        }
+			// Tratamento especial para datas de status
+			if (dto.getDataInativacao() != null) {
+				associado.setDataInativacao(dto.getDataInativacao());
+			}
+			// Se o status for I e não veio data, será setada na validação
 
-	        // 3. FATURAMENTO MÍNIMO
-	        associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
+			if (dto.getDataInicioSuspensao() != null) {
+				associado.setDataInicioSuspensao(dto.getDataInicioSuspensao());
+			}
 
-	        // 4. RELACIONAMENTOS - TODOS COM VERIFICAÇÃO DE NULL
-	        try {
-	            // Vendedor Interno
-	            if (dto.getVendedorId() != null) {
-	                Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
-	                    .orElseThrow(() -> new EntityNotFoundException(
-	                        "Vendedor não encontrado com ID: " + dto.getVendedorId()));
-	                associado.setVendedor(vendedor);
-	            } else {
-	                associado.setVendedor(null);
-	            }
-	        } catch (Exception e) {
-	            logger.error("❌ Erro ao processar vendedor interno: {}", e.getMessage());
-	            associado.setVendedor(null);
-	        }
+			if (dto.getDataFimSuspensao() != null) {
+				associado.setDataFimSuspensao(dto.getDataFimSuspensao());
+			}
 
-	        // Vendedor Externo
-	        try {
-	            if (dto.getVendedorExternoId() != null) {
-	                Long vendedorExternoId = dto.getVendedorExternoId().longValue();
-	                Optional<Vendedor> vendedorExternoOpt = vendedorRepository.findById(vendedorExternoId);
-	                if (vendedorExternoOpt.isPresent()) {
-	                    associado.setVendedorExterno(vendedorExternoOpt.get());
-	                } else {
-	                    logger.warn("⚠️ Vendedor externo não encontrado com ID {}", vendedorExternoId);
-	                    associado.setVendedorExterno(null);
-	                }
-	            } else {
-	                associado.setVendedorExterno(null);
-	            }
-	        } catch (Exception e) {
-	            logger.error("❌ Erro ao processar vendedor externo: {}", e.getMessage());
-	            associado.setVendedorExterno(null);
-	        }
+			// 🔥 MOTIVOS - PRESERVAR VALORES
+			if (dto.getMotivoInativacao() != null && !dto.getMotivoInativacao().trim().isEmpty()) {
+				associado.setMotivoInativacao(dto.getMotivoInativacao().trim());
+			} else if ("I".equals(novoStatus) && associado.getMotivoInativacao() == null) {
+				// Se está inativando e o motivo veio vazio, manter como está
+				// A validação posterior vai exigir, mas pode ser preenchido na validação
+			}
 
-	        // Plano
-	        try {
-	            if (dto.getPlanoId() != null) {
-	                Planos plano = planosRepository.findById(dto.getPlanoId())
-	                    .orElseThrow(() -> new EntityNotFoundException(
-	                        "Plano não encontrado com ID: " + dto.getPlanoId()));
-	                associado.setPlano(plano);
-	            } else {
-	                associado.setPlano(null);
-	            }
-	        } catch (Exception e) {
-	            logger.error("❌ Erro ao processar plano: {}", e.getMessage());
-	            associado.setPlano(null);
-	        }
+			if (dto.getMotivoSuspensao() != null && !dto.getMotivoSuspensao().trim().isEmpty()) {
+				associado.setMotivoSuspensao(dto.getMotivoSuspensao().trim());
+			}
 
-	        // Categoria
-	        try {
-	            if (dto.getCategoriaId() != null) {
-	                Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
-	                    .orElseThrow(() -> new EntityNotFoundException(
-	                        "Categoria não encontrada com ID: " + dto.getCategoriaId()));
-	                associado.setCategoria(categoria);
-	            } else {
-	                associado.setCategoria(null);
-	            }
-	        } catch (Exception e) {
-	            logger.error("❌ Erro ao processar categoria: {}", e.getMessage());
-	            associado.setCategoria(null);
-	        }
+			// 3. FATURAMENTO MÍNIMO
+			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
 
-	        // 5. SUB-ENTIDADES
-	        atualizarEnderecos(associado, dto.getEnderecos());
-	        atualizarTelefones(associado, dto.getTelefones());
-	        atualizarEmails(associado, dto.getEmails());
+			// 4. RELACIONAMENTOS - TODOS COM VERIFICAÇÃO DE NULL
+			try {
+				// Vendedor Interno
+				if (dto.getVendedorId() != null) {
+					Vendedor vendedor = vendedorRepository.findById(dto.getVendedorId())
+							.orElseThrow(() -> new EntityNotFoundException(
+									"Vendedor não encontrado com ID: " + dto.getVendedorId()));
+					associado.setVendedor(vendedor);
+				} else {
+					associado.setVendedor(null);
+				}
+			} catch (Exception e) {
+				logger.error("❌ Erro ao processar vendedor interno: {}", e.getMessage());
+				associado.setVendedor(null);
+			}
 
-	        logger.info("✅ Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
+			// Vendedor Externo
+			try {
+				if (dto.getVendedorExternoId() != null) {
+					Long vendedorExternoId = dto.getVendedorExternoId().longValue();
+					Optional<Vendedor> vendedorExternoOpt = vendedorRepository.findById(vendedorExternoId);
+					if (vendedorExternoOpt.isPresent()) {
+						associado.setVendedorExterno(vendedorExternoOpt.get());
+					} else {
+						logger.warn("⚠️ Vendedor externo não encontrado com ID {}", vendedorExternoId);
+						associado.setVendedorExterno(null);
+					}
+				} else {
+					associado.setVendedorExterno(null);
+				}
+			} catch (Exception e) {
+				logger.error("❌ Erro ao processar vendedor externo: {}", e.getMessage());
+				associado.setVendedorExterno(null);
+			}
 
-	    } catch (IllegalArgumentException | EntityNotFoundException e) {
-	        logger.error("❌ Erro de validação: {}", e.getMessage());
-	        throw e;
-	    } catch (Exception e) {
-	        logger.error("❌ Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
-	        throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
-	    }
+			// Plano
+			try {
+				if (dto.getPlanoId() != null) {
+					Planos plano = planosRepository.findById(dto.getPlanoId()).orElseThrow(
+							() -> new EntityNotFoundException("Plano não encontrado com ID: " + dto.getPlanoId()));
+					associado.setPlano(plano);
+				} else {
+					associado.setPlano(null);
+				}
+			} catch (Exception e) {
+				logger.error("❌ Erro ao processar plano: {}", e.getMessage());
+				associado.setPlano(null);
+			}
+
+			// Categoria
+			try {
+				if (dto.getCategoriaId() != null) {
+					Categoria categoria = categoriaRepository.findById(dto.getCategoriaId())
+							.orElseThrow(() -> new EntityNotFoundException(
+									"Categoria não encontrada com ID: " + dto.getCategoriaId()));
+					associado.setCategoria(categoria);
+				} else {
+					associado.setCategoria(null);
+				}
+			} catch (Exception e) {
+				logger.error("❌ Erro ao processar categoria: {}", e.getMessage());
+				associado.setCategoria(null);
+			}
+
+			// 5. SUB-ENTIDADES
+			atualizarEnderecos(associado, dto.getEnderecos());
+			atualizarTelefones(associado, dto.getTelefones());
+			atualizarEmails(associado, dto.getEmails());
+
+			logger.info("✅ Entidade atualizada com sucesso para associado: {}", associado.getNomeRazao());
+
+		} catch (IllegalArgumentException | EntityNotFoundException e) {
+			logger.error("❌ Erro de validação: {}", e.getMessage());
+			throw e;
+		} catch (Exception e) {
+			logger.error("❌ Erro inesperado ao atualizar entidade: {}", e.getMessage(), e);
+			throw new RuntimeException("Erro ao processar dados do associado: " + e.getMessage(), e);
+		}
 	}
 
 	// ========== MÉTODOS AUXILIARES PARA ATUALIZAR SUB-ENTIDADES ==========
@@ -1153,7 +1151,7 @@ public class AssociadoService {
 		return associadoRepository.findById(id)
 				.orElseThrow(() -> new EntityNotFoundException("Associado não encontrado com ID: " + id));
 	}
-	
+
 	// ============================================================
 	// 🔥 NOVOS MÉTODOS — FILTRO POR NOTA NO PERÍODO
 	// ============================================================
@@ -1162,36 +1160,30 @@ public class AssociadoService {
 	 * 🔥 Busca associados de uma régua que possuem nota no período.
 	 */
 	@Transactional(readOnly = true)
-	public List<Associado> buscarPorReguaComNotaNoPeriodo(
-	        Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
-	    
-	    logger.info("🔍 Buscando associados da régua {} com nota entre {} e {}", 
-	        reguaId, dataInicio, dataFim);
-	    
-	    long inicio = System.currentTimeMillis();
-	    List<Associado> associados = associadoRepository
-	        .findByReguaComNotaNoPeriodo(reguaId, dataInicio, dataFim);
-	    long tempo = System.currentTimeMillis() - inicio;
-	    
-	    logger.info("✅ {} associados com nota encontrados em {} ms", associados.size(), tempo);
-	    return associados;
+	public List<Associado> buscarPorReguaComNotaNoPeriodo(Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
+
+		logger.info("🔍 Buscando associados da régua {} com nota entre {} e {}", reguaId, dataInicio, dataFim);
+
+		long inicio = System.currentTimeMillis();
+		List<Associado> associados = associadoRepository.findByReguaComNotaNoPeriodo(reguaId, dataInicio, dataFim);
+		long tempo = System.currentTimeMillis() - inicio;
+
+		logger.info("✅ {} associados com nota encontrados em {} ms", associados.size(), tempo);
+		return associados;
 	}
 
 	/**
 	 * 🔥 Conta associados da régua que NÃO têm nota no período.
 	 */
 	@Transactional(readOnly = true)
-	public long contarPorReguaSemNotaNoPeriodo(
-	        Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
-	    
-	    logger.info("🔍 Contando associados da régua {} SEM nota entre {} e {}", 
-	        reguaId, dataInicio, dataFim);
-	    
-	    long count = associadoRepository
-	        .countByReguaSemNotaNoPeriodo(reguaId, dataInicio, dataFim);
-	    
-	    logger.info("📊 {} associados sem nota no período", count);
-	    return count;
+	public long contarPorReguaSemNotaNoPeriodo(Long reguaId, LocalDate dataInicio, LocalDate dataFim) {
+
+		logger.info("🔍 Contando associados da régua {} SEM nota entre {} e {}", reguaId, dataInicio, dataFim);
+
+		long count = associadoRepository.countByReguaSemNotaNoPeriodo(reguaId, dataInicio, dataFim);
+
+		logger.info("📊 {} associados sem nota no período", count);
+		return count;
 	}
 
 	/**
@@ -1199,12 +1191,11 @@ public class AssociadoService {
 	 */
 	@Transactional(readOnly = true)
 	public List<Associado> buscarPorRegua(Long reguaId) {
-	    logger.info("🔍 Buscando associados da régua {}", reguaId);
-	    List<Associado> associados = associadoRepository.findByReguaAtivos(reguaId);
-	    logger.info("✅ {} associados encontrados", associados.size());
-	    return associados;
+		logger.info("🔍 Buscando associados da régua {}", reguaId);
+		List<Associado> associados = associadoRepository.findByReguaAtivos(reguaId);
+		logger.info("✅ {} associados encontrados", associados.size());
+		return associados;
 	}
-	
 
 	/**
 	 * Busca associado pelo código SPC
@@ -1392,186 +1383,179 @@ public class AssociadoService {
 
 		return saved;
 	}
-	
+
 	/**
 	 * 🔥 NOVO MÉTODO: Validação de consistência dos dados antes de salvar
 	 */
 	private void validarConsistenciaDados(Associado associado) {
-	    // Verificar consistência entre status e campos relacionados
-	    if ("I".equals(associado.getStatus())) {
-	        // Inativo deve ter data e motivo
-	        if (associado.getDataInativacao() == null) {
-	            associado.setDataInativacao(LocalDate.now());
-	        }
-	        if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
-	            throw new IllegalArgumentException("Motivo da inativação é obrigatório para associados inativos");
-	        }
-	        
-	        // Inativo não deve ter campos de suspensão
-	        associado.setDataInicioSuspensao(null);
-	        associado.setDataFimSuspensao(null);
-	        associado.setMotivoSuspensao(null);
-	    } else if ("S".equals(associado.getStatus())) {
-	        // Suspenso deve ter datas e motivo
-	        if (associado.getDataInicioSuspensao() == null) {
-	            associado.setDataInicioSuspensao(LocalDate.now());
-	        }
-	        if (associado.getDataFimSuspensao() == null) {
-	            associado.setDataFimSuspensao(associado.getDataInicioSuspensao().plusMonths(1));
-	        }
-	        if (associado.getMotivoSuspensao() == null || associado.getMotivoSuspensao().trim().isEmpty()) {
-	            throw new IllegalArgumentException("Motivo da suspensão é obrigatório para associados suspensos");
-	        }
-	        
-	        // Suspenso não deve ter campos de inativação
-	        associado.setDataInativacao(null);
-	        associado.setMotivoInativacao(null);
-	    } else if ("A".equals(associado.getStatus())) {
-	        // Ativo não deve ter campos de inativação ou suspensão
-	        associado.setDataInativacao(null);
-	        associado.setDataInicioSuspensao(null);
-	        associado.setDataFimSuspensao(null);
-	        associado.setMotivoInativacao(null);
-	        associado.setMotivoSuspensao(null);
-	    }
+		// Verificar consistência entre status e campos relacionados
+		if ("I".equals(associado.getStatus())) {
+			// Inativo deve ter data e motivo
+			if (associado.getDataInativacao() == null) {
+				associado.setDataInativacao(LocalDate.now());
+			}
+			if (associado.getMotivoInativacao() == null || associado.getMotivoInativacao().trim().isEmpty()) {
+				throw new IllegalArgumentException("Motivo da inativação é obrigatório para associados inativos");
+			}
+
+			// Inativo não deve ter campos de suspensão
+			associado.setDataInicioSuspensao(null);
+			associado.setDataFimSuspensao(null);
+			associado.setMotivoSuspensao(null);
+		} else if ("S".equals(associado.getStatus())) {
+			// Suspenso deve ter datas e motivo
+			if (associado.getDataInicioSuspensao() == null) {
+				associado.setDataInicioSuspensao(LocalDate.now());
+			}
+			if (associado.getDataFimSuspensao() == null) {
+				associado.setDataFimSuspensao(associado.getDataInicioSuspensao().plusMonths(1));
+			}
+			if (associado.getMotivoSuspensao() == null || associado.getMotivoSuspensao().trim().isEmpty()) {
+				throw new IllegalArgumentException("Motivo da suspensão é obrigatório para associados suspensos");
+			}
+
+			// Suspenso não deve ter campos de inativação
+			associado.setDataInativacao(null);
+			associado.setMotivoInativacao(null);
+		} else if ("A".equals(associado.getStatus())) {
+			// Ativo não deve ter campos de inativação ou suspensão
+			associado.setDataInativacao(null);
+			associado.setDataInicioSuspensao(null);
+			associado.setDataFimSuspensao(null);
+			associado.setMotivoInativacao(null);
+			associado.setMotivoSuspensao(null);
+		}
 	}
-	
-	
+
 	// ============================================================
 	// BUSCAR ENTIDADE POR ID
 	// ============================================================
 	public Associado buscarEntidadePorId(Long id) {
-	    return associadoRepository.findById(id)
-	            .orElseThrow(() -> new RuntimeException("Associado não encontrado com ID: " + id));
-	}	
-	
+		return associadoRepository.findById(id)
+				.orElseThrow(() -> new RuntimeException("Associado não encontrado com ID: " + id));
+	}
+
 	// ============================================================
 	// MIGRAR ASSOCIADO PARA RÉGUA DE FATURAMENTO
 	// ============================================================
 	@Transactional
 	public void migrarParaRegua(Long associadoId) {
-	    logger.info("📏 Migrando associado ID: {} para régua de faturamento", associadoId);
+		logger.info("📏 Migrando associado ID: {} para régua de faturamento", associadoId);
 
-	    // 1. Buscar o associado
-	    Associado associado = buscarEntidadePorId(associadoId);
+		// 1. Buscar o associado
+		Associado associado = buscarEntidadePorId(associadoId);
 
-	    // 2. Verificar se o associado já está em uma régua
-	    if (associado.getReguaFaturamento() != null) {
-	        logger.warn("⚠️ Associado ID: {} já está na régua: {}", associadoId,
-	                associado.getReguaFaturamento().getId());
-	        throw new RuntimeException("Associado já está vinculado a uma régua de faturamento");
-	    }
+		// 2. Verificar se o associado já está em uma régua
+		if (associado.getReguaFaturamento() != null) {
+			logger.warn("⚠️ Associado ID: {} já está na régua: {}", associadoId,
+					associado.getReguaFaturamento().getId());
+			throw new RuntimeException("Associado já está vinculado a uma régua de faturamento");
+		}
 
-	    // 3. Buscar a régua ativa
-	    ReguaFaturamento regua = reguaFaturamentoRepository.findFirstByAtivoTrue()
-	            .orElseThrow(() -> new RuntimeException("Nenhuma régua de faturamento ativa encontrada"));
+		// 3. Buscar a régua ativa
+		ReguaFaturamento regua = reguaFaturamentoRepository.findFirstByAtivoTrue()
+				.orElseThrow(() -> new RuntimeException("Nenhuma régua de faturamento ativa encontrada"));
 
-	    // 4. Associar o associado à régua
-	    associado.setReguaFaturamento(regua);
-	    associado.setDataAtualizacao(LocalDateTime.now());
+		// 4. Associar o associado à régua
+		associado.setReguaFaturamento(regua);
+		associado.setDataAtualizacao(LocalDateTime.now());
 
-	    // 5. Salvar
-	    associadoRepository.save(associado);
+		// 5. Salvar
+		associadoRepository.save(associado);
 
-	    logger.info("✅ Associado ID: {} migrado para régua ID: {}", associadoId, regua.getId());
+		logger.info("✅ Associado ID: {} migrado para régua ID: {}", associadoId, regua.getId());
 	}
-	
+
 	// ============================================================
 	// TO DTO (MÉTODO PÚBLICO)
 	// ============================================================
 	public AssociadoDTO toDTO(Associado associado) {
-	    if (associado == null) return null;
+		if (associado == null)
+			return null;
 
-	    AssociadoDTO dto = new AssociadoDTO();
-	    dto.setId(associado.getId());
-	    dto.setCodigoSpc(associado.getCodigoSpc());
-	    dto.setCodigoRm(associado.getCodigoRm());
-	    dto.setCnpjCpf(associado.getCnpjCpf());
-	    dto.setNomeRazao(associado.getNomeRazao());
-	    dto.setNomeFantasia(associado.getNomeFantasia());
-	    dto.setTipoPessoa(associado.getTipoPessoa());
-	    dto.setStatus(associado.getStatus());
-	    dto.setDataCadastro(associado.getDataCadastro());
-	    dto.setDataAtualizacao(associado.getDataAtualizacao());
+		AssociadoDTO dto = new AssociadoDTO();
+		dto.setId(associado.getId());
+		dto.setCodigoSpc(associado.getCodigoSpc());
+		dto.setCodigoRm(associado.getCodigoRm());
+		dto.setCnpjCpf(associado.getCnpjCpf());
+		dto.setNomeRazao(associado.getNomeRazao());
+		dto.setNomeFantasia(associado.getNomeFantasia());
+		dto.setTipoPessoa(associado.getTipoPessoa());
+		dto.setStatus(associado.getStatus());
+		dto.setDataCadastro(associado.getDataCadastro());
+		dto.setDataAtualizacao(associado.getDataAtualizacao());
 
-	    if (associado.getVendedor() != null) {
-	        dto.setVendedorId(associado.getVendedor().getId());
-	        dto.setVendedorNome(associado.getVendedor().getNomeRazao());
-	    }
+		if (associado.getVendedor() != null) {
+			dto.setVendedorId(associado.getVendedor().getId());
+			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
+		}
 
-	    if (associado.getPlano() != null) {
-	        dto.setPlanoId(associado.getPlano().getId());
-	        dto.setPlanoNome(associado.getPlano().getPlano());
-	    }
+		if (associado.getPlano() != null) {
+			dto.setPlanoId(associado.getPlano().getId());
+			dto.setPlanoNome(associado.getPlano().getPlano());
+		}
 
-	    if (associado.getCategoria() != null) {
-	        dto.setCategoriaId(associado.getCategoria().getId());
-	        dto.setCategoriaNome(associado.getCategoria().getDescricao());
-	    }
+		if (associado.getCategoria() != null) {
+			dto.setCategoriaId(associado.getCategoria().getId());
+			dto.setCategoriaNome(associado.getCategoria().getDescricao());
+		}
 
-	    if (associado.getReguaFaturamento() != null) {
-	        dto.setReguaFaturamentoId(associado.getReguaFaturamento().getId());
-	    }
-	    
-	    // Endereços
-	    if (associado.getEnderecos() != null && !associado.getEnderecos().isEmpty()) {
-	        List<EnderecoDTO> enderecosDTO = associado.getEnderecos().stream()
-	            .map(this::toEnderecoDTO)
-	            .filter(e -> e != null)
-	            .collect(Collectors.toList());
-	        dto.setEnderecos(enderecosDTO);
-	        logger.debug("📮 {} endereços convertidos para DTO", enderecosDTO.size());
-	    } else {
-	        dto.setEnderecos(new ArrayList<>());
-	    }
+		if (associado.getReguaFaturamento() != null) {
+			dto.setReguaFaturamentoId(associado.getReguaFaturamento().getId());
+		}
 
-	    // Telefones
-	    if (associado.getTelefones() != null && !associado.getTelefones().isEmpty()) {
-	        List<TelefoneDTO> telefonesDTO = associado.getTelefones().stream()
-	            .map(this::toTelefoneDTO)
-	            .filter(t -> t != null)
-	            .collect(Collectors.toList());
-	        dto.setTelefones(telefonesDTO);
-	        logger.debug("📞 {} telefones convertidos para DTO", telefonesDTO.size());
-	    } else {
-	        dto.setTelefones(new ArrayList<>());
-	    }
+		// Endereços
+		if (associado.getEnderecos() != null && !associado.getEnderecos().isEmpty()) {
+			List<EnderecoDTO> enderecosDTO = associado.getEnderecos().stream().map(this::toEnderecoDTO)
+					.filter(e -> e != null).collect(Collectors.toList());
+			dto.setEnderecos(enderecosDTO);
+			logger.debug("📮 {} endereços convertidos para DTO", enderecosDTO.size());
+		} else {
+			dto.setEnderecos(new ArrayList<>());
+		}
 
-	    // Emails
-	    if (associado.getEmails() != null && !associado.getEmails().isEmpty()) {
-	        List<EmailDTO> emailsDTO = associado.getEmails().stream()
-	            .map(this::toEmailDTO)
-	            .filter(e -> e != null)
-	            .collect(Collectors.toList());
-	        dto.setEmails(emailsDTO);
-	        logger.debug("📧 {} emails convertidos para DTO", emailsDTO.size());
-	    } else {
-	        dto.setEmails(new ArrayList<>());
-	    }
-	    
-	    return dto;
+		// Telefones
+		if (associado.getTelefones() != null && !associado.getTelefones().isEmpty()) {
+			List<TelefoneDTO> telefonesDTO = associado.getTelefones().stream().map(this::toTelefoneDTO)
+					.filter(t -> t != null).collect(Collectors.toList());
+			dto.setTelefones(telefonesDTO);
+			logger.debug("📞 {} telefones convertidos para DTO", telefonesDTO.size());
+		} else {
+			dto.setTelefones(new ArrayList<>());
+		}
+
+		// Emails
+		if (associado.getEmails() != null && !associado.getEmails().isEmpty()) {
+			List<EmailDTO> emailsDTO = associado.getEmails().stream().map(this::toEmailDTO).filter(e -> e != null)
+					.collect(Collectors.toList());
+			dto.setEmails(emailsDTO);
+			logger.debug("📧 {} emails convertidos para DTO", emailsDTO.size());
+		} else {
+			dto.setEmails(new ArrayList<>());
+		}
+
+		return dto;
 	}
-	
+
 	// ============================================================
-    // 🔥 MÉTODOS PARA INATIVAÇÃO
-    // ============================================================
+	// 🔥 MÉTODOS PARA INATIVAÇÃO
+	// ============================================================
 
-    /**
-     * Busca associados ATIVOS que não estão na lista de CNPJs/CPFs
-     * Utilizado para identificar quais associados devem ser inativados
-     */
-    public List<com.sga.model.Associado> findAtivosNotInCnpjList(List<String> cnpjs) {
-        logger.info("🔍 Buscando associados ativos não listados em {} CNPJs", cnpjs.size());
-        return associadoRepository.findAtivosNotInCnpjList(cnpjs);
-    }
+	/**
+	 * Busca associados ATIVOS que não estão na lista de CNPJs/CPFs Utilizado para
+	 * identificar quais associados devem ser inativados
+	 */
+	public List<com.sga.model.Associado> findAtivosNotInCnpjList(List<String> cnpjs) {
+		logger.info("🔍 Buscando associados ativos não listados em {} CNPJs", cnpjs.size());
+		return associadoRepository.findAtivosNotInCnpjList(cnpjs);
+	}
 
-    /**
-     * Salva uma lista de associados em lote
-     */
-    public List<com.sga.model.Associado> saveAllAssociados(List<com.sga.model.Associado> associados) {
-        logger.info("💾 Salvando {} associados em lote", associados.size());
-        return associadoRepository.saveAll(associados);
-    }
-	
+	/**
+	 * Salva uma lista de associados em lote
+	 */
+	public List<com.sga.model.Associado> saveAllAssociados(List<com.sga.model.Associado> associados) {
+		logger.info("💾 Salvando {} associados em lote", associados.size());
+		return associadoRepository.saveAll(associados);
+	}
 
 }

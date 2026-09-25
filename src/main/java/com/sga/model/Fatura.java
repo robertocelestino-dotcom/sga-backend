@@ -90,6 +90,11 @@ public class Fatura {
 
 	@OneToMany(mappedBy = "fatura", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<LogFatura> logs;
+	
+	// Guarda cancelamentos que precisam ser persistidos após a fatura ganhar ID
+	// (não é uma coluna do banco, apenas em memória durante o processamento em batch)
+	@javax.persistence.Transient
+	private List<CancelamentoProcessado> cancelamentosPendentesPersistencia = new ArrayList<>();
 
 	// ==================== CONSTRUTORES ====================
 	public Fatura() {
@@ -270,6 +275,21 @@ public class Fatura {
 
 	public void setLogs(List<LogFatura> logs) {
 		this.logs = logs;
+	}
+	
+	public List<CancelamentoProcessado> getCancelamentosPendentesPersistencia() {
+		return cancelamentosPendentesPersistencia;
+	}
+
+	public void setCancelamentosPendentesPersistencia(List<CancelamentoProcessado> cancelamentosPendentesPersistencia) {
+		this.cancelamentosPendentesPersistencia = cancelamentosPendentesPersistencia;
+	}
+
+	public void addCancelamentoPendente(CancelamentoProcessado cp) {
+		if (this.cancelamentosPendentesPersistencia == null) {
+			this.cancelamentosPendentesPersistencia = new ArrayList<>();
+		}
+		this.cancelamentosPendentesPersistencia.add(cp);
 	}
 
 	// ==================== MÉTODOS AUXILIARES ====================

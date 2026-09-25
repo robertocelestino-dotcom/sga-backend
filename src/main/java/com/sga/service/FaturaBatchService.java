@@ -1,5 +1,3 @@
-// src/main/java/com/sga/service/FaturaBatchService.java
-
 package com.sga.service;
 
 import java.util.ArrayList;
@@ -11,8 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.sga.model.CancelamentoProcessado;
 import com.sga.model.Fatura;
 import com.sga.model.FaturaItem;
+import com.sga.repository.CancelamentoProcessadoRepository;
 import com.sga.repository.FaturaItemRepository;
 import com.sga.repository.FaturaRepository;
 
@@ -29,6 +29,10 @@ public class FaturaBatchService {
     
     @Autowired
     private FaturaItemRepository faturaItemRepository;
+
+    // 🔥 NOVO: Repository para persistir cancelamentos
+    @Autowired
+    private CancelamentoProcessadoRepository cancelamentoProcessadoRepository;
     
     /**
      * Salva faturas em lote
@@ -113,10 +117,12 @@ public class FaturaBatchService {
     
     /**
      * Salva faturas com seus itens em lote
+     * 
+     * 🔥 CORREÇÃO: Após salvar faturas e itens, persiste também os cancelamentos
+     * que estavam pendentes (fatura.getId() == null no momento da aplicação).
      */
     @Transactional
     public void salvarFaturasComItens(List<Fatura> faturas) {
-    	
         if (faturas == null || faturas.isEmpty()) {
             return;
         }
@@ -143,8 +149,77 @@ public class FaturaBatchService {
             salvarItensEmLote(todosItens);
         }
         
+        // 🔥 4. NOVO: Persistir cancelamentos processados que ficaram pendentes
+        // Neste ponto, as faturas e itens JÁ TÊM IDs, então as FKs funcionam.
+        List<CancelamentoProcessado> todosCancelamentos = new ArrayList<>();
+        for (Fatura fatura : faturasSalvas) {
+            List<CancelamentoProcessado> pendentes = fatura.getCancelamentosPendentesPersistencia();
+            if (pendentes != null && !pendentes.isEmpty()) {
+                for (CancelamentoProcessado cp : pendentes) {
+                    // Garantir que a fatura está setada
+                    cp.setFatura(fatura);
+                    
+                    // 🔥 Ajustar referência do item: 
+                    // o FaturaItem em memória tem o ID após o saveAll, mas precisamos
+                    // garantir que o objeto apontado por cp.faturaItem seja o mesmo
+                    // que foi salvo (com ID). O saveAll() do Hibernate propaga o ID
+                    // para o mesmo objeto, então deve funcionar automaticamente.
+                    // 
+                    // Como segurança, verificamos se o faturaItem ainda está sem ID
+                    // e, se estiver, buscamos pelo (fatura_id, codigo_produto, descricao).
+                    if (cp.getFaturaItem() != null && cp.getFaturaItem().getId() == null) {
+                        log.warn("⚠️ faturaItem sem ID para cancelamento {}. Buscando por código/descrição...",
+                                cp.getCancelamentoImportacao().getId());
+                        
+                        FaturaItem itemEncontrado = localizarItemPorCodigoEDescricao(
+                                fatura, 
+                                cp.getFaturaItem().getCodigoProduto(), 
+                                cp.getFaturaItem().getDescricao());
+                        
+                        if (itemEncontrado != null) {
+                            cp.setFaturaItem(itemEncontrado);
+                        } else {
+                            log.warn("   ⚠️ Item não encontrado. Salvando cancelamento sem referência ao item.");
+                            cp.setFaturaItem(null);
+                        }
+                    }
+                    
+                    todosCancelamentos.add(cp);
+                }
+            }
+        }
+        
+        if (!todosCancelamentos.isEmpty()) {
+            log.info("🗑️ Persistindo {} cancelamentos processados em lote...", todosCancelamentos.size());
+            cancelamentoProcessadoRepository.saveAll(todosCancelamentos);
+            cancelamentoProcessadoRepository.flush();
+            log.info("✅ {} cancelamentos processados persistidos", todosCancelamentos.size());
+        } else {
+            log.debug("ℹ️ Nenhum cancelamento processado para persistir neste lote.");
+        }
+        
         long tempoTotal = System.currentTimeMillis() - inicioTotal;
-        log.info("✅ {} faturas e {} itens salvos em {} ms", 
-            faturasSalvas.size(), todosItens.size(), tempoTotal);
+        log.info("✅ {} faturas, {} itens e {} cancelamentos salvos em {} ms", 
+            faturasSalvas.size(), todosItens.size(), todosCancelamentos.size(), tempoTotal);
+    }
+
+    /**
+     * 🔥 Localiza um FaturaItem dentro da fatura pelo código + descrição.
+     * Usado quando o item em memória não tem ID após o saveAll (caso raro).
+     */
+    private FaturaItem localizarItemPorCodigoEDescricao(Fatura fatura, String codigo, String descricao) {
+        if (fatura.getItens() == null) return null;
+        
+        for (FaturaItem item : fatura.getItens()) {
+            boolean codigoMatch = (codigo == null && item.getCodigoProduto() == null) 
+                    || (codigo != null && codigo.equals(item.getCodigoProduto()));
+            boolean descricaoMatch = (descricao == null && item.getDescricao() == null)
+                    || (descricao != null && descricao.equals(item.getDescricao()));
+            
+            if (codigoMatch && descricaoMatch) {
+                return item;
+            }
+        }
+        return null;
     }
 }
