@@ -12,12 +12,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.transaction.Transactional;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.sga.enums.TipoArquivoFaturamento;
@@ -46,6 +45,7 @@ public class ImportacaoSPService {
 	/**
 	 * Processa arquivo SPC e identifica o tipo (Consolidado ou Prévia)
 	 */
+	@Transactional
 	public ImportacaoSPC processarArquivoSPC(MultipartFile arquivo) {
 		logger.info("=== INICIANDO PROCESSAMENTO DO ARQUIVO SPC ===");
 		logger.info("Arquivo: {}, Tamanho: {} bytes", arquivo.getOriginalFilename(), arquivo.getSize());
@@ -92,7 +92,7 @@ public class ImportacaoSPService {
 							importacao.getParametros().add(parametros);
 
 							// 🔥 EXTRAIR DATA FIM PERÍODO DO REGISTRO TIPO 1
-							String dataFimStr = linha.substring(67, 75).trim(); // pos 68-75
+							String dataFimStr = linha.substring(67, 75).trim();
 							if (!dataFimStr.isEmpty()) {
 								try {
 									dataFimPeriodo = LocalDate.parse(dataFimStr, DATE_FORMATTER);
@@ -104,7 +104,7 @@ public class ImportacaoSPService {
 							}
 
 							// 🔥 EXTRAIR DESCRIÇÃO DO ARQUIVO
-							descricaoArquivo = linha.substring(39, 59).trim(); // pos 40-59
+							descricaoArquivo = linha.substring(39, 59).trim();
 							importacao.setDescricaoArquivo(descricaoArquivo);
 							logger.info("📋 Descrição do arquivo: {}", descricaoArquivo);
 
@@ -209,7 +209,6 @@ public class ImportacaoSPService {
 	// ==================== MÉTODOS DE PROCESSAMENTO EXISTENTES ====================
 
 	private HeaderSPC processarHeader(String linha, ImportacaoSPC importacao) {
-		// ... manter o código existente ...
 		try {
 			if (linha.length() < 575) {
 				logger.warn("Linha HEADER muito curta: {} caracteres", linha.length());
@@ -246,7 +245,6 @@ public class ImportacaoSPService {
 	}
 
 	private ParametrosSPC processarParametros(String linha, ImportacaoSPC importacao) {
-		// ... manter o código existente ...
 		try {
 			if (linha.length() < 575) {
 				logger.warn("Linha PARÂMETROS muito curta: {} caracteres", linha.length());
@@ -300,7 +298,6 @@ public class ImportacaoSPService {
 	}
 
 	private NotaDebitoSPC processarNotaDebito(String linha, ImportacaoSPC importacao) {
-		// ... manter o código existente ...
 		try {
 			if (linha.length() < 575) {
 				logger.warn("Linha NOTA DÉBITO muito curta: {} caracteres", linha.length());
@@ -347,7 +344,6 @@ public class ImportacaoSPService {
 	}
 
 	public static String sanitizeLine(String line) {
-		// ... manter o código existente ...
 		if (line == null)
 			return null;
 		line = line.replace("\uFEFF", "");
@@ -390,7 +386,6 @@ public class ImportacaoSPService {
 	}
 
 	private ItemSPC processarItem(String linha, NotaDebitoSPC notaDebito, ImportacaoSPC importacao) {
-		// ... manter o código existente ...
 		try {
 			if (linha.length() < 140) {
 				logger.warn("Linha ITEM muito curta: {} caracteres", linha.length());
@@ -447,7 +442,6 @@ public class ImportacaoSPService {
 	}
 
 	private TraillerSPC processarTrailler(String linha, ImportacaoSPC importacao) {
-		// ... manter o código existente ...
 		try {
 			if (linha.length() < 575) {
 				logger.warn("Linha TRAILLER muito curta: {} caracteres", linha.length());
@@ -484,11 +478,21 @@ public class ImportacaoSPService {
 		}
 	}
 
+	@Transactional(readOnly = true)
 	public List<ImportacaoSPC> listarImportacoes() {
 		return importacaoRepository.findAll();
 	}
 
-	// Adicione este método para calcular os totais de forma consistente
+	// ============================================================
+	// 🔥 MÉTODO CORRIGIDO: calcularTotaisImportacao
+	// ============================================================
+	/**
+	 * Calcula os totais (débitos, créditos, valor cobrado) de uma importação.
+	 * 
+	 * 🔥 USA @Transactional para manter a sessão aberta durante o loop,
+	 * permitindo acessar nota.getItens() sem LazyInitializationException.
+	 */
+	@Transactional(readOnly = true)
 	public Map<String, Object> calcularTotaisImportacao(Long importacaoId) {
 		logger.info("📊 Calculando totais da importação: {}", importacaoId);
 
@@ -503,12 +507,16 @@ public class ImportacaoSPService {
 			BigDecimal debitosNota = BigDecimal.ZERO;
 			BigDecimal creditosNota = BigDecimal.ZERO;
 
-			for (ItemSPC item : nota.getItens()) {
-				totalItens++;
-				if ("D".equals(item.getCreditoDebito())) {
-					debitosNota = debitosNota.add(item.getValorTotal());
-				} else if ("C".equals(item.getCreditoDebito())) {
-					creditosNota = creditosNota.add(item.getValorTotal());
+			if (nota.getItens() != null) {
+				for (ItemSPC item : nota.getItens()) {
+					totalItens++;
+					BigDecimal valorItem = item.getValorTotal() != null ? item.getValorTotal() : BigDecimal.ZERO;
+
+					if ("D".equals(item.getCreditoDebito())) {
+						debitosNota = debitosNota.add(valorItem);
+					} else if ("C".equals(item.getCreditoDebito())) {
+						creditosNota = creditosNota.add(valorItem);
+					}
 				}
 			}
 

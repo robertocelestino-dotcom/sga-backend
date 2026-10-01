@@ -3,7 +3,7 @@
 package com.sga.controller;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -417,4 +417,57 @@ public class ReguaFaturamentoController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+    
+    // ============================================================
+    // 🔥 NOVO: Endpoint para listar réguas COM contagem de associados
+    // ============================================================
+    @GetMapping("/com-contagem")
+    public ResponseEntity<List<Map<String, Object>>> listarReguasComContagem() {
+        log.info("📊 Listando réguas com contagem de associados");
+        
+        try {
+            // Buscar todas as réguas ativas
+            List<ReguaFaturamento> reguas = reguaService.listarReguasAtivas();
+            
+            // 🔥 Buscar contagem via SERVICE (não repository)
+            Map<Long, Long> contagemPorRegua = reguaService.contarAssociadosPorRegua();
+            
+            List<Map<String, Object>> resultado = new ArrayList<>();
+            
+            for (ReguaFaturamento regua : reguas) {
+                Map<String, Object> map = new LinkedHashMap<>();
+                map.put("id", regua.getId());
+                map.put("nome", regua.getNome());
+                map.put("descricao", regua.getDescricao());
+                map.put("diaEmissao", regua.getDiaEmissao());
+                map.put("diaVencimento", regua.getDiaVencimento());
+                map.put("periodo", regua.getPeriodo());
+                map.put("sequencia", regua.getSequencia());
+                map.put("tipoArquivo", regua.getTipoArquivo());
+                map.put("ehPadrao", regua.getEhPadrao());
+                map.put("ativo", regua.getAtivo());
+                map.put("cor", regua.getCor());
+                map.put("icone", regua.getIcone());
+                map.put("aplicarFranquia", regua.getAplicarFranquia());
+                map.put("aplicarFaturamentoMinimo", regua.getAplicarFaturamentoMinimo());
+                map.put("aplicarCancelamentos", regua.getAplicarCancelamentos());
+                map.put("permiteMigracao", regua.getPermiteMigracao());
+                map.put("reguaDestinoMigracaoId", regua.getReguaDestinoMigracaoId());
+                map.put("tipoProcessamento", regua.getTipoProcessamento());
+                
+                // 🔥 Contagem do Map
+                Long totalAssociados = contagemPorRegua.getOrDefault(regua.getId(), 0L);
+                map.put("totalAssociados", totalAssociados);
+                
+                resultado.add(map);
+            }
+            
+            log.info("✅ {} réguas retornadas com contagem", resultado.size());
+            return ResponseEntity.ok(resultado);
+            
+        } catch (Exception e) {
+            log.error("❌ Erro ao listar réguas com contagem: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    } 
 }

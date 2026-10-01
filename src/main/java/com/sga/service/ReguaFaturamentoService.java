@@ -26,11 +26,13 @@ import com.sga.dto.TipoArquivoReguaDTO;
 import com.sga.exception.ResourceNotFoundException;
 import com.sga.model.Associado;
 import com.sga.model.AssociadoRegua;
+import com.sga.model.HistoricoMigracaoRegua;
 import com.sga.model.ReguaFaturamento;
 import com.sga.model.TipoArquivoRegua;
 import com.sga.repository.AssociadoReguaRepository;
 import com.sga.repository.AssociadoRepository;
 import com.sga.repository.FaturaRepository;
+import com.sga.repository.HistoricoMigracaoReguaRepository;
 import com.sga.repository.NotaDebitoSPCRepository;
 import com.sga.repository.ReguaFaturamentoRepository;
 import com.sga.repository.TipoArquivoReguaRepository;
@@ -48,6 +50,9 @@ public class ReguaFaturamentoService {
 
     @Autowired
     private AssociadoRepository associadoRepository;
+    
+    @Autowired
+    private HistoricoMigracaoReguaRepository historicoMigracaoReguaRepository;
 
     @Autowired
     private TipoArquivoReguaRepository tipoArquivoReguaRepository;
@@ -72,6 +77,26 @@ public class ReguaFaturamentoService {
         return reguaFaturamentoRepository.findReguasAtivas();
     }
 
+    /**
+     * 🔥 NOVO: Conta associados ativos por régua.
+     * Retorna um Map<reguaId, quantidade>.
+     */
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, Long> contarAssociadosPorRegua() {
+        log.info("📊 Contando associados por régua");
+        
+        List<ReguaFaturamento> reguas = reguaFaturamentoRepository.findAll();
+        java.util.Map<Long, Long> contagem = new java.util.HashMap<>();
+        
+        for (ReguaFaturamento regua : reguas) {
+            long total = associadoReguaRepository.findByReguaIdAndAtivoTrue(regua.getId()).size();
+            contagem.put(regua.getId(), total);
+        }
+        
+        log.info("✅ Contagem concluída para {} réguas", contagem.size());
+        return contagem;
+    } 
+    
     @Transactional(readOnly = true)
     public Optional<ReguaFaturamento> buscarReguaPadrao() {
         log.info("Buscando régua padrão");
@@ -107,8 +132,18 @@ public class ReguaFaturamentoService {
     @Transactional
     public ReguaFaturamento criarRegua(ReguaFaturamento regua, String usuario) {
         log.info("Criando nova régua: {}", regua.getNome());
+        
+        // Garantir defaults
+        if (regua.getAtivo() == null) regua.setAtivo(true);
+        if (regua.getEhPadrao() == null) regua.setEhPadrao(false);
+        if (regua.getPermiteMigracao() == null) regua.setPermiteMigracao(true);
+        if (regua.getAplicarFranquia() == null) regua.setAplicarFranquia(true);
+        if (regua.getAplicarFaturamentoMinimo() == null) regua.setAplicarFaturamentoMinimo(false);
+        if (regua.getAplicarCancelamentos() == null) regua.setAplicarCancelamentos(true);
+        
         regua.setCriadoPor(usuario);
         regua.setCriadoEm(LocalDateTime.now());
+        
         return reguaFaturamentoRepository.save(regua);
     }
 
@@ -130,9 +165,20 @@ public class ReguaFaturamentoService {
         existing.setAtivo(regua.getAtivo());
         existing.setCor(regua.getCor());
         existing.setIcone(regua.getIcone());
+        
+        // 🔥 NOVOS CAMPOS - ADICIONAR
+        existing.setDiaVencimento(regua.getDiaVencimento());
+        existing.setPermiteMigracao(regua.getPermiteMigracao());
+        existing.setReguaDestinoMigracaoId(regua.getReguaDestinoMigracaoId());
+        existing.setTipoProcessamento(regua.getTipoProcessamento());
+        existing.setAplicarFranquia(regua.getAplicarFranquia());
+        existing.setAplicarFaturamentoMinimo(regua.getAplicarFaturamentoMinimo());
+        existing.setAplicarCancelamentos(regua.getAplicarCancelamentos());
+        
         existing.setAtualizadoPor(usuario);
         existing.setAtualizadoEm(LocalDateTime.now());
         
+        // Tipos de arquivo
         if (existing.getTiposArquivo() != null && !existing.getTiposArquivo().isEmpty()) {
             tipoArquivoReguaRepository.deleteByReguaId(id);
             existing.getTiposArquivo().clear();
@@ -251,19 +297,24 @@ public class ReguaFaturamentoService {
 
     @Transactional
     public AssociadoRegua adicionarAssociadoARegua(Long associadoId, Long reguaId, LocalDate dataInicio, String usuario) {
+    	
         log.info("Adicionando associado {} à régua {}", associadoId, reguaId);
         
+        // 1. Buscar associado
         Associado associado = associadoRepository.findById(associadoId)
             .orElseThrow(() -> new RuntimeException("Associado não encontrado com ID: " + associadoId));
         
+        // 2. Buscar régua
         ReguaFaturamento regua = reguaFaturamentoRepository.findById(reguaId)
             .orElseThrow(() -> new RuntimeException("Régua não encontrada com ID: " + reguaId));
         
+        // 3. Verificar se já existe associação ativa
         boolean existeAtivo = associadoReguaRepository.existsByAssociadoIdAndAtivoTrue(associadoId);
         if (existeAtivo) {
             throw new RuntimeException("Associado já possui uma régua ativa");
         }
         
+        // 4. Criar associação
         AssociadoRegua associadoRegua = new AssociadoRegua();
         associadoRegua.setAssociado(associado);
         associadoRegua.setRegua(regua);
@@ -272,7 +323,39 @@ public class ReguaFaturamentoService {
         associadoRegua.setCriadoPor(usuario);
         associadoRegua.setCriadoEm(LocalDateTime.now());
         
-        return associadoReguaRepository.save(associadoRegua);
+        // 5. Salvar associação
+        AssociadoRegua salvo = associadoReguaRepository.save(associadoRegua);
+        
+        // ============================================================
+        // 🔥 NOVO: Registrar histórico automaticamente
+        // ============================================================
+        try {
+            HistoricoMigracaoRegua historico = new HistoricoMigracaoRegua();
+            historico.setAssociado(associado);
+            historico.setReguaDestino(regua);
+            historico.setReguaOrigem(null);  // primeira associação, sem origem
+            historico.setDataMigracao(LocalDateTime.now());
+            historico.setUsuario(usuario != null ? usuario : "SISTEMA");
+            historico.setMotivo("Associação criada via adicionarAssociadoARegua");
+            historico.setStatus("SUCESSO");
+            historico.setObservacao("Registro gerado automaticamente ao adicionar associado à régua. " +
+                                    "Associação ID: " + salvo.getId());
+            historico.setFaturasPendentes(0);
+            historico.setMigracaoForcada(false);
+            
+            historicoMigracaoReguaRepository.save(historico);
+            
+            log.info("✅ Histórico de migração registrado automaticamente para associado {} -> régua {}", 
+                     associadoId, reguaId);
+            
+        } catch (Exception e) {
+            // 🔥 Não deixa a falha do histórico quebrar a operação principal
+            log.error("⚠️ Falha ao registrar histórico de migração para associado {}: {}", 
+                      associadoId, e.getMessage(), e);
+            // Não relança a exceção — a associação já foi criada com sucesso
+        }
+        
+        return salvo;
     }
     
     @Transactional
@@ -378,34 +461,36 @@ public class ReguaFaturamentoService {
     }
 
     /**
-     * 🔥 BUSCA A RÉGUA ATIVA DE UM ASSOCIADO (CORRIGIDO)
+     * 🔥 BUSCA A RÉGUA ATIVA DE UM ASSOCIADO (com @EntityGraph)
      */
     @Transactional(readOnly = true)
     public Optional<AssociadoRegua> buscarAssociadoAtivo(Long associadoId) {
         log.info("🔍 Buscando régua ATIVA do associado {}", associadoId);
         
         try {
-            // 🔥 USAR O NOVO MÉTODO QUE RETORNA LISTA
+            // 🔥 USAR O NOVO MÉTODO COM @EntityGraph
             List<AssociadoRegua> associacoes = associadoReguaRepository
-                    .findAllByAssociadoIdAndAtivoTrue(associadoId);
+                    .findByAssociadoIdAndAtivoTrueWithRelations(associadoId);
             
             if (associacoes.isEmpty()) {
                 log.info("ℹ️ Nenhuma régua ativa para o associado {}", associadoId);
                 return Optional.empty();
             }
             
-            // Se tiver mais de um, pegar o mais recente (maior ID)
+            // Se tiver mais de um, pegar o mais recente (já ordenado por id DESC)
             if (associacoes.size() > 1) {
                 log.warn("⚠️ Associado {} possui {} associações ativas. Retornando a mais recente.", 
                          associadoId, associacoes.size());
-                return Optional.of(associacoes.get(associacoes.size() - 1));
             }
             
-            log.info("✅ Régua ativa encontrada: {}", associacoes.get(0).getRegua().getNome());
-            return Optional.of(associacoes.get(0));
+            AssociadoRegua resultado = associacoes.get(0);
+            log.info("✅ Régua ativa encontrada: {} (ID: {})", 
+                     resultado.getRegua().getNome(), resultado.getRegua().getId());
+            
+            return Optional.of(resultado);
             
         } catch (Exception e) {
-            log.error("❌ Erro ao buscar régua ativa do associado {}: {}", associadoId, e.getMessage());
+            log.error("❌ Erro ao buscar régua ativa do associado {}: {}", associadoId, e.getMessage(), e);
             return Optional.empty();
         }
     }
@@ -578,6 +663,7 @@ public class ReguaFaturamentoService {
     // ========== CONVERSORES ==========
     
     public ReguaFaturamentoDTO toDTO(ReguaFaturamento entity) {
+    	
         if (entity == null) return null;
         
         ReguaFaturamentoDTO dto = new ReguaFaturamentoDTO();
@@ -593,6 +679,17 @@ public class ReguaFaturamentoService {
         dto.setAtivo(entity.getAtivo());
         dto.setCor(entity.getCor());
         dto.setIcone(entity.getIcone());
+        
+        // 🔥 NOVOS CAMPOS - ADICIONAR
+        dto.setDiaVencimento(entity.getDiaVencimento());
+        dto.setPermiteMigracao(entity.getPermiteMigracao());
+        dto.setReguaDestinoMigracaoId(entity.getReguaDestinoMigracaoId());
+        dto.setTipoProcessamento(entity.getTipoProcessamento());
+        dto.setAplicarFranquia(entity.getAplicarFranquia());
+        dto.setAplicarFaturamentoMinimo(entity.getAplicarFaturamentoMinimo());
+        dto.setAplicarCancelamentos(entity.getAplicarCancelamentos());
+        
+        // Auditoria
         dto.setCriadoEm(entity.getCriadoEm());
         dto.setCriadoPor(entity.getCriadoPor());
         dto.setAtualizadoEm(entity.getAtualizadoEm());
@@ -669,4 +766,6 @@ public class ReguaFaturamentoService {
         
         return dto;
     }
+    
+    
 }

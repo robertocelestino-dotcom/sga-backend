@@ -1484,12 +1484,25 @@ public class AssociadoService {
 		dto.setStatus(associado.getStatus());
 		dto.setDataCadastro(associado.getDataCadastro());
 		dto.setDataAtualizacao(associado.getDataAtualizacao());
-
+		
+	    dto.setDataFiliacao(associado.getDataFiliacao());
+	    dto.setDataInativacao(associado.getDataInativacao());
+	    dto.setMotivoInativacao(associado.getMotivoInativacao());
+	    dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
+	    dto.setDataFimSuspensao(associado.getDataFimSuspensao());
+	    dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+	    dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());	
+		
 		if (associado.getVendedor() != null) {
 			dto.setVendedorId(associado.getVendedor().getId());
 			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
 		}
 
+		if (associado.getVendedorExterno() != null) {
+	        dto.setVendedorExternoId(associado.getVendedorExterno().getId());
+	        dto.setVendedorExternoNome(associado.getVendedorExterno().getNomeRazao());
+	    }	
+		
 		if (associado.getPlano() != null) {
 			dto.setPlanoId(associado.getPlano().getId());
 			dto.setPlanoNome(associado.getPlano().getPlano());

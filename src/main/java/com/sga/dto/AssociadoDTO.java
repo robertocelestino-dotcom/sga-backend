@@ -49,7 +49,8 @@ public class AssociadoDTO {
 	private Long vendedorId;
 	private String vendedorNome;
 
-	private Integer vendedorExternoId;
+	//private Integer vendedorExternoId;
+	private Long vendedorExternoId;
 	private String vendedorExternoNome;
 
 	private Long planoId;
@@ -218,11 +219,11 @@ public class AssociadoDTO {
 		this.vendedorNome = vendedorNome;
 	}
 
-	public Integer getVendedorExternoId() {
+	public Long getVendedorExternoId() {
 		return vendedorExternoId;
 	}
 
-	public void setVendedorExternoId(Integer vendedorExternoId) {
+	public void setVendedorExternoId(Long vendedorExternoId) {
 		this.vendedorExternoId = vendedorExternoId;
 	}
 

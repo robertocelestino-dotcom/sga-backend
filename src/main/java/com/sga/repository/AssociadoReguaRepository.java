@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.sga.dto.AssociadoReguaDTO;
-import com.sga.dto.AssociadoResumoDTO;
 import com.sga.model.AssociadoRegua;
 
 @Repository
@@ -175,7 +175,21 @@ public interface AssociadoReguaRepository extends JpaRepository<AssociadoRegua, 
            "AND ar.regua.id = :reguaId AND ar.dataInicio = :dataInicio")
     Optional<AssociadoRegua> findByAssociadoIdAndReguaIdAndDataInicio(@Param("associadoId") Long associadoId,
                                                                        @Param("reguaId") Long reguaId,
-                                                                       @Param("dataInicio") LocalDate dataInicio);    
+                                                                       @Param("dataInicio") LocalDate dataInicio);
+    
+    
+    /**
+     * 🔥 OTIMIZADO: Busca associações ativas do associado COM a régua e o associado
+     * já carregados. Evita LazyInitializationException em open-in-view=false.
+     */
+    @EntityGraph(attributePaths = {"regua", "associado"})
+    @Query("SELECT ar FROM AssociadoRegua ar " +
+           "WHERE ar.associado.id = :associadoId " +
+           "AND ar.ativo = true " +
+           "ORDER BY ar.id DESC")
+    List<AssociadoRegua> findByAssociadoIdAndAtivoTrueWithRelations(
+        @Param("associadoId") Long associadoId);
+    
     
 }
 

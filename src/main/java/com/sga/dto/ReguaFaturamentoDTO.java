@@ -20,27 +20,42 @@ public class ReguaFaturamentoDTO {
     private Boolean ativo;
     private String cor;
     private String icone;
-    
+
+    // ============================================================
+    // 🔥 NOVOS CAMPOS (estavam faltando)
+    // ============================================================
+    private Integer diaVencimento;
+    private Boolean permiteMigracao;
+    private Long reguaDestinoMigracaoId;
+    private String tipoProcessamento;
+    private Boolean aplicarFranquia;
+    private Boolean aplicarFaturamentoMinimo;
+    private Boolean aplicarCancelamentos;
+
     // 🔥 TIPOS DE ARQUIVO (lista)
     private List<TipoArquivoReguaDTO> tiposArquivo = new ArrayList<>();
-    
+
     // Campos de auditoria
     private LocalDateTime criadoEm;
     private String criadoPor;
     private LocalDateTime atualizadoEm;
     private String atualizadoPor;
-    
+
     // Construtores
     public ReguaFaturamentoDTO() {
         this.tiposArquivo = new ArrayList<>();
         this.ativo = true;
         this.ehPadrao = false;
+        this.permiteMigracao = true;
+        this.aplicarFranquia = true;
+        this.aplicarFaturamentoMinimo = false;
+        this.aplicarCancelamentos = true;
     }
-    
-    public ReguaFaturamentoDTO(Long id, String nome, String descricao, Integer diaEmissao, 
-                               String periodo, Integer sequencia, String tipoArquivo, 
+
+    public ReguaFaturamentoDTO(Long id, String nome, String descricao, Integer diaEmissao,
+                               String periodo, Integer sequencia, String tipoArquivo,
                                Integer ordemImportacao, Boolean ehPadrao, Boolean ativo,
-                               String cor, String icone, LocalDateTime criadoEm, 
+                               String cor, String icone, LocalDateTime criadoEm,
                                String criadoPor, LocalDateTime atualizadoEm, String atualizadoPor) {
         this.id = id;
         this.nome = nome;
@@ -59,204 +74,139 @@ public class ReguaFaturamentoDTO {
         this.atualizadoEm = atualizadoEm;
         this.atualizadoPor = atualizadoPor;
         this.tiposArquivo = new ArrayList<>();
+        this.permiteMigracao = true;
+        this.aplicarFranquia = true;
+        this.aplicarFaturamentoMinimo = false;
+        this.aplicarCancelamentos = true;
     }
-    
-    // Getters e Setters
-    public Long getId() {
-        return id;
-    }
-    
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public String getNome() {
-        return nome;
-    }
-    
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-    
-    public String getDescricao() {
-        return descricao;
-    }
-    
-    public void setDescricao(String descricao) {
-        this.descricao = descricao;
-    }
-    
-    public Integer getDiaEmissao() {
-        return diaEmissao;
-    }
-    
-    public void setDiaEmissao(Integer diaEmissao) {
-        this.diaEmissao = diaEmissao;
-    }
-    
-    public String getPeriodo() {
-        return periodo;
-    }
-    
-    public void setPeriodo(String periodo) {
-        this.periodo = periodo;
-    }
-    
-    public Integer getSequencia() {
-        return sequencia;
-    }
-    
-    public void setSequencia(Integer sequencia) {
-        this.sequencia = sequencia;
-    }
-    
-    public String getTipoArquivo() {
-        return tipoArquivo;
-    }
-    
-    public void setTipoArquivo(String tipoArquivo) {
-        this.tipoArquivo = tipoArquivo;
-    }
-    
-    public Integer getOrdemImportacao() {
-        return ordemImportacao;
-    }
-    
-    public void setOrdemImportacao(Integer ordemImportacao) {
-        this.ordemImportacao = ordemImportacao;
-    }
-    
-    public Boolean getEhPadrao() {
-        return ehPadrao;
-    }
-    
-    public void setEhPadrao(Boolean ehPadrao) {
-        this.ehPadrao = ehPadrao;
-    }
-    
-    public Boolean getAtivo() {
-        return ativo;
-    }
-    
-    public void setAtivo(Boolean ativo) {
-        this.ativo = ativo;
-    }
-    
-    public String getCor() {
-        return cor;
-    }
-    
-    public void setCor(String cor) {
-        this.cor = cor;
-    }
-    
-    public String getIcone() {
-        return icone;
-    }
-    
-    public void setIcone(String icone) {
-        this.icone = icone;
-    }
-    
-    public List<TipoArquivoReguaDTO> getTiposArquivo() {
-        return tiposArquivo;
-    }
-    
+
+    // ============================================================
+    // GETTERS E SETTERS
+    // ============================================================
+
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+
+    public String getNome() { return nome; }
+    public void setNome(String nome) { this.nome = nome; }
+
+    public String getDescricao() { return descricao; }
+    public void setDescricao(String descricao) { this.descricao = descricao; }
+
+    public Integer getDiaEmissao() { return diaEmissao; }
+    public void setDiaEmissao(Integer diaEmissao) { this.diaEmissao = diaEmissao; }
+
+    public String getPeriodo() { return periodo; }
+    public void setPeriodo(String periodo) { this.periodo = periodo; }
+
+    public Integer getSequencia() { return sequencia; }
+    public void setSequencia(Integer sequencia) { this.sequencia = sequencia; }
+
+    public String getTipoArquivo() { return tipoArquivo; }
+    public void setTipoArquivo(String tipoArquivo) { this.tipoArquivo = tipoArquivo; }
+
+    public Integer getOrdemImportacao() { return ordemImportacao; }
+    public void setOrdemImportacao(Integer ordemImportacao) { this.ordemImportacao = ordemImportacao; }
+
+    public Boolean getEhPadrao() { return ehPadrao; }
+    public void setEhPadrao(Boolean ehPadrao) { this.ehPadrao = ehPadrao; }
+
+    public Boolean getAtivo() { return ativo; }
+    public void setAtivo(Boolean ativo) { this.ativo = ativo; }
+
+    public String getCor() { return cor; }
+    public void setCor(String cor) { this.cor = cor; }
+
+    public String getIcone() { return icone; }
+    public void setIcone(String icone) { this.icone = icone; }
+
+    // ============================================================
+    // 🔥 NOVOS GETTERS E SETTERS
+    // ============================================================
+
+    public Integer getDiaVencimento() { return diaVencimento; }
+    public void setDiaVencimento(Integer diaVencimento) { this.diaVencimento = diaVencimento; }
+
+    public Boolean getPermiteMigracao() { return permiteMigracao; }
+    public void setPermiteMigracao(Boolean permiteMigracao) { this.permiteMigracao = permiteMigracao; }
+
+    public Long getReguaDestinoMigracaoId() { return reguaDestinoMigracaoId; }
+    public void setReguaDestinoMigracaoId(Long reguaDestinoMigracaoId) { this.reguaDestinoMigracaoId = reguaDestinoMigracaoId; }
+
+    public String getTipoProcessamento() { return tipoProcessamento; }
+    public void setTipoProcessamento(String tipoProcessamento) { this.tipoProcessamento = tipoProcessamento; }
+
+    public Boolean getAplicarFranquia() { return aplicarFranquia; }
+    public void setAplicarFranquia(Boolean aplicarFranquia) { this.aplicarFranquia = aplicarFranquia; }
+
+    public Boolean getAplicarFaturamentoMinimo() { return aplicarFaturamentoMinimo; }
+    public void setAplicarFaturamentoMinimo(Boolean aplicarFaturamentoMinimo) { this.aplicarFaturamentoMinimo = aplicarFaturamentoMinimo; }
+
+    public Boolean getAplicarCancelamentos() { return aplicarCancelamentos; }
+    public void setAplicarCancelamentos(Boolean aplicarCancelamentos) { this.aplicarCancelamentos = aplicarCancelamentos; }
+
+    // ============================================================
+    // TIPOS DE ARQUIVO
+    // ============================================================
+
+    public List<TipoArquivoReguaDTO> getTiposArquivo() { return tiposArquivo; }
     public void setTiposArquivo(List<TipoArquivoReguaDTO> tiposArquivo) {
         this.tiposArquivo = tiposArquivo != null ? tiposArquivo : new ArrayList<>();
     }
-    
-    public LocalDateTime getCriadoEm() {
-        return criadoEm;
-    }
-    
-    public void setCriadoEm(LocalDateTime criadoEm) {
-        this.criadoEm = criadoEm;
-    }
-    
-    public String getCriadoPor() {
-        return criadoPor;
-    }
-    
-    public void setCriadoPor(String criadoPor) {
-        this.criadoPor = criadoPor;
-    }
-    
-    public LocalDateTime getAtualizadoEm() {
-        return atualizadoEm;
-    }
-    
-    public void setAtualizadoEm(LocalDateTime atualizadoEm) {
-        this.atualizadoEm = atualizadoEm;
-    }
-    
-    public String getAtualizadoPor() {
-        return atualizadoPor;
-    }
-    
-    public void setAtualizadoPor(String atualizadoPor) {
-        this.atualizadoPor = atualizadoPor;
-    }
-    
-    // ========== MÉTODOS AUXILIARES ==========
-    
-    /**
-     * Adiciona um tipo de arquivo à lista
-     */
+
+    // ============================================================
+    // AUDITORIA
+    // ============================================================
+
+    public LocalDateTime getCriadoEm() { return criadoEm; }
+    public void setCriadoEm(LocalDateTime criadoEm) { this.criadoEm = criadoEm; }
+
+    public String getCriadoPor() { return criadoPor; }
+    public void setCriadoPor(String criadoPor) { this.criadoPor = criadoPor; }
+
+    public LocalDateTime getAtualizadoEm() { return atualizadoEm; }
+    public void setAtualizadoEm(LocalDateTime atualizadoEm) { this.atualizadoEm = atualizadoEm; }
+
+    public String getAtualizadoPor() { return atualizadoPor; }
+    public void setAtualizadoPor(String atualizadoPor) { this.atualizadoPor = atualizadoPor; }
+
+    // ============================================================
+    // MÉTODOS AUXILIARES
+    // ============================================================
+
     public void addTipoArquivo(TipoArquivoReguaDTO tipo) {
         if (this.tiposArquivo == null) {
             this.tiposArquivo = new ArrayList<>();
         }
         this.tiposArquivo.add(tipo);
     }
-    
-    /**
-     * Remove um tipo de arquivo da lista
-     */
+
     public void removeTipoArquivo(TipoArquivoReguaDTO tipo) {
         if (this.tiposArquivo != null) {
             this.tiposArquivo.remove(tipo);
         }
     }
-    
-    /**
-     * Verifica se a régua é do primeiro período
-     */
+
     public boolean isPrimeiroPeriodo() {
         return diaEmissao != null && (diaEmissao == 1 || diaEmissao == 2);
     }
-    
-    /**
-     * Verifica se a régua é do segundo período
-     */
+
     public boolean isSegundoPeriodo() {
         return diaEmissao != null && diaEmissao == 16;
     }
-    
-    /**
-     * Verifica se a régua é do terceiro período
-     */
+
     public boolean isTerceiroPeriodo() {
         return diaEmissao != null && diaEmissao == 26;
     }
-    
-    /**
-     * Verifica se é régua padrão
-     */
+
     public boolean isPadrao() {
         return ehPadrao != null && ehPadrao;
     }
-    
-    /**
-     * Verifica se está ativa
-     */
+
     public boolean isAtiva() {
         return ativo != null && ativo;
     }
-    
-    /**
-     * Retorna a descrição do período para exibição
-     */
+
     public String getPeriodoDescricao() {
         if (isPrimeiroPeriodo()) {
             return "Primeiro Período (Dia " + diaEmissao + ")";
@@ -267,16 +217,20 @@ public class ReguaFaturamentoDTO {
         }
         return periodo != null ? periodo : "Período não definido";
     }
-    
+
     @Override
     public String toString() {
         return "ReguaFaturamentoDTO{" +
                 "id=" + id +
                 ", nome='" + nome + '\'' +
                 ", diaEmissao=" + diaEmissao +
+                ", diaVencimento=" + diaVencimento +
                 ", periodo='" + periodo + '\'' +
                 ", ehPadrao=" + ehPadrao +
                 ", ativo=" + ativo +
+                ", aplicarFranquia=" + aplicarFranquia +
+                ", aplicarFaturamentoMinimo=" + aplicarFaturamentoMinimo +
+                ", aplicarCancelamentos=" + aplicarCancelamentos +
                 ", tiposArquivo=" + tiposArquivo +
                 '}';
     }
