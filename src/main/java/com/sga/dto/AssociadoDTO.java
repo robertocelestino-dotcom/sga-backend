@@ -44,12 +44,16 @@ public class AssociadoDTO {
 	private String motivoInativacao;
 	private String motivoSuspensao;
 
+	private String origemUltimaOperacao;
+
+	private Long importacaoLoteId;
+
 	private BigDecimal faturamentoMinimo;
 
 	private Long vendedorId;
 	private String vendedorNome;
 
-	//private Integer vendedorExternoId;
+	// private Integer vendedorExternoId;
 	private Long vendedorExternoId;
 	private String vendedorExternoNome;
 
@@ -322,6 +326,22 @@ public class AssociadoDTO {
 
 	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
 		this.dataAtualizacao = dataAtualizacao;
+	}
+
+	public String getOrigemUltimaOperacao() {
+		return origemUltimaOperacao;
+	}
+
+	public void setOrigemUltimaOperacao(String origemUltimaOperacao) {
+		this.origemUltimaOperacao = origemUltimaOperacao;
+	}
+
+	public Long getImportacaoLoteId() {
+		return importacaoLoteId;
+	}
+
+	public void setImportacaoLoteId(Long importacaoLoteId) {
+		this.importacaoLoteId = importacaoLoteId;
 	}
 
 }

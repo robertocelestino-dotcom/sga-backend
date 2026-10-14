@@ -1,7 +1,6 @@
 package com.sga.controller;
 
 import java.math.BigDecimal;
-import org.springframework.http.HttpHeaders;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -19,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,8 +40,10 @@ import com.sga.dto.EmailDTO;
 import com.sga.dto.EnderecoDTO;
 import com.sga.dto.TelefoneDTO;
 import com.sga.model.Categoria;
+import com.sga.model.ImportacaoLote;
 import com.sga.model.Planos;
 import com.sga.model.Vendedor;
+import com.sga.repository.ImportacaoLoteRepository;
 import com.sga.service.AssociadoDefFaturamentoService;
 import com.sga.service.AssociadoService;
 
@@ -56,6 +58,9 @@ public class AssociadoController {
 
     @Autowired
     private AssociadoDefFaturamentoService associadoDefFaturamentoService;
+    
+    @Autowired
+    private ImportacaoLoteRepository importacaoLoteRepository;
 
     // ============================================================
     // LISTAR ASSOCIADOS (VIEW)
@@ -68,13 +73,14 @@ public class AssociadoController {
             @RequestParam(required = false) String codigoRm, @RequestParam(required = false) String cnpjCpf,
             @RequestParam(required = false) String nomeRazao, @RequestParam(required = false) String tipoPessoa,
             @RequestParam(required = false) String status, @RequestParam(required = false) Long vendedorId,
-            @RequestParam(required = false) Long planoId, @RequestParam(required = false) Long categoriaId) {
+            @RequestParam(required = false) Long planoId, @RequestParam(required = false) Long categoriaId,
+            @RequestParam(required = false) String origem) {
 
         Sort.Direction sortDirection = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort));
 
         Page<AssociadoResumoDTO> associados = associadoService.listarComFiltros(pageable, codigoSpc, nomeRazao, cnpjCpf,
-                status);
+                status, origem);
 
         return ResponseEntity.ok(associados);
     }
@@ -197,13 +203,36 @@ public class AssociadoController {
     @PostMapping("/importacao/lote")
     @PreAuthorize("hasAuthority('ASSOCIADO_CREATE') or hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<AssociadoDTO>> importarAssociadosEmLote(@RequestBody List<AssociadoDTO> associados) {
+    	
         logger.info("📥 Importando {} associados em lote (UPSERT)", associados.size());
 
+        // ============================================================
+        // 🔥 ETAPA 0: CRIAR LOTE DE IMPORTAÇÃO
+        // ============================================================
+        ImportacaoLote lote = new ImportacaoLote();
+        lote.setDataInicio(LocalDateTime.now());
+        lote.setArquivoNome("importacao_" + LocalDateTime.now());
+        lote.setUsuario("IMPORTACAO_LOTE");
+        lote.setStatus("EM_ANDAMENTO");
+        lote.setTotalLinhas(associados.size());
+
+        lote = importacaoLoteRepository.save(lote);
+        Long loteId = lote.getId();
+        logger.info("📦 Lote de importação criado: ID={}", loteId);
+
+        // Injeta o loteId em cada DTO
+        for (AssociadoDTO dto : associados) {
+            dto.setImportacaoLoteId(loteId);
+        }
+
         List<AssociadoDTO> associadosImportados = new ArrayList<>();
+        
         int criados = 0;
         int atualizados = 0;
         int erros = 0;
         int configuracoesCriadas = 0;
+        int reguasVinculadas = 0;
+        
         List<AssociadoDTO> associadosInativados = new ArrayList<>();
 
         // ===== ETAPA 1: EXTRAIR CNPJs DA LISTA PARA INATIVAÇÃO =====
@@ -266,6 +295,13 @@ public class AssociadoController {
                         var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
                         resultado = associadoService.toDTO(associadoEntity);
                         atualizados++;
+                        
+                        // 🔥 CONTOU RÉGUA VINCULADA (fallback de existente sem régua)?
+                        if (associadoEntity.getReguaFaturamento() != null
+                                && existente.getReguaFaturamentoId() == null) {
+                            reguasVinculadas++;
+                        }
+                        
                         logger.info("✏️ Associado atualizado: {} (ID: {})", dto.getNomeRazao(), resultado.getId());
 
                         // ============================================================
@@ -296,6 +332,11 @@ public class AssociadoController {
                     var associadoEntity = associadoService.importarAssociado(dto, "IMPORTACAO_LOTE");
                     resultado = associadoService.toDTO(associadoEntity);
                     criados++;
+                    
+                    // 🔥 Conta régua vinculada (consulta tb_associado_regua)
+                    if (associadoService.possuiReguaAtiva(associadoEntity.getId())) {
+                        reguasVinculadas++;
+                    }
                     
                     // ============================================================
                     // 🔥 CONFIGURAÇÃO DE FATURAMENTO PARA NOVO ASSOCIADO
@@ -382,11 +423,29 @@ public class AssociadoController {
         }
 
         // ============================================================
+        // 🔥 ETAPA 5: FECHAR O LOTE DE IMPORTAÇÃO
+        // ============================================================
+        try {
+            lote.setDataFim(LocalDateTime.now());
+            lote.setTotalCriados(criados);
+            lote.setTotalAtualizados(atualizados);
+            lote.setTotalInativados(totalInativados);
+            lote.setTotalErros(erros);
+            lote.setStatus("CONCLUIDO");
+            importacaoLoteRepository.save(lote);
+            logger.info("📦 Lote de importação fechado: ID={}, status=CONCLUIDO", loteId);
+        } catch (Exception e) {
+            logger.error("❌ Erro ao fechar lote {}: {}", loteId, e.getMessage(), e);
+            lote.setStatus("FALHOU");
+            importacaoLoteRepository.save(lote);
+        }
+
+        // ============================================================
         // LOG FINAL COM TODAS AS ESTATÍSTICAS
         // ============================================================
-        logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas, {} inativados", 
-            criados, atualizados, erros, configuracoesCriadas, totalInativados);
-
+        logger.info("📊 Importação concluída: {} criados, {} atualizados, {} erros, {} configurações criadas, {} réguas vinculadas, {} inativados", 
+                criados, atualizados, erros, configuracoesCriadas, reguasVinculadas, totalInativados);
+        
         // ============================================================
         // ETAPA 4: ADICIONAR HEADERS COM ESTATÍSTICAS
         // ============================================================
@@ -396,6 +455,7 @@ public class AssociadoController {
         headers.add("X-Importacao-Erros", String.valueOf(erros));
         headers.add("X-Importacao-Configuracoes", String.valueOf(configuracoesCriadas));
         headers.add("X-Importacao-Inativados", String.valueOf(totalInativados));
+        headers.add("X-Importacao-Regua-Vinculadas", String.valueOf(reguasVinculadas));
         headers.add("X-Importacao-Total", String.valueOf(associados.size()));
 
         // ============================================================
@@ -430,8 +490,9 @@ public class AssociadoController {
         // EXPOSE HEADERS PARA O FRONTEND
         // ============================================================
         headers.add("Access-Control-Expose-Headers", 
-            "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, " +
-            "X-Importacao-Configuracoes, X-Importacao-Inativados, X-Importacao-Inativados-List");
+                "X-Importacao-Criados, X-Importacao-Atualizados, X-Importacao-Erros, " +
+                "X-Importacao-Configuracoes, X-Importacao-Inativados, X-Importacao-Inativados-List, " +
+                "X-Importacao-Regua-Vinculadas");
 
         return ResponseEntity.ok()
                 .headers(headers)
@@ -552,8 +613,7 @@ public class AssociadoController {
     }
 
     // ============================================================
-    // INNER CLASS
-    // ============================================================
+    // INNER CLASS    // ============================================================
     public static class HealthResponse {
         private String status;
         private String service;

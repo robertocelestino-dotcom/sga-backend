@@ -35,6 +35,8 @@ public class AssociadoResumoDTO {
 	private String motivoInativacao;
 	private String motivoSuspensao;
 
+	private String origemUltimaOperacao; // 🔥 NOVO
+
 	// Campos de relacionamento ADICIONADOS
 	private Long vendedorId;
 	private String vendedorNome;
@@ -49,7 +51,7 @@ public class AssociadoResumoDTO {
 	private String categoriaNome;
 
 	public AssociadoResumoDTO() {
-	
+
 	}
 
 	public AssociadoResumoDTO(Long id, String codigoSpc, String codigoRm, String cnpjCpf, String nomeRazao,
@@ -255,6 +257,14 @@ public class AssociadoResumoDTO {
 
 	public void setCategoriaNome(String categoriaNome) {
 		this.categoriaNome = categoriaNome;
+	}
+
+	public String getOrigemUltimaOperacao() {
+		return origemUltimaOperacao;
+	}
+
+	public void setOrigemUltimaOperacao(String origemUltimaOperacao) {
+		this.origemUltimaOperacao = origemUltimaOperacao;
 	}
 
 }

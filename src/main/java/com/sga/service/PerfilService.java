@@ -1,60 +1,78 @@
 package com.sga.service;
 
-import com.sga.dto.PerfilDTO;
-import com.sga.dto.MenuDTO;
-import com.sga.dto.PermissaoDTO;
-import com.sga.dto.PerfilRequest;
-import com.sga.model.Perfil;
-import com.sga.model.Menu;
-import com.sga.model.Permissao;
-import com.sga.repository.PerfilRepository;
-import com.sga.repository.MenuRepository;
-import com.sga.repository.PermissaoRepository;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
+import com.sga.dto.MenuDTO;
+import com.sga.dto.PerfilDTO;
+import com.sga.dto.PerfilRequest;
+import com.sga.dto.PermissaoDTO;
+import com.sga.model.Menu;
+import com.sga.model.Perfil;
+import com.sga.model.Permissao;
+import com.sga.repository.MenuRepository;
+import com.sga.repository.PerfilRepository;
+import com.sga.repository.PermissaoRepository;
 
 @Service
 public class PerfilService {
 
     @Autowired
-    private PerfilRepository perfilRepository;  // REMOVER 'final'
+    private PerfilRepository perfilRepository;
 
     @Autowired
-    private MenuRepository menuRepository;  // REMOVER 'final'
+    private MenuRepository menuRepository;
 
     @Autowired
-    private PermissaoRepository permissaoRepository;  // REMOVER 'final'
+    private PermissaoRepository permissaoRepository;
 
+    // ============================================================
+    // 🔥 LEITURA
+    //
+    // ⚠️ IMPORTANTE: adicionamos @Transactional(readOnly = true) em
+    //    todos os métodos de leitura porque Perfil.menus e
+    //    Perfil.permissoes são LAZY. Sem a transação, o Hibernate
+    //    lança LazyInitializationException ao acessar as coleções
+    //    dentro do toDTO() (que é chamado fora da sessão).
+    //
+    //    Isso resolve o HTTP 500 em GET /admin/perfis e outros
+    //    endpoints que retornam PerfilDTO.
+    // ============================================================
+
+    @Transactional(readOnly = true)
     public List<PerfilDTO> listarTodos() {
         return perfilRepository.findAll().stream()
             .map(this::toDTO)
             .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<PerfilDTO> listarAtivos() {
         return perfilRepository.findByAtivoTrue().stream()
             .map(this::toDTO)
             .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public PerfilDTO buscarPorId(Long id) {
         Perfil perfil = perfilRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Perfil não encontrado"));
         return toDTO(perfil);
     }
 
-    // Adicione este método no PerfilService.java
-
+    @Transactional(readOnly = true)
     public Perfil buscarEntidadePorId(Long id) {
         return perfilRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Perfil não encontrado"));
-    }   
-    
+    }
+
+    @Transactional(readOnly = true)
     public List<MenuDTO> listarMenusPorPerfil(Long perfilId) {
         Perfil perfil = perfilRepository.findById(perfilId)
             .orElseThrow(() -> new RuntimeException("Perfil não encontrado"));
@@ -63,9 +81,14 @@ public class PerfilService {
             .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<String> listarPermissoesPorPerfil(Long perfilId) {
         return permissaoRepository.findPermissoesByPerfilId(perfilId);
     }
+
+    // ============================================================
+    // 🔥 ESCRITA
+    // ============================================================
 
     @Transactional
     public PerfilDTO criar(PerfilRequest request) {
@@ -173,6 +196,10 @@ public class PerfilService {
         perfilRepository.save(perfil);
     }
 
+    // ============================================================
+    // MAPPERS
+    // ============================================================
+
     private PerfilDTO toDTO(Perfil perfil) {
         PerfilDTO dto = new PerfilDTO();
         dto.setId(perfil.getId());
@@ -214,5 +241,25 @@ public class PerfilService {
         dto.setRecurso(permissao.getRecurso());
         dto.setAcao(permissao.getAcao());
         return dto;
+    }
+
+    // ============================================================
+    // MÉTODOS OTIMIZADOS (usados pelo AuthController)
+    // ============================================================
+
+    @Transactional(readOnly = true)
+    public Optional<Perfil> findByIdComPermissoes(Long id) {
+        return perfilRepository.findByIdComPermissoes(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Perfil> findByIdComMenus(Long id) {
+        return perfilRepository.findByIdComMenus(id);
+    }
+
+    @Deprecated
+    @Transactional(readOnly = true)
+    public Optional<Perfil> findByIdComMenusEPermissoes(Long id) {
+        return perfilRepository.findByIdComMenusEPermissoes(id);
     }
 }

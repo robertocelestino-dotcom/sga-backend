@@ -76,14 +76,62 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	 * findByIdWithRelacionamentos(@Param("id") Long id);
 	 */
 
+	/*
+	 * @Query("SELECT a FROM Associado a WHERE " +
+	 * "(:codigoSpc IS NULL OR a.codigoSpc IS NULL OR LOWER(a.codigoSpc) LIKE LOWER(CONCAT('%', :codigoSpc, '%'))) AND "
+	 * +
+	 * "(:nomeRazao IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nomeRazao, '%'))) AND "
+	 * + "(:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%')) AND " +
+	 * "(:status IS NULL OR a.status = :status)")
+	 * 
+	 * Page<Associado> findByFiltrosCombinados(@Param("codigoSpc") String
+	 * codigoSpc, @Param("nomeRazao") String nomeRazao,
+	 * 
+	 * @Param("cnpjCpf") String cnpjCpf, @Param("status") String status, Pageable
+	 * pageable);
+	 * 
+	 */
+
 	@Query("SELECT a FROM Associado a WHERE "
 			+ "(:codigoSpc IS NULL OR a.codigoSpc IS NULL OR LOWER(a.codigoSpc) LIKE LOWER(CONCAT('%', :codigoSpc, '%'))) AND "
 			+ "(:nomeRazao IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nomeRazao, '%'))) AND "
 			+ "(:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%')) AND "
-			+ "(:status IS NULL OR a.status = :status)")
-
+			+ "(:status IS NULL OR a.status = :status) AND " + "(:origem IS NULL OR a.origemUltimaOperacao = :origem)")
 	Page<Associado> findByFiltrosCombinados(@Param("codigoSpc") String codigoSpc, @Param("nomeRazao") String nomeRazao,
-			@Param("cnpjCpf") String cnpjCpf, @Param("status") String status, Pageable pageable);
+			@Param("cnpjCpf") String cnpjCpf, @Param("status") String status, @Param("origem") String origem,
+			Pageable pageable);
+
+	// ============================================================
+	// 🔥 FILTRO POR ÚLTIMA IMPORTAÇÃO
+	// Usado quando origem = IMPORTACAO_NOVO ou IMPORTACAO_ATUALIZADO.
+	// Traz apenas os associados que foram tocados na ÚLTIMA importação
+	// (entre :inicioJanela e :fimJanela).
+	// ============================================================
+	@Query("SELECT a FROM Associado a WHERE "
+			+ "(:codigoSpc IS NULL OR a.codigoSpc IS NULL OR LOWER(a.codigoSpc) LIKE LOWER(CONCAT('%', :codigoSpc, '%'))) AND "
+			+ "(:nomeRazao IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nomeRazao, '%'))) AND "
+			+ "(:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%')) AND "
+			+ "(:status IS NULL OR a.status = :status) AND " + "a.origemUltimaOperacao = :origem AND "
+			+ "a.ultimaImportacaoEm BETWEEN :inicioJanela AND :fimJanela")
+	Page<Associado> findByFiltrosComImportacaoRecente(@Param("codigoSpc") String codigoSpc,
+			@Param("nomeRazao") String nomeRazao, @Param("cnpjCpf") String cnpjCpf, @Param("status") String status,
+			@Param("origem") String origem, @Param("inicioJanela") LocalDateTime inicioJanela,
+			@Param("fimJanela") LocalDateTime fimJanela, Pageable pageable);
+
+	// ============================================================
+	// 🔥 FILTRO POR LOTE DE IMPORTAÇÃO
+	// Usado quando origem = IMPORTACAO_NOVO ou IMPORTACAO_ATUALIZADO.
+	// Traz apenas os associados do lote mais recente.
+	// ============================================================
+	@Query("SELECT a FROM Associado a WHERE "
+			+ "(:codigoSpc IS NULL OR a.codigoSpc IS NULL OR LOWER(a.codigoSpc) LIKE LOWER(CONCAT('%', :codigoSpc, '%'))) AND "
+			+ "(:nomeRazao IS NULL OR LOWER(a.nomeRazao) LIKE LOWER(CONCAT('%', :nomeRazao, '%'))) AND "
+			+ "(:cnpjCpf IS NULL OR a.cnpjCpf LIKE CONCAT('%', :cnpjCpf, '%')) AND "
+			+ "(:status IS NULL OR a.status = :status) AND " + "a.origemUltimaOperacao = :origem AND "
+			+ "a.importacaoLoteId = :loteId")
+	Page<Associado> findByFiltrosComLote(@Param("codigoSpc") String codigoSpc, @Param("nomeRazao") String nomeRazao,
+			@Param("cnpjCpf") String cnpjCpf, @Param("status") String status, @Param("origem") String origem,
+			@Param("loteId") Long loteId, Pageable pageable);
 
 	Optional<Associado> findByCnpjCpf(String cnpjCpf);
 
@@ -106,7 +154,6 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	Page<Associado> findByIdInAndFiltros(@Param("ids") List<Long> ids, @Param("nome") String nome,
 			@Param("cnpjCpf") String cnpjCpf, Pageable pageable);
 
-	
 	// ========== 🔥 NOVOS MÉTODOS PARA INATIVAÇÃO ==========
 
 	/**
@@ -147,7 +194,6 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	int inativarAssociadosEmLote(@Param("cnpjs") List<String> cnpjs, @Param("dataInativacao") LocalDate dataInativacao,
 			@Param("motivo") String motivo, @Param("dataAtualizacao") LocalDateTime dataAtualizacao);
 
-	
 	// ============================================================
 	// 🔥 NOVOS MÉTODOS — FILTRO POR NOTA NO PERÍODO
 	// ============================================================
@@ -155,67 +201,47 @@ public interface AssociadoRepository extends JpaRepository<Associado, Long>, Jpa
 	/**
 	 * 🔥 Busca associados de uma régua que POSSUEM nota de débito no período.
 	 * 
-	 * Critérios:
-	 *  - Associado ativo (status = 'A')
-	 *  - Vinculado à régua informada e ativo na régua
-	 *  - Existe pelo menos 1 nota de débito com:
-	 *      - codigo_socio (com padding de 8 dígitos) = codigospc do associado
-	 *      - data_fim_periodo entre dataInicio e dataFim
+	 * Critérios: - Associado ativo (status = 'A') - Vinculado à régua informada e
+	 * ativo na régua - Existe pelo menos 1 nota de débito com: - codigo_socio (com
+	 * padding de 8 dígitos) = codigospc do associado - data_fim_periodo entre
+	 * dataInicio e dataFim
 	 * 
 	 * Complexidade: 1 query (usando EXISTS + índices)
 	 */
-	@Query(value = 
-	    "SELECT DISTINCT a.* FROM tb_associado a " +
-	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
-	    "WHERE ar.regua_id = :reguaId " +
-	    "  AND ar.ativo = true " +
-	    "  AND a.status = 'A' " +
-	    "  AND EXISTS ( " +
-	    "      SELECT 1 FROM tb_nota_debito_spc nd " +
-	    "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio " +
-	    "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " +
-	    "  ) " +
-	    "ORDER BY a.nomerazao",
-	    nativeQuery = true)
-	List<Associado> findByReguaComNotaNoPeriodo(
-	    @Param("reguaId") Long reguaId,
-	    @Param("dataInicio") LocalDate dataInicio,
-	    @Param("dataFim") LocalDate dataFim);
+	@Query(value = "SELECT DISTINCT a.* FROM tb_associado a "
+			+ "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " + "WHERE ar.regua_id = :reguaId "
+			+ "  AND ar.ativo = true " + "  AND a.status = 'A' " + "  AND EXISTS ( "
+			+ "      SELECT 1 FROM tb_nota_debito_spc nd " + "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio "
+			+ "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " + "  ) "
+			+ "ORDER BY a.nomerazao", nativeQuery = true)
+	List<Associado> findByReguaComNotaNoPeriodo(@Param("reguaId") Long reguaId,
+			@Param("dataInicio") LocalDate dataInicio, @Param("dataFim") LocalDate dataFim);
 
 	/**
-	 * 🔥 Conta associados da régua que NÃO têm nota no período.
-	 * Usado para exibir aviso ao usuário: "X associados excluídos por não terem nota".
+	 * 🔥 Conta associados da régua que NÃO têm nota no período. Usado para exibir
+	 * aviso ao usuário: "X associados excluídos por não terem nota".
 	 */
-	@Query(value = 
-	    "SELECT COUNT(DISTINCT a.id) FROM tb_associado a " +
-	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
-	    "WHERE ar.regua_id = :reguaId " +
-	    "  AND ar.ativo = true " +
-	    "  AND a.status = 'A' " +
-	    "  AND NOT EXISTS ( " +
-	    "      SELECT 1 FROM tb_nota_debito_spc nd " +
-	    "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio " +
-	    "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " +
-	    "  )",
-	    nativeQuery = true)
-	long countByReguaSemNotaNoPeriodo(
-	    @Param("reguaId") Long reguaId,
-	    @Param("dataInicio") LocalDate dataInicio,
-	    @Param("dataFim") LocalDate dataFim);
+	@Query(value = "SELECT COUNT(DISTINCT a.id) FROM tb_associado a "
+			+ "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " + "WHERE ar.regua_id = :reguaId "
+			+ "  AND ar.ativo = true " + "  AND a.status = 'A' " + "  AND NOT EXISTS ( "
+			+ "      SELECT 1 FROM tb_nota_debito_spc nd " + "      WHERE LPAD(a.codigospc, 8, '0') = nd.codigo_socio "
+			+ "        AND nd.data_fim_periodo BETWEEN :dataInicio AND :dataFim " + "  )", nativeQuery = true)
+	long countByReguaSemNotaNoPeriodo(@Param("reguaId") Long reguaId, @Param("dataInicio") LocalDate dataInicio,
+			@Param("dataFim") LocalDate dataFim);
 
 	/**
-	 * 🔥 Busca associados de uma régua (sem filtro de nota).
-	 * Mantido para compatibilidade com o comportamento anterior.
+	 * 🔥 Busca associados de uma régua (sem filtro de nota). Mantido para
+	 * compatibilidade com o comportamento anterior.
 	 */
-	@Query(value = 
-	    "SELECT DISTINCT a.* FROM tb_associado a " +
-	    "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " +
-	    "WHERE ar.regua_id = :reguaId " +
-	    "  AND ar.ativo = true " +
-	    "  AND a.status = 'A' " +
-	    "ORDER BY a.nomerazao",
-	    nativeQuery = true)
+	@Query(value = "SELECT DISTINCT a.* FROM tb_associado a "
+			+ "INNER JOIN tb_associado_regua ar ON ar.associado_id = a.id " + "WHERE ar.regua_id = :reguaId "
+			+ "  AND ar.ativo = true " + "  AND a.status = 'A' " + "ORDER BY a.nomerazao", nativeQuery = true)
 	List<Associado> findByReguaAtivos(@Param("reguaId") Long reguaId);
-	
-	
+
+	// ============================================================
+	// 🔥 ÚLTIMA IMPORTAÇÃO — usado pelo filtro "Novos/Atualizados"
+	// ============================================================
+	@Query("SELECT MAX(a.ultimaImportacaoEm) FROM Associado a WHERE a.ultimaImportacaoEm IS NOT NULL")
+	LocalDateTime findMaxUltimaImportacaoEm();
+
 }

@@ -9,6 +9,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.sga.service.SessaoService;
 import com.sga.service.UsuarioService;
 
 import javax.servlet.FilterChain;
@@ -27,20 +28,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Lazy
     private UsuarioService usuarioService;
 
+    @Autowired
+    @Lazy
+    private SessaoService sessaoService;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // 🔥 IGNORAR ENDPOINTS PÚBLICOS - NÃO TENTAR AUTENTICAR
         String path = request.getRequestURI();
-        
-        // 🔥 URLs que NÃO devem passar pelo filtro JWT
-        if (path.startsWith("/api/auth/") || 
-            path.startsWith("/api/importacao-spc/") || 
-            path.startsWith("/api-docs/") || 
-            path.startsWith("/swagger-ui/") ||
-            path.startsWith("/actuator/")) {
-            System.out.println("🔓 Ignorando filtro JWT para: " + path);
+
+        // ============================================================
+        // Ignorar apenas endpoints realmente públicos
+        // ============================================================
+        if (path.startsWith("/api/auth/login")
+                || path.startsWith("/api/auth/teste")
+                || path.startsWith("/actuator/health")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -50,7 +53,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String username;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            System.out.println("🔓 Sem token JWT, continuando...");
             filterChain.doFilter(request, response);
             return;
         }
@@ -60,22 +62,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             username = jwtService.extractUsername(jwt);
 
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                // ============================================================
+                // 🔥 VALIDA SE A SESSÃO AINDA ESTÁ ATIVA (não foi revogada)
+                // ============================================================
+                if (!sessaoService.validarSessao(jwt)) {
+                    filterChain.doFilter(request, response);
+                    return;
+                }
+
+                // 🔥 loadUserByUsername agora usa findByUsernameWithPerfil
+                //    → perfil + permissões vêm em 1 query (sem LazyInit)
                 UserDetails userDetails = usuarioService.loadUserByUsername(username);
 
                 if (jwtService.isTokenValid(jwt, userDetails)) {
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
-                            null, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("✅ Usuário autenticado via JWT: " + username);
-                } else {
-                    System.out.println("⚠️ Token JWT inválido para: " + username);
                 }
             }
         } catch (Exception e) {
             System.err.println("❌ Erro ao processar JWT: " + e.getMessage());
         }
-        
+
         filterChain.doFilter(request, response);
     }
 }

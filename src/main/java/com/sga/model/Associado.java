@@ -101,7 +101,8 @@ public class Associado {
 	@Column(name = "FATURAMENTO_MINIMO", precision = 15, scale = 2)
 	private BigDecimal faturamentoMinimo;
 
-	@Column(name = "DATA_CADASTRO")
+	// @Column(name = "DATA_CADASTRO")
+	@Column(name = "DATA_CADASTRO", updatable = false)
 	private LocalDateTime dataCadastro;
 
 	@Column(name = "ultima_migracao")
@@ -125,7 +126,6 @@ public class Associado {
 	@OneToMany(mappedBy = "associado", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 	private List<AssociadoDefFaturamento> definicoesFaturamento = new ArrayList<>();
 
-	
 	// Campo para régua de faturamento
 	@ManyToOne
 	@JoinColumn(name = "regua_faturamento_id")
@@ -134,8 +134,29 @@ public class Associado {
 	// Campo para data de atualização
 	@Column(name = "data_atualizacao")
 	private LocalDateTime dataAtualizacao;
-	
-	
+
+	// ============================================================
+	// 🔥 ÚLTIMA IMPORTAÇÃO — preenchida APENAS quando o associado
+	// é criado ou atualizado via importação em lote.
+	// Cadastro manual NUNCA preenche este campo.
+	// ============================================================
+	@Column(name = "ultima_importacao_em")
+	private LocalDateTime ultimaImportacaoEm;
+
+	// ============================================================
+	// 🔥 LOTE DA ÚLTIMA IMPORTAÇÃO
+	// FK para tb_importacao_lote. Usado pelo filtro "Origem".
+	// ============================================================
+	@Column(name = "importacao_lote_id")
+	private Long importacaoLoteId;
+
+	// ============================================================
+	// 🔥 ORIGEM DA ÚLTIMA OPERAÇÃO
+	// Valores: CADASTRO_MANUAL, IMPORTACAO_NOVO, IMPORTACAO_ATUALIZADO
+	// ============================================================
+	@Column(name = "origem_ultima_operacao", length = 30)
+	private String origemUltimaOperacao;
+
 	// Campos transientes para controle
 	@Transient
 	private boolean statusChanged = false;
@@ -143,24 +164,49 @@ public class Associado {
 	@Transient
 	private String statusAnterior;
 
+	// ============================================================
+	// 🔥 HOOKS JPA — preenchimento automático
+	// ============================================================
+	@javax.persistence.PrePersist
+	protected void onPrePersist() {
+		if (this.dataCadastro == null) {
+			this.dataCadastro = LocalDateTime.now();
+		}
+	}
+
+	public Long getImportacaoLoteId() {
+		return importacaoLoteId;
+	}
+
+	public void setImportacaoLoteId(Long importacaoLoteId) {
+		this.importacaoLoteId = importacaoLoteId;
+	}
+
+	public LocalDateTime getUltimaImportacaoEm() {
+		return ultimaImportacaoEm;
+	}
+
+	public void setUltimaImportacaoEm(LocalDateTime ultimaImportacaoEm) {
+		this.ultimaImportacaoEm = ultimaImportacaoEm;
+	}
 
 	// Getters e Setters
 	public ReguaFaturamento getReguaFaturamento() {
-	    return reguaFaturamento;
+		return reguaFaturamento;
 	}
 
 	public void setReguaFaturamento(ReguaFaturamento reguaFaturamento) {
-	    this.reguaFaturamento = reguaFaturamento;
+		this.reguaFaturamento = reguaFaturamento;
 	}
 
 	public LocalDateTime getDataAtualizacao() {
-	    return dataAtualizacao;
+		return dataAtualizacao;
 	}
 
 	public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
-	    this.dataAtualizacao = dataAtualizacao;
+		this.dataAtualizacao = dataAtualizacao;
 	}
-	
+
 	// Adicionar métodos auxiliares
 	public boolean isAtivo() {
 		return STATUS_ATIVO.equals(status);
@@ -502,6 +548,14 @@ public class Associado {
 
 	public void setUsuarioUltimaMigracao(String usuarioUltimaMigracao) {
 		this.usuarioUltimaMigracao = usuarioUltimaMigracao;
+	}
+
+	public String getOrigemUltimaOperacao() {
+		return origemUltimaOperacao;
+	}
+
+	public void setOrigemUltimaOperacao(String origemUltimaOperacao) {
+		this.origemUltimaOperacao = origemUltimaOperacao;
 	}
 
 	// Métodos auxiliares

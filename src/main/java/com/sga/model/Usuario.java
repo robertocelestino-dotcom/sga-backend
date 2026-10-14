@@ -19,11 +19,15 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "TB_USUARIO")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Usuario implements UserDetails {
 
 	@Id
@@ -45,7 +49,7 @@ public class Usuario implements UserDetails {
 	private Long idVendedor;
 
 	@Column(length = 20)
-	private String role = "USER"; // ADMIN, VENDEDOR, FINANCEIRO
+	private String role = "USER";
 
 	private boolean ativo = true;
 
@@ -53,7 +57,7 @@ public class Usuario implements UserDetails {
 	private java.time.LocalDateTime dataCriacao = java.time.LocalDateTime.now();
 
 	// ============================================================
-	// NOVOS CAMPOS (ADICIONADOS SEM REMOVER OS EXISTENTES)
+	// CAMPOS ADICIONADOS
 	// ============================================================
 
 	@Column(name = "PERFIL_ID")
@@ -77,10 +81,36 @@ public class Usuario implements UserDetails {
 	@Column(name = "DATA_ATUALIZACAO")
 	private java.time.LocalDateTime dataAtualizacao = java.time.LocalDateTime.now();
 
-	// ============================================================
-	// RELACIONAMENTO COM PERFIL (NOVO - OPCIONAL)
-	// ============================================================
+	@Column(name = "data_bloqueio")
+	private java.time.LocalDateTime dataBloqueio;
 
+	@Column(name = "motivo_bloqueio", length = 255)
+	private String motivoBloqueio;
+
+	// ============================================================
+	// 🔥 FOTO DO USUÁRIO (avatar em base64)
+	//
+	// - @JsonIgnore: ESSENCIAL. Sem isso, o SistemaLogAspect serializa
+	//   1-2MB de base64 em CADA operação que toca Usuario, gerando
+	//   inserts gigantes no tb_sistema_log.
+	//
+	// ⚠️ O AuthController retorna a foto via DTO próprio (UsuarioDTO),
+	//    portanto o @JsonIgnore não afeta a resposta do login.
+	// ============================================================
+	@JsonIgnore
+	@Column(name = "foto_base64", columnDefinition = "TEXT")
+	private String fotoBase64;
+
+	// ============================================================
+	// RELACIONAMENTO COM PERFIL
+	//
+	// - @JsonIgnore: impede que o Perfil (com menus recursivos)
+	//   seja serializado junto com o Usuario em logs.
+	// - Mantido EAGER porque o getAuthorities() do UserDetails acessa
+	//   perfil.getPermissoes() e precisa estar carregado para
+	//   autenticação/autorização funcionar.
+	// ============================================================
+	@JsonIgnore
 	@ManyToOne(fetch = FetchType.EAGER)
 	@JoinColumn(name = "PERFIL_ID", insertable = false, updatable = false)
 	private Perfil perfil;
@@ -94,7 +124,7 @@ public class Usuario implements UserDetails {
 	}
 
 	// ============================================================
-	// GETTERS E SETTERS EXISTENTES (MANTIDOS)
+	// GETTERS E SETTERS
 	// ============================================================
 
 	public Long getId() {
@@ -169,10 +199,6 @@ public class Usuario implements UserDetails {
 		this.dataCriacao = dataCriacao;
 	}
 
-	// ============================================================
-	// GETTERS E SETTERS DOS NOVOS CAMPOS
-	// ============================================================
-
 	public Long getPerfilId() {
 		return perfilId;
 	}
@@ -217,6 +243,10 @@ public class Usuario implements UserDetails {
 		return bloqueado;
 	}
 
+	public boolean estaBloqueado() {
+		return bloqueado != null && bloqueado;
+	}
+
 	public void setBloqueado(Boolean bloqueado) {
 		this.bloqueado = bloqueado;
 	}
@@ -241,7 +271,7 @@ public class Usuario implements UserDetails {
 	}
 
 	// ============================================================
-	// MÉTODOS AUXILIARES PARA COMPATIBILIDADE
+	// MÉTODOS AUXILIARES
 	// ============================================================
 
 	public String getNomeCompleto() {
@@ -260,27 +290,55 @@ public class Usuario implements UserDetails {
 		this.password = senha;
 	}
 
+	public java.time.LocalDateTime getDataBloqueio() {
+		return dataBloqueio;
+	}
+
+	public void setDataBloqueio(java.time.LocalDateTime dataBloqueio) {
+		this.dataBloqueio = dataBloqueio;
+	}
+
+	public String getMotivoBloqueio() {
+		return motivoBloqueio;
+	}
+
+	public void setMotivoBloqueio(String motivoBloqueio) {
+		this.motivoBloqueio = motivoBloqueio;
+	}
+
+	public String getFotoBase64() {
+		return fotoBase64;
+	}
+
+	public void setFotoBase64(String fotoBase64) {
+		this.fotoBase64 = fotoBase64;
+	}
+
 	// ============================================================
-	// MÉTODOS DO UserDetails
+	// UserDetails
 	// ============================================================
 
 	@Override
 	public Collection<? extends GrantedAuthority> getAuthorities() {
-	    // Se tiver perfil com permissões, usa elas
-	    if (perfil != null && perfil.getPermissoes() != null && !perfil.getPermissoes().isEmpty()) {
-	        List<GrantedAuthority> authorities = new ArrayList<>();
-	        for (Permissao p : perfil.getPermissoes()) {
-	            authorities.add(new SimpleGrantedAuthority(p.getNome()));
-	        }
-	        return authorities;
-	    }
-	    
-	    // Fallback: usa o role existente
-	    if (role != null && !role.isEmpty()) {
-	        return List.of(new SimpleGrantedAuthority("ROLE_" + role));
-	    }
-	    
-	    return List.of(new SimpleGrantedAuthority("ROLE_USER"));
+		List<GrantedAuthority> authorities = new ArrayList<>();
+
+		if (role != null && !role.trim().isEmpty()) {
+			authorities.add(new SimpleGrantedAuthority("ROLE_" + role.trim().toUpperCase()));
+		}
+
+		if (perfil != null && perfil.getPermissoes() != null) {
+			for (Permissao p : perfil.getPermissoes()) {
+				if (p.getNome() != null && !p.getNome().trim().isEmpty()) {
+					authorities.add(new SimpleGrantedAuthority(p.getNome()));
+				}
+			}
+		}
+
+		if (authorities.isEmpty()) {
+			authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+		}
+
+		return authorities;
 	}
 
 	@Override
@@ -290,7 +348,7 @@ public class Usuario implements UserDetails {
 
 	@Override
 	public boolean isAccountNonLocked() {
-		return bloqueado == null || !bloqueado;
+		return true;
 	}
 
 	@Override
@@ -307,7 +365,7 @@ public class Usuario implements UserDetails {
 	}
 
 	// ============================================================
-	// hashCode e equals (MANTIDOS)
+	// hashCode e equals
 	// ============================================================
 
 	@Override

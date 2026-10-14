@@ -8,9 +8,13 @@ import java.time.LocalDateTime;
 import javax.persistence.*;
 import lombok.Data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Data
 @Entity
 @Table(name = "TB_PERFIL")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Perfil {
 
     @Id
@@ -32,7 +36,17 @@ public class Perfil {
     @Column(name = "DATA_ATUALIZACAO")
     private LocalDateTime dataAtualizacao = LocalDateTime.now();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    /**
+     * 🔥 Menus do perfil.
+     *
+     * - @JsonIgnore: bloqueia serialização recursiva (Menu tem relação
+     *   bidirecional com Menu e poderia causar StackOverflow).
+     * - LAZY: evita o N+1 gigante no login. O carregamento é feito
+     *   explicitamente via JOIN FETCH nas queries críticas
+     *   (PerfilRepository.findByIdComMenusEPermissoes).
+     */
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "TB_PERFIL_MENU",
         joinColumns = @JoinColumn(name = "PERFIL_ID"),
@@ -40,7 +54,13 @@ public class Perfil {
     )
     private Set<Menu> menus = new HashSet<>();
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    /**
+     * 🔥 Permissões do perfil.
+     * Mesma estratégia: @JsonIgnore + LAZY, com JOIN FETCH explícito
+     * nas queries de login.
+     */
+    @JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "TB_PERFIL_PERMISSAO",
         joinColumns = @JoinColumn(name = "PERFIL_ID"),
@@ -48,7 +68,10 @@ public class Perfil {
     )
     private Set<Permissao> permissoes = new HashSet<>();
 
-    // Construtores
+    // ============================================================
+    // CONSTRUTORES
+    // ============================================================
+
     public Perfil() {
         super();
     }
@@ -59,7 +82,10 @@ public class Perfil {
         this.ativo = true;
     }
 
-    // Getters e Setters
+    // ============================================================
+    // GETTERS E SETTERS
+    // ============================================================
+
     public Long getId() {
         return id;
     }
@@ -123,6 +149,10 @@ public class Perfil {
     public void setPermissoes(Set<Permissao> permissoes) {
         this.permissoes = permissoes;
     }
+
+    // ============================================================
+    // hashCode e equals
+    // ============================================================
 
     @Override
     public int hashCode() {

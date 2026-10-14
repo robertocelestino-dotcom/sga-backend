@@ -36,6 +36,7 @@ import com.sga.repository.AssociadoRepository;
 import com.sga.repository.CategoriaRepository;
 import com.sga.repository.EmailRepository;
 import com.sga.repository.EnderecoRepository;
+import com.sga.repository.ImportacaoLoteRepository;
 import com.sga.repository.PlanosRepository;
 import com.sga.repository.ReguaFaturamentoRepository;
 import com.sga.repository.TelefoneRepository;
@@ -48,6 +49,12 @@ import lombok.RequiredArgsConstructor;
 public class AssociadoService {
 
 	private static final Logger logger = LoggerFactory.getLogger(AssociadoService.class);
+
+	// ============================================================
+	// 🔥 RÉGUA PADRÃO PARA NOVOS ASSOCIADOS IMPORTADOS
+	// ============================================================
+	@org.springframework.beans.factory.annotation.Value("${sga.importacao.regua-padrao-id:6}")
+	private Long reguaPadraoId;
 
 	@Autowired
 	private AssociadoRepository associadoRepository;
@@ -76,18 +83,47 @@ public class AssociadoService {
 	@Autowired
 	private ReguaFaturamentoRepository reguaFaturamentoRepository;
 
+	@Autowired
+	private ReguaFaturamentoService reguaFaturamentoService;
+
+	@Autowired
+	private ImportacaoLoteRepository importacaoLoteRepository;
+
 	// ========== MÉTODOS DO CONTROLLER ==========
 
 	@Transactional(readOnly = true)
 	public Page<AssociadoResumoDTO> listarComFiltros(Pageable pageable, String codigoSpc, String nome, String cnpjCpf,
-			String status) {
-		logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}", nome,
-				cnpjCpf, status, codigoSpc);
+			String status, String origem) {
 
+		logger.info("Listando associados com filtros - Nome: {}, CNPJ/CPF: {}, Status: {}, Código SPC: {}, Origem: {}",
+				nome, cnpjCpf, status, codigoSpc, origem);
+
+		// ============================================================
+		// 🔥 CASO ESPECIAL: filtro por IMPORTACAO_*
+		// Traz apenas os associados do ÚLTIMO LOTE de importação.
+		// ============================================================
+		if ("IMPORTACAO_NOVO".equals(origem) || "IMPORTACAO_ATUALIZADO".equals(origem)) {
+			Long ultimoLoteId = importacaoLoteRepository.findUltimoLoteId();
+
+			if (ultimoLoteId == null) {
+				logger.info("ℹ️ Nenhum lote de importação concluído encontrado — retornando página vazia");
+				return Page.empty(pageable);
+			}
+
+			logger.info("📥 Filtrando por lote de importação: loteId={}, origem={}", ultimoLoteId, origem);
+
+			Page<Associado> associados = associadoRepository.findByFiltrosComLote(codigoSpc, nome, cnpjCpf, status,
+					origem, ultimoLoteId, pageable);
+
+			return associados.map(this::toResumoDTO);
+		}
+
+		// ============================================================
+		// CASO PADRÃO: filtro simples por origem (CADASTRO_MANUAL ou null)
+		// ============================================================
 		Page<Associado> associados = associadoRepository.findByFiltrosCombinados(codigoSpc, nome, cnpjCpf, status,
-				pageable);
+				origem, pageable);
 
-		// 🔥 CORRIGIDO: Usar toResumoDTO em vez de toDTO
 		return associados.map(this::toResumoDTO);
 	}
 
@@ -186,6 +222,9 @@ public class AssociadoService {
 		dto.setDataFimSuspensao(associado.getDataFimSuspensao());
 		dto.setMotivoInativacao(associado.getMotivoInativacao());
 		dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+
+		// 🔥 Origem e última importação
+		dto.setOrigemUltimaOperacao(associado.getOrigemUltimaOperacao());
 
 		// Vendedor
 		if (associado.getVendedor() != null) {
@@ -452,6 +491,9 @@ public class AssociadoService {
 		Associado associado = new Associado();
 		updateEntityFromDTO(associado, associadoDTO);
 
+		// 🔥 Marcar origem como cadastro manual (não preencher ultimaImportacaoEm)
+		associado.setOrigemUltimaOperacao("CADASTRO_MANUAL");
+
 		aplicarRegrasStatus(associado);
 
 		Associado saved = associadoRepository.save(associado);
@@ -603,7 +645,10 @@ public class AssociadoService {
 
 			// 2. DATAS - COM TRATAMENTO DE NULL
 			if (dto.getDataCadastro() != null) {
-				associado.setDataCadastro(dto.getDataCadastro());
+				// associado.setDataCadastro(dto.getDataCadastro());
+				// 🔥 dataCadastro é IMUTÁVEL: gerenciada pelo @PrePersist.
+				// Qualquer valor vindo do DTO é ignorado para preservar a data real.
+				associado.setDataCadastro(LocalDateTime.now());
 			} else if (associado.getDataCadastro() == null) {
 				associado.setDataCadastro(LocalDateTime.now());
 			}
@@ -1227,6 +1272,7 @@ public class AssociadoService {
 
 		if (associadoExistente.isPresent()) {
 			if (Boolean.TRUE.equals(dto.getForcarAtualizacao())) {
+
 				// 🔥 ATUALIZAR associado existente
 				associado = associadoExistente.get();
 				logger.info("🔄 Atualizando associado existente ID: {}", associado.getId());
@@ -1240,6 +1286,12 @@ public class AssociadoService {
 				associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
 				associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
 				associado.setDataFiliacao(dto.getDataFiliacao());
+
+				// 🔥 Marcar origem e timestamp de importação
+				associado.setOrigemUltimaOperacao("IMPORTACAO_ATUALIZADO");
+				associado.setUltimaImportacaoEm(LocalDateTime.now());
+				associado.setImportacaoLoteId(dto.getImportacaoLoteId());
+
 				// 🔥 REMOVIDO: associado.setAtualizadoEm(LocalDateTime.now()); - campo não
 				// existe
 
@@ -1300,9 +1352,16 @@ public class AssociadoService {
 				return associadoExistente.get();
 			}
 		} else {
+			
 			// CRIAR novo associado
 			isNovo = true;
 			associado = new Associado();
+
+			// 🔥 Marcar origem e timestamp de importação
+			associado.setOrigemUltimaOperacao("IMPORTACAO_NOVO");
+			associado.setUltimaImportacaoEm(LocalDateTime.now());
+			associado.setImportacaoLoteId(dto.getImportacaoLoteId());
+			
 			associado.setCnpjCpf(dto.getCnpjCpf());
 			associado.setNomeRazao(dto.getNomeRazao());
 			associado.setNomeFantasia(dto.getNomeFantasia());
@@ -1312,7 +1371,8 @@ public class AssociadoService {
 			associado.setStatus(dto.getStatus() != null ? dto.getStatus() : "A");
 			associado.setFaturamentoMinimo(dto.getFaturamentoMinimo());
 			associado.setDataFiliacao(dto.getDataFiliacao());
-			associado.setDataCadastro(LocalDateTime.now());
+			// associado.setDataCadastro(LocalDateTime.now());
+
 			// 🔥 REMOVIDO: associado.setCriadoEm(LocalDateTime.now()); - campo não existe
 			// 🔥 REMOVIDO: associado.setCriadoPor(usuario); - campo não existe
 
@@ -1376,10 +1436,51 @@ public class AssociadoService {
 			}
 		}
 
+		// ============================================================
+		// 🔥 VINCULAR À RÉGUA PADRÃO
+		// Aplica em:
+		// 1. Associados NOVOS (sempre)
+		// 2. Associados EXISTENTES que ainda não têm régua (fallback)
+		// NÃO sobrescreve régua já definida em associados existentes.
+		// ============================================================
+		if (associado.getReguaFaturamento() == null) {
+			try {
+				Long reguaId = reguaPadraoId != null ? reguaPadraoId : 6L;
+				Optional<ReguaFaturamento> reguaOpt = reguaFaturamentoRepository.findById(reguaId);
+
+				if (reguaOpt.isPresent()) {
+					associado.setReguaFaturamento(reguaOpt.get());
+					associado.setDataAtualizacao(LocalDateTime.now());
+
+					logger.info("📏 Associado {} vinculado à régua padrão id={} ({})",
+							isNovo ? "NOVO" : "EXISTENTE (sem régua)", reguaId, reguaOpt.get().getNome());
+				} else {
+					logger.warn("⚠️ Régua padrão id={} NÃO ENCONTRADA. Associado {} ficou SEM régua.", reguaId,
+							dto.getNomeRazao());
+				}
+			} catch (Exception e) {
+				// Não deixar a importação quebrar por causa da régua
+				logger.error("❌ Erro ao vincular régua padrão ao associado {}: {}", dto.getNomeRazao(), e.getMessage(),
+						e);
+			}
+		} else {
+			logger.debug("ℹ️ Associado {} já possui régua (id={}), mantendo a existente.", dto.getNomeRazao(),
+					associado.getReguaFaturamento().getId());
+		}
+
 		// Salvar associado
 		Associado saved = associadoRepository.save(associado);
 
 		logger.info("✅ Associado {} com sucesso: ID {}", isNovo ? "criado" : "atualizado", saved.getId());
+
+		// ============================================================
+		// 🔥 VINCULAR À RÉGUA PADRÃO (apenas para NOVOS associados)
+		// Usa tb_associado_regua como fonte da verdade (mesmo padrão do
+		// MigracaoReguaService). NÃO mexe em regua_faturamento_id (legado).
+		// ============================================================
+		if (isNovo) {
+			vincularReguaPadraoSePossivel(saved);
+		}
 
 		return saved;
 	}
@@ -1484,25 +1585,28 @@ public class AssociadoService {
 		dto.setStatus(associado.getStatus());
 		dto.setDataCadastro(associado.getDataCadastro());
 		dto.setDataAtualizacao(associado.getDataAtualizacao());
-		
-	    dto.setDataFiliacao(associado.getDataFiliacao());
-	    dto.setDataInativacao(associado.getDataInativacao());
-	    dto.setMotivoInativacao(associado.getMotivoInativacao());
-	    dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
-	    dto.setDataFimSuspensao(associado.getDataFimSuspensao());
-	    dto.setMotivoSuspensao(associado.getMotivoSuspensao());
-	    dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());	
-		
+
+		dto.setDataFiliacao(associado.getDataFiliacao());
+		dto.setDataInativacao(associado.getDataInativacao());
+		dto.setMotivoInativacao(associado.getMotivoInativacao());
+		dto.setDataInicioSuspensao(associado.getDataInicioSuspensao());
+		dto.setDataFimSuspensao(associado.getDataFimSuspensao());
+		dto.setMotivoSuspensao(associado.getMotivoSuspensao());
+		dto.setFaturamentoMinimo(associado.getFaturamentoMinimo());
+
+		dto.setOrigemUltimaOperacao(associado.getOrigemUltimaOperacao());
+		dto.setImportacaoLoteId(associado.getImportacaoLoteId());
+
 		if (associado.getVendedor() != null) {
 			dto.setVendedorId(associado.getVendedor().getId());
 			dto.setVendedorNome(associado.getVendedor().getNomeRazao());
 		}
 
 		if (associado.getVendedorExterno() != null) {
-	        dto.setVendedorExternoId(associado.getVendedorExterno().getId());
-	        dto.setVendedorExternoNome(associado.getVendedorExterno().getNomeRazao());
-	    }	
-		
+			dto.setVendedorExternoId(associado.getVendedorExterno().getId());
+			dto.setVendedorExternoNome(associado.getVendedorExterno().getNomeRazao());
+		}
+
 		if (associado.getPlano() != null) {
 			dto.setPlanoId(associado.getPlano().getId());
 			dto.setPlanoNome(associado.getPlano().getPlano());
@@ -1569,6 +1673,52 @@ public class AssociadoService {
 	public List<com.sga.model.Associado> saveAllAssociados(List<com.sga.model.Associado> associados) {
 		logger.info("💾 Salvando {} associados em lote", associados.size());
 		return associadoRepository.saveAll(associados);
+	}
+
+	/**
+	 * 🔥 Vincula o associado à régua padrão via tb_associado_regua. Reutiliza
+	 * ReguaFaturamentoService.adicionarAssociadoARegua() que já: - Verifica se já
+	 * existe associação ativa (evita duplicata) - Cria o registro em
+	 * tb_associado_regua - Registra em tb_historico_migracao_regua Em caso de erro,
+	 * apenas loga — NÃO quebra a importação.
+	 */
+	private void vincularReguaPadraoSePossivel(Associado associado) {
+		try {
+			if (associado == null || associado.getId() == null) {
+				logger.warn("⚠️ Não foi possível vincular régua: associado sem ID");
+				return;
+			}
+
+			Long reguaId = reguaPadraoId != null ? reguaPadraoId : 6L;
+
+			reguaFaturamentoService.adicionarAssociadoARegua(associado.getId(), reguaId, LocalDate.now(),
+					"IMPORTACAO_LOTE");
+
+			logger.info("📏 Associado {} vinculado à régua padrão id={} (tb_associado_regua)", associado.getId(),
+					reguaId);
+
+		} catch (Exception e) {
+			// Já loga dentro do service, mas reforça aqui
+			logger.error("❌ Erro ao vincular associado {} à régua padrão: {}",
+					associado != null ? associado.getId() : "null", e.getMessage());
+		}
+	}
+
+	/**
+	 * 🔥 Verifica se o associado possui régua ativa registrada em
+	 * tb_associado_regua. Usado pelo controller para contabilizar quantos
+	 * associados foram vinculados automaticamente durante a importação.
+	 */
+	@Transactional(readOnly = true)
+	public boolean possuiReguaAtiva(Long associadoId) {
+		if (associadoId == null)
+			return false;
+		try {
+			return reguaFaturamentoService.buscarAssociadoAtivo(associadoId).isPresent();
+		} catch (Exception e) {
+			logger.warn("Erro ao verificar régua ativa do associado {}: {}", associadoId, e.getMessage());
+			return false;
+		}
 	}
 
 }

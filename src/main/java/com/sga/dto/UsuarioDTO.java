@@ -20,6 +20,7 @@ public class UsuarioDTO {
 	private Long perfilId;
 	private String perfilNome;
 	private String role;
+	private String fotoBase64;
 
 	public Long getId() {
 		return id;
@@ -99,6 +100,14 @@ public class UsuarioDTO {
 
 	public void setRole(String role) {
 		this.role = role;
+	}
+
+	public String getFotoBase64() {
+		return fotoBase64;
+	}
+
+	public void setFotoBase64(String fotoBase64) {
+		this.fotoBase64 = fotoBase64;
 	}
 
 }

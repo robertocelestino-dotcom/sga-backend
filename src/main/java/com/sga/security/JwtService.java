@@ -27,6 +27,14 @@ public class JwtService {
     public JwtService(JwtConfig jwtConfig) {
         this.jwtConfig = jwtConfig;
     }
+    
+    /**
+     * 🔥 Retorna o tempo de expiração do JWT em milissegundos.
+     * Usado pelo AuthController para calcular a data de expiração da sessão.
+     */
+    public long getExpirationTime() {
+        return jwtConfig.getExpiration();
+    }
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);

@@ -1,16 +1,32 @@
 package com.sga.model;
 
-import java.util.Objects;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.time.LocalDateTime;
+import java.util.Objects;
 
-import javax.persistence.*;
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
+import javax.persistence.Table;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 
 @Data
 @Entity
 @Table(name = "TB_MENU")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Menu {
 
     @Id
@@ -32,11 +48,31 @@ public class Menu {
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    @ManyToOne
+    /**
+     * 🔥 Referência ao menu pai.
+     *
+     * - @JsonIgnore: impede recursão infinita quando o Jackson tenta
+     *   serializar um Menu (ex: no SistemaLogAspect). Sem isso, ocorria
+     *   StackOverflowError porque menu.subMenus -> menu.menuPai -> ...
+     * - LAZY: só carrega o pai quando explicitamente acessado.
+     */
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MENU_PAI_ID")
     private Menu menuPai;
 
-    @OneToMany(mappedBy = "menuPai", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    /**
+     * 🔥 Submenus.
+     *
+     * - @JsonIgnore: bloqueia recursão infinita na serialização.
+     * - LAZY: evita N+1 desnecessário. O carregamento eager é feito
+     *   explicitamente nas queries de login com JOIN FETCH.
+     *
+     * ⚠️ Mantido CascadeType.ALL e @OrderBy para preservar o
+     *    comportamento de persistência/ordenação atual.
+     */
+    @JsonIgnore
+    @OneToMany(mappedBy = "menuPai", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @OrderBy("ordem ASC")
     private List<Menu> subMenus = new ArrayList<>();
 
@@ -46,7 +82,10 @@ public class Menu {
     @Column(name = "DATA_ATUALIZACAO")
     private LocalDateTime dataAtualizacao = LocalDateTime.now();
 
-    // Construtores
+    // ============================================================
+    // CONSTRUTORES
+    // ============================================================
+
     public Menu() {
         super();
     }
@@ -59,7 +98,10 @@ public class Menu {
         this.ativo = true;
     }
 
-    // Getters e Setters
+    // ============================================================
+    // GETTERS E SETTERS
+    // ============================================================
+
     public Long getId() {
         return id;
     }
@@ -139,6 +181,10 @@ public class Menu {
     public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
         this.dataAtualizacao = dataAtualizacao;
     }
+
+    // ============================================================
+    // hashCode e equals
+    // ============================================================
 
     @Override
     public int hashCode() {

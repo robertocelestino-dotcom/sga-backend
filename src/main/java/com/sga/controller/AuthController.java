@@ -1,5 +1,6 @@
 package com.sga.controller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -9,14 +10,17 @@ import java.util.stream.Collectors;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +30,7 @@ import com.sga.model.Menu;
 import com.sga.model.Perfil;
 import com.sga.model.Permissao;
 import com.sga.model.Usuario;
+import com.sga.repository.MenuRepository;
 import com.sga.security.JwtService;
 import com.sga.service.LogAcessoService;
 import com.sga.service.PerfilService;
@@ -36,6 +41,8 @@ import com.sga.service.UsuarioService;
 @CrossOrigin(origins = { "http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173",
 		"http://127.0.0.1:5173", "http://localhost:5174", "http://127.0.0.1:5174" })
 public class AuthController {
+
+	private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
 	@Autowired
 	private AuthenticationManager authenticationManager;
@@ -50,53 +57,118 @@ public class AuthController {
 	private JwtService jwtService;
 
 	@Autowired
-	private PasswordEncoder passwordEncoder;
+	private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
 	@Autowired
 	private LogAcessoService logAcessoService;
 
+	@Autowired
+	private com.sga.service.SessaoService sessaoService;
+
+	// 🔥 NOVO — repositório dedicado para buscar menus (evita LAZY)
+	@Autowired
+	private MenuRepository menuRepository;
+
 	// ============================================================
 	// LOGIN
+	//
+	// 🔥 OTIMIZAÇÕES (sem alterar contrato):
+	//   1) Busca usuário + perfil + permissões em 1 query (JOIN FETCH)
+	//   2) Busca menus com LEFT JOIN FETCH m.menuPai (sem LAZY fora de tx)
+	//   3) Constrói árvore de menus em memória (sem N+1)
 	// ============================================================
 	@PostMapping("/login")
-	public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+	public ResponseEntity<?> login(@RequestBody LoginRequest request, HttpServletRequest httpRequest) {
+
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
 
 		try {
-			System.out.println("🔐 Tentando login para: " + request.getUsername());
-			System.out.println("📝 Senha recebida: " + request.getPassword());
 
-			// Autenticar
+			logger.info("🔐 Tentando login para: {}", request.getUsername());
+
+			// ============================================================
+			// 🔥 VERIFICAÇÃO MANUAL DE BLOQUEIO (antes de autenticar)
+			// ============================================================
+			Optional<Usuario> usuarioOpt = usuarioService.findByUsername(request.getUsername());
+			if (usuarioOpt.isPresent() && usuarioOpt.get().estaBloqueado()) {
+				logger.warn("🔒 Tentativa de login em conta bloqueada: {}", request.getUsername());
+
+				logAcessoService.registrarAcesso(null, request.getUsername(), ip, userAgent, "LOGIN_LOCKED", "FAILED",
+						"Conta bloqueada");
+
+				Map<String, Object> body = new HashMap<>();
+				body.put("error", "Conta bloqueada");
+				body.put("message", "Sua conta está bloqueada. Contate o administrador.");
+				return ResponseEntity.status(HttpStatus.LOCKED).body(body);
+			}
+
+			// ============================================================
+			// AUTENTICAÇÃO
+			// ============================================================
 			authenticationManager.authenticate(
 					new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-			// Carregar usuário completo
-			Usuario usuario = usuarioService.findByUsername(request.getUsername())
+			// 🔥 Carrega usuário com perfil + permissões em 1 query
+			//    (evita LazyInitializationException em getAuthorities())
+			Usuario usuario = usuarioService.findByUsernameWithPerfil(request.getUsername())
 					.orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-			System.out.println("✅ Usuário autenticado: " + usuario.getUsername());
+			logger.info("✅ Usuário autenticado: {}", usuario.getUsername());
 
-			// Carregar perfil e permissões
-			Perfil perfil = usuario.getPerfil();
+			// 🔥 Reseta tentativas de login + atualiza último login/IP
+			usuarioService.atualizarUltimoLogin(usuario.getId(), ip);
+
+			// ============================================================
+			// CARREGAR PERFIL + MENUS (2 queries separadas e seguras)
+			//
+			// - Menus: MenuRepository.findMenusByPerfilIdComPai() → List<Menu>
+			//          (uma única query, com menuPai já carregado)
+			// - Permissões: PerfilRepository.findByIdComPermissoes() → Set<Permissao>
+			//
+			// ⚠️ NÃO usamos mais perfil.getMenus() porque:
+			//    1) A coleção é LAZY e fora de transação pode vir vazia
+			//    2) O JOIN FETCH em p.menus + p.permissoes gera produto cartesiano
+			//    3) A deduplicação do Hibernate em Set<> pode perder itens
+			// ============================================================
+			Long perfilId = usuario.getPerfilId() != null
+					? usuario.getPerfilId()
+					: (usuario.getPerfil() != null ? usuario.getPerfil().getId() : null);
+
+			Perfil perfil = null;
+			List<Menu> menusDoPerfil = new ArrayList<>();
 			List<MenuDTO> menus = new ArrayList<>();
 			List<String> permissoes = new ArrayList<>();
 
-			if (perfil != null) {
-				System.out.println("✅ Perfil encontrado: " + perfil.getNome());
+			if (perfilId != null) {
+				// 🔥 Query 1: menus do perfil (com menuPai carregado)
+				menusDoPerfil = menuRepository.findMenusByPerfilIdComPai(perfilId);
 
-				// Buscar menus do perfil
-				if (perfil.getMenus() != null) {
-					menus = perfil.getMenus().stream().map(this::toMenuDTO).collect(Collectors.toList());
-					System.out.println("✅ Menus encontrados: " + menus.size());
+				// 🔥 Query 2: perfil com as permissões
+				perfil = perfilService.findByIdComPermissoes(perfilId).orElse(null);
+
+				logger.info("🔍 [LOGIN] perfilId={} | menusDoPerfil={} | perfil={}",
+						perfilId, menusDoPerfil.size(),
+						perfil != null ? perfil.getNome() : "null");
+			}
+
+			if (perfil != null) {
+				logger.info("✅ Perfil encontrado: {}", perfil.getNome());
+
+				// 🔥 Constrói a árvore em memória a partir da lista flat
+				if (!menusDoPerfil.isEmpty()) {
+					menus = construirArvoreMenusDeLista(menusDoPerfil);
+					logger.info("🔍 [LOGIN] Árvore construída: {} raízes", menus.size());
 				}
 
-				// Buscar permissões do perfil
+				// 🔥 Permissões
 				if (perfil.getPermissoes() != null) {
-					permissoes = perfil.getPermissoes().stream().map(Permissao::getNome).collect(Collectors.toList());
-					System.out.println("✅ Permissões encontradas: " + permissoes.size());
+					permissoes = perfil.getPermissoes().stream()
+							.map(Permissao::getNome)
+							.collect(Collectors.toList());
 				}
 			} else {
-				System.out.println("⚠️ Usuário sem perfil associado!");
-				// Fallback: usar role do usuário
+				logger.warn("⚠️ Usuário sem perfil associado!");
 				if (usuario.getRole() != null) {
 					permissoes.add("ROLE_" + usuario.getRole());
 				}
@@ -105,330 +177,371 @@ public class AuthController {
 			// Gerar token JWT
 			String token = jwtService.generateToken(usuario);
 
+			// 🔥 Cria a sessão no banco (permite revogação futura)
+			LocalDateTime expiracao = LocalDateTime.now().plusNanos(jwtService.getExpirationTime() * 1_000_000);
+			sessaoService.criarSessao(usuario.getId(), token, ip, userAgent, expiracao);
+
 			// Registrar log de acesso
-			logAcessoService.registrarAcesso(usuario.getId(), usuario.getUsername(), httpRequest.getRemoteAddr(),
-					httpRequest.getHeader("User-Agent"), "LOGIN", "SUCCESS", "Login realizado com sucesso");
+			logAcessoService.registrarAcesso(usuario.getId(), usuario.getUsername(), ip, userAgent, "LOGIN", "SUCCESS",
+					"Login realizado com sucesso");
 
 			// Construir resposta
 			AuthResponse response = new AuthResponse();
 			response.setToken(token);
 			response.setTokenType("Bearer");
-			response.setUsuario(
-					new UsuarioDTO(usuario.getId(), usuario.getUsername(), usuario.getEmail(), usuario.getNome(),
-							usuario.isAtivo(), usuario.getBloqueado() != null ? usuario.getBloqueado() : false,
-							usuario.getUltimoLogin(), perfil != null ? perfil.getId() : null,
-							perfil != null ? perfil.getNome() : usuario.getRole(), usuario.getRole()));
+
+			UsuarioDTO usuarioDTO = new UsuarioDTO(
+					usuario.getId(),
+					usuario.getUsername(),
+					usuario.getEmail(),
+					usuario.getNome(),
+					usuario.isAtivo(),
+					usuario.getBloqueado() != null ? usuario.getBloqueado() : false,
+					usuario.getUltimoLogin(),
+					perfil != null ? perfil.getId() : null,
+					perfil != null ? perfil.getNome() : usuario.getRole(),
+					usuario.getRole());
+			usuarioDTO.setFotoBase64(usuario.getFotoBase64());
+			response.setUsuario(usuarioDTO);
+
 			response.setMenus(menus);
 			response.setPermissoes(permissoes);
 
-			System.out.println("✅ Login realizado com sucesso para: " + usuario.getUsername());
-			System.out.println("📋 Menus retornados: " + menus.size());
+			logger.info("✅ Login OK: {} | menus={} | permissões={}", usuario.getUsername(), menus.size(),
+					permissoes.size());
 
 			return ResponseEntity.ok(response);
 
+		} catch (BadCredentialsException e) {
+			// ============================================================
+			// CREDENCIAIS INVÁLIDAS — incrementa tentativas
+			// ============================================================
+			int tentativas = usuarioService.incrementarTentativasLogin(request.getUsername());
+			int restantes = Math.max(0, UsuarioService.MAX_TENTATIVAS_LOGIN - tentativas);
+
+			logger.warn("❌ Credenciais inválidas para: {} | tentativa {}/{}", request.getUsername(), tentativas,
+					UsuarioService.MAX_TENTATIVAS_LOGIN);
+
+			logAcessoService.registrarAcesso(null, request.getUsername(), ip, userAgent, "LOGIN_FAILED", "FAILED",
+					"Tentativa " + tentativas + "/" + UsuarioService.MAX_TENTATIVAS_LOGIN);
+
+			if (tentativas >= UsuarioService.MAX_TENTATIVAS_LOGIN) {
+				Map<String, Object> body = new HashMap<>();
+				body.put("error", "Conta bloqueada");
+				body.put("message", "Após " + UsuarioService.MAX_TENTATIVAS_LOGIN
+						+ " tentativas incorretas, sua conta foi bloqueada. Contate o administrador.");
+				body.put("tentativasRestantes", 0);
+				return ResponseEntity.status(HttpStatus.LOCKED).body(body);
+			}
+
+			Map<String, Object> body = new HashMap<>();
+			body.put("error", "Credenciais inválidas");
+			body.put("message", "Usuário ou senha incorretos.");
+			body.put("tentativasRestantes", restantes);
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(body);
+
 		} catch (Exception e) {
-			System.err.println("❌ Erro no login: " + e.getMessage());
-			e.printStackTrace();
+			logger.error("❌ Erro inesperado no login: {}", e.getMessage(), e);
 
-			// Registrar log de falha
-			logAcessoService.registrarAcesso(null, request.getUsername(), httpRequest.getRemoteAddr(),
-					httpRequest.getHeader("User-Agent"), "LOGIN_FAILED", "FAILED", e.getMessage());
+			logAcessoService.registrarAcesso(null, request.getUsername(), ip, userAgent, "LOGIN_ERROR", "FAILED",
+					e.getMessage());
 
-			throw e;
+			Map<String, Object> body = new HashMap<>();
+			body.put("error", "Erro no login");
+			body.put("message", "Não foi possível autenticar. Tente novamente.");
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
 		}
 	}
 
 	// ============================================================
-	// REGISTRAR
+	// TROCAR MINHA SENHA — qualquer usuário autenticado troca a própria
 	// ============================================================
-	@PostMapping("/registrar")
-	public ResponseEntity<Usuario> registrar(@RequestBody RegistrarRequest request) {
-		Usuario usuario = usuarioService.criarUsuario(request.getUsername(), request.getPassword(), request.getEmail(),
-				request.getNome(), request.getRole());
-		return ResponseEntity.ok(usuario);
-	}
+	@PostMapping("/me/trocar-senha")
+	public ResponseEntity<?> trocarMinhaSenha(@RequestBody TrocarSenhaRequest request, HttpServletRequest httpRequest) {
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
 
-	// ============================================================
-	// CRIAR USUÁRIO DE TESTE (admin123)
-	// ============================================================
-	@PostMapping("/criar-usuario-teste")
-	public ResponseEntity<?> criarUsuarioTeste() {
 		try {
-			if (usuarioService.findByUsername("admin").isPresent()) {
-				return ResponseEntity.ok("Usuário admin já existe");
+			String authHeader = httpRequest.getHeader("Authorization");
+			if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Token não fornecido"));
 			}
 
-			Usuario usuario = new Usuario();
-			usuario.setUsername("admin");
-			usuario.setPassword(passwordEncoder.encode("admin123"));
-			usuario.setEmail("admin@sga.com");
-			usuario.setNome("Administrador");
-			usuario.setRole("ADMIN");
-			usuario.setAtivo(true);
-			usuario.setBloqueado(false);
-			usuario.setTentativasLogin(0);
+			String token = authHeader.substring(7);
+			String username = jwtService.extractUsername(token);
 
-			usuarioService.save(usuario);
+			logger.info("🔑 Troca de senha solicitada por: {}", username);
 
-			return ResponseEntity.ok("Usuário admin criado com sucesso! Use: admin / admin123");
+			usuarioService.alterarSenhaPorUsername(username, request.getSenhaAtual(), request.getSenhaNova());
 
+			logger.info("✅ Senha alterada com sucesso para: {}", username);
+
+			logAcessoService.registrarAcesso(null, username, ip, userAgent, "CHANGE_PASSWORD", "SUCCESS",
+					"Senha alterada pelo próprio usuário");
+
+			return ResponseEntity.ok(Map.of("success", true, "message", "Senha alterada com sucesso."));
+
+		} catch (RuntimeException e) {
+			logger.warn("⚠️ Erro na troca de senha: {}", e.getMessage());
+
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Troca de senha falhou", "message", e.getMessage()));
 		} catch (Exception e) {
-			return ResponseEntity.badRequest().body("Erro ao criar usuário: " + e.getMessage());
+			logger.error("❌ Erro inesperado na troca de senha: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Erro", "message", "Não foi possível alterar a senha."));
 		}
 	}
 
 	// ============================================================
-	// CRIAR ADMIN COM SENHA PERSONALIZADA (POST)
+	// 🔥 ATUALIZAR MINHA FOTO (avatar) — qualquer usuário autenticado
+	//
+	// 🔥 OTIMIZAÇÃO: NÃO devolve mais o fotoBase64 no response.
+	//    O frontend já tem a string localmente; devolver 1-2MB era
+	//    desnecessário e causava lentidão.
 	// ============================================================
-	@PostMapping("/create-admin-direct")
-	public ResponseEntity<Map<String, Object>> createAdminDirect(@RequestBody Map<String, String> request) {
-		Map<String, Object> response = new HashMap<>();
+	@PostMapping("/me/foto")
+	public ResponseEntity<?> atualizarMinhaFoto(@RequestBody FotoRequest request, HttpServletRequest httpRequest) {
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
+
 		try {
-			String password = request.get("password");
-			if (password == null || password.isEmpty()) {
-				password = "admin@2025";
+			String username = extrairUsernameDoToken(httpRequest);
+			if (username == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(Map.of("error", "Token inválido"));
 			}
 
-			System.out.println("🔄 Criando usuário admin com senha: " + password);
+			logger.info("📸 Atualizando foto de: {}", username);
 
-			// Deletar se existir
-			usuarioService.findByUsername("admin").ifPresent(u -> {
-				System.out.println("🗑️ Deletando admin existente...");
-				usuarioService.deletar(u.getId());
-			});
+			usuarioService.atualizarFotoPorUsername(username, request.getFotoBase64());
 
-			// Criar novo admin
-			Usuario admin = new Usuario();
-			admin.setUsername("admin");
-			admin.setPassword(passwordEncoder.encode(password));
-			admin.setEmail("admin@sga.com");
-			admin.setNome("Administrador do Sistema");
-			admin.setRole("ADMIN");
-			admin.setAtivo(true);
-			admin.setBloqueado(false);
-			admin.setPerfilId(1L);
+			logAcessoService.registrarAcesso(null, username, ip, userAgent, "UPDATE_PHOTO", "SUCCESS",
+					"Foto atualizada pelo próprio usuário");
 
-			// Buscar perfil - CORRIGIDO
-			try {
-				Perfil perfil = perfilService.buscarEntidadePorId(1L);
-				if (perfil != null) {
-					admin.setPerfil(perfil);
-					System.out.println("✅ Perfil encontrado: " + perfil.getNome());
-				}
-			} catch (Exception e) {
-				System.out.println("⚠️ Perfil não encontrado, continuando sem perfil...");
-			}
+			// 🔥 Response leve — sem devolver 1-2MB
+			return ResponseEntity.ok(Map.of(
+					"success", true,
+					"message", "Foto atualizada com sucesso."));
 
-			usuarioService.save(admin);
-			System.out.println("✅ Admin criado com sucesso!");
-
-			// Verificar se o hash foi gerado corretamente
-			String hash = admin.getPassword();
-			boolean isValid = hash != null && hash.startsWith("$2a$10$") && hash.length() == 60;
-
-			response.put("success", true);
-			response.put("message", "Admin criado com sucesso!");
-			response.put("username", "admin");
-			response.put("password", password);
-			response.put("hash", hash);
-			response.put("hashValid", isValid);
-			response.put("hashLength", hash != null ? hash.length() : 0);
-
-			return ResponseEntity.ok(response);
+		} catch (RuntimeException e) {
+			logger.warn("⚠️ Erro ao atualizar foto: {}", e.getMessage());
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Erro", "message", e.getMessage()));
 		} catch (Exception e) {
-			System.err.println("❌ Erro ao criar admin: " + e.getMessage());
-			e.printStackTrace();
-			response.put("success", false);
-			response.put("error", e.getMessage());
-			return ResponseEntity.badRequest().body(response);
+			logger.error("❌ Erro inesperado ao atualizar foto: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Erro", "message", "Não foi possível atualizar a foto."));
 		}
 	}
 
 	// ============================================================
-	// CRIAR ADMIN COM SENHA PERSONALIZADA (GET)
+	// 🔥 REMOVER MINHA FOTO — qualquer usuário autenticado
 	// ============================================================
-	@GetMapping("/create-admin-quick")
-	public ResponseEntity<Map<String, Object>> createAdminQuick() {
-		Map<String, Object> response = new HashMap<>();
+	@DeleteMapping("/me/foto")
+	public ResponseEntity<?> removerMinhaFoto(HttpServletRequest httpRequest) {
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
+
 		try {
-			String password = "admin@2025";
-			System.out.println("🔄 Criando usuário admin com senha: " + password);
-
-			// Deletar se existir
-			usuarioService.findByUsername("admin").ifPresent(u -> {
-				System.out.println("🗑️ Deletando admin existente...");
-				usuarioService.deletar(u.getId());
-			});
-
-			Usuario admin = new Usuario();
-			admin.setUsername("admin");
-			admin.setPassword(passwordEncoder.encode(password));
-			admin.setEmail("admin@sga.com");
-			admin.setNome("Administrador do Sistema");
-			admin.setRole("ADMIN");
-			admin.setAtivo(true);
-			admin.setBloqueado(false);
-			admin.setPerfilId(1L);
-
-			// Buscar perfil - CORRIGIDO
-			try {
-				Perfil perfil = perfilService.buscarEntidadePorId(1L);
-				if (perfil != null) {
-					admin.setPerfil(perfil);
-					System.out.println("✅ Perfil encontrado: " + perfil.getNome());
-				}
-			} catch (Exception e) {
-				System.out.println("⚠️ Perfil não encontrado, continuando sem perfil...");
+			String username = extrairUsernameDoToken(httpRequest);
+			if (username == null) {
+				return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+						.body(Map.of("error", "Token inválido"));
 			}
 
-			usuarioService.save(admin);
-			System.out.println("✅ Admin criado com sucesso!");
+			logger.info("🗑️ Removendo foto de: {}", username);
 
-			String hash = admin.getPassword();
-			boolean isValid = hash != null && hash.startsWith("$2a$10$") && hash.length() == 60;
+			usuarioService.removerFotoPorUsername(username);
 
-			response.put("success", true);
-			response.put("message", "Admin criado com sucesso!");
-			response.put("username", "admin");
-			response.put("password", password);
-			response.put("hash", hash);
-			response.put("hashValid", isValid);
-			response.put("hashLength", hash != null ? hash.length() : 0);
+			logAcessoService.registrarAcesso(null, username, ip, userAgent, "DELETE_PHOTO", "SUCCESS",
+					"Foto removida pelo próprio usuário");
 
-			return ResponseEntity.ok(response);
+			return ResponseEntity.ok(Map.of(
+					"success", true,
+					"message", "Foto removida com sucesso."));
+
 		} catch (Exception e) {
-			System.err.println("❌ Erro ao criar admin: " + e.getMessage());
-			e.printStackTrace();
-			response.put("success", false);
-			response.put("error", e.getMessage());
-			return ResponseEntity.badRequest().body(response);
+			logger.error("❌ Erro ao remover foto: {}", e.getMessage(), e);
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+					.body(Map.of("error", "Erro", "message", "Não foi possível remover a foto."));
 		}
 	}
 
 	// ============================================================
-	// CRIAR ADMIN (Versão Simples - GET)
+	// LOGOUT — Encerra a sessão atual
 	// ============================================================
-	@GetMapping("/create-admin")
-	public ResponseEntity<String> createAdmin() {
+	@PostMapping("/logout")
+	public ResponseEntity<Map<String, Object>> logout(HttpServletRequest httpRequest) {
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
+
 		try {
-			String password = "admin@2025";
-			System.out.println("🔄 Criando usuário admin com senha: " + password);
-
-			// Deletar se existir
-			usuarioService.findByUsername("admin").ifPresent(u -> {
-				System.out.println("🗑️ Deletando admin existente...");
-				usuarioService.deletar(u.getId());
-			});
-
-			Usuario admin = new Usuario();
-			admin.setUsername("admin");
-			admin.setPassword(passwordEncoder.encode(password));
-			admin.setEmail("admin@sga.com");
-			admin.setNome("Administrador do Sistema");
-			admin.setRole("ADMIN");
-			admin.setAtivo(true);
-			admin.setBloqueado(false);
-			admin.setPerfilId(1L);
-
-			// Buscar perfil - CORRIGIDO
-			try {
-				Perfil perfil = perfilService.buscarEntidadePorId(1L);
-				if (perfil != null) {
-					admin.setPerfil(perfil);
-					System.out.println("✅ Perfil encontrado: " + perfil.getNome());
-				}
-			} catch (Exception e) {
-				System.out.println("⚠️ Perfil não encontrado, continuando sem perfil...");
+			String authHeader = httpRequest.getHeader("Authorization");
+			if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Token não fornecido"));
 			}
 
-			usuarioService.save(admin);
-			System.out.println("✅ Admin criado com sucesso!");
+			String token = authHeader.substring(7);
+			String username = jwtService.extractUsername(token);
 
-			String hash = admin.getPassword();
-			boolean isValid = hash != null && hash.startsWith("$2a$10$") && hash.length() == 60;
+			sessaoService.encerrarSessao(token);
 
-			return ResponseEntity.ok("✅ Admin criado com sucesso!\n" + "Usuário: admin\n" + "Senha: " + password + "\n"
-					+ "Hash: " + hash + "\n" + "Hash válido: " + isValid);
+			logger.info("🚪 Logout realizado: {}", username);
+
+			if (username != null) {
+				logAcessoService.registrarAcesso(null, username, ip, userAgent, "LOGOUT", "SUCCESS",
+						"Logout realizado com sucesso");
+			}
+
+			return ResponseEntity.ok(Map.of("success", true, "message", "Logout realizado com sucesso."));
+
 		} catch (Exception e) {
-			return ResponseEntity.badRequest().body("❌ Erro: " + e.getMessage());
+			logger.error("❌ Erro no logout: {}", e.getMessage(), e);
+			return ResponseEntity.ok(Map.of("success", true, "message", "Logout processado."));
 		}
 	}
 
 	// ============================================================
-	// GERAR HASH PARA UMA SENHA
+	// LOGOUT ALL — Encerra TODAS as sessões do usuário
 	// ============================================================
-	@GetMapping("/generate-hash")
-	public ResponseEntity<String> generateHash() {
-		String rawPassword = "admin123";
-		String encodedPassword = passwordEncoder.encode(rawPassword);
-		return ResponseEntity.ok("Novo hash para 'admin123': " + encodedPassword);
-	}
+	@PostMapping("/logout-all")
+	@org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+	public ResponseEntity<Map<String, Object>> logoutAll(HttpServletRequest httpRequest) {
+		final String ip = httpRequest.getRemoteAddr();
+		final String userAgent = httpRequest.getHeader("User-Agent");
 
-	@GetMapping("/generate-hash/{password}")
-	public ResponseEntity<String> generateHashForPassword(@PathVariable String password) {
-		String encodedPassword = passwordEncoder.encode(password);
-		return ResponseEntity.ok("Hash para '" + password + "': " + encodedPassword);
-	}
+		try {
+			String authHeader = httpRequest.getHeader("Authorization");
+			if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+				return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Token não fornecido"));
+			}
 
-	// ============================================================
-	// TESTAR HASH (ATUALIZADO)
-	// ============================================================
-	@GetMapping("/test-hash")
-	public ResponseEntity<Map<String, Object>> testHash() {
-		Map<String, Object> result = new HashMap<>();
+			String token = authHeader.substring(7);
+			String username = jwtService.extractUsername(token);
 
-		String rawPassword = "admin@2025";
+			Usuario usuario = usuarioService.findByUsername(username)
+					.orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
 
-		// Verificar o usuário no banco
-		Optional<Usuario> adminOpt = usuarioService.findByUsername("admin");
-		if (adminOpt.isPresent()) {
-			Usuario admin = adminOpt.get();
-			String dbHash = admin.getPassword();
-			boolean dbMatches = passwordEncoder.matches(rawPassword, dbHash);
+			sessaoService.encerrarSessoesUsuario(usuario.getId());
 
-			result.put("username", admin.getUsername());
-			result.put("dbHash", dbHash);
-			result.put("dbHashMatches", dbMatches);
-			result.put("dbHashLength", dbHash != null ? dbHash.length() : 0);
-			result.put("dbHashPrefix", dbHash != null ? dbHash.substring(0, Math.min(20, dbHash.length())) : "null");
-			result.put("dbHashIsBCrypt", dbHash != null && dbHash.startsWith("$2a$10$"));
-			result.put("adminExists", true);
-			result.put("rawPassword", rawPassword);
-		} else {
-			result.put("adminExists", false);
-			result.put("message", "Usuário admin não encontrado");
+			logger.info("🚪 Logout ALL realizado: {}", username);
+
+			logAcessoService.registrarAcesso(usuario.getId(), username, ip, userAgent, "LOGOUT_ALL", "SUCCESS",
+					"Todas as sessões encerradas");
+
+			return ResponseEntity.ok(Map.of("success", true, "message", "Todas as sessões foram encerradas."));
+
+		} catch (Exception e) {
+			logger.error("❌ Erro no logout-all: {}", e.getMessage(), e);
+			return ResponseEntity.ok(Map.of("success", true, "message", "Logout processado."));
 		}
-
-		return ResponseEntity.ok(result);
 	}
 
 	// ============================================================
-	// TESTE
+	// TESTE — health check leve
 	// ============================================================
 	@GetMapping("/teste")
 	public ResponseEntity<String> teste() {
-		return ResponseEntity.ok("Backend funcionando! " + System.currentTimeMillis());
+		return ResponseEntity.ok("OK");
 	}
 
 	// ============================================================
 	// MÉTODOS AUXILIARES
 	// ============================================================
-	private MenuDTO toMenuDTO(Menu menu) {
-		MenuDTO dto = new MenuDTO();
-		dto.setId(menu.getId());
-		dto.setNome(menu.getNome());
-		dto.setCaminho(menu.getCaminho());
-		dto.setIcone(menu.getIcone());
-		dto.setOrdem(menu.getOrdem());
-		dto.setAtivo(menu.getAtivo());
-		if (menu.getMenuPai() != null) {
-			dto.setMenuPaiId(menu.getMenuPai().getId());
-			dto.setMenuPaiNome(menu.getMenuPai().getNome());
+
+	/**
+	 * 🔥 Constrói a árvore de menus em memória — SEM N+1.
+	 *
+	 * Recebe uma List<Menu> flat (vinda do MenuRepository) e devolve
+	 * uma List<MenuDTO> com subMenus aninhados.
+	 *
+	 * Estratégia:
+	 *   1) Cria um DTO flat para cada menu (sem recursão).
+	 *   2) Agrupa por ID em um mapa.
+	 *   3) Para cada menu, encontra o pai no mapa e adiciona como submenu.
+	 *   4) Os que não têm pai ficam como raiz.
+	 *
+	 * O(N) — antes era O(N²) com lazy loading.
+	 */
+	private List<MenuDTO> construirArvoreMenusDeLista(List<Menu> menusDoPerfil) {
+		if (menusDoPerfil == null || menusDoPerfil.isEmpty()) {
+			return new ArrayList<>();
 		}
-		if (menu.getSubMenus() != null && !menu.getSubMenus().isEmpty()) {
-			dto.setSubMenus(menu.getSubMenus().stream().map(this::toMenuDTO).collect(Collectors.toList()));
+
+		// 1) Cria DTOs flats
+		Map<Long, MenuDTO> dtoMap = new HashMap<>();
+		for (Menu m : menusDoPerfil) {
+			MenuDTO dto = new MenuDTO();
+			dto.setId(m.getId());
+			dto.setNome(m.getNome());
+			dto.setCaminho(m.getCaminho());
+			dto.setIcone(m.getIcone());
+			dto.setOrdem(m.getOrdem());
+			dto.setAtivo(m.getAtivo());
+			dto.setSubMenus(new ArrayList<>());
+
+			if (m.getMenuPai() != null) {
+				dto.setMenuPaiId(m.getMenuPai().getId());
+				dto.setMenuPaiNome(m.getMenuPai().getNome());
+			}
+
+			dtoMap.put(m.getId(), dto);
 		}
-		return dto;
+
+		// 2) Monta a árvore
+		List<MenuDTO> roots = new ArrayList<>();
+		for (Menu m : menusDoPerfil) {
+			MenuDTO dto = dtoMap.get(m.getId());
+			if (dto == null) continue;
+
+			if (m.getMenuPai() != null && dtoMap.containsKey(m.getMenuPai().getId())) {
+				MenuDTO pai = dtoMap.get(m.getMenuPai().getId());
+				pai.getSubMenus().add(dto);
+			} else {
+				roots.add(dto);
+			}
+		}
+
+		// 3) Ordena raízes e submenus por ordem
+		roots.sort((a, b) -> {
+			int oa = a.getOrdem() != null ? a.getOrdem() : 0;
+			int ob = b.getOrdem() != null ? b.getOrdem() : 0;
+			return Integer.compare(oa, ob);
+		});
+		for (MenuDTO r : roots) {
+			ordenarSubMenus(r);
+		}
+
+		return roots;
+	}
+
+	private void ordenarSubMenus(MenuDTO dto) {
+		if (dto.getSubMenus() == null || dto.getSubMenus().isEmpty()) return;
+		dto.getSubMenus().sort((a, b) -> {
+			int oa = a.getOrdem() != null ? a.getOrdem() : 0;
+			int ob = b.getOrdem() != null ? b.getOrdem() : 0;
+			return Integer.compare(oa, ob);
+		});
+		for (MenuDTO filho : dto.getSubMenus()) {
+			ordenarSubMenus(filho);
+		}
+	}
+
+	/**
+	 * 🔥 Helper — extrai o username do token JWT no header Authorization
+	 */
+	private String extrairUsernameDoToken(HttpServletRequest httpRequest) {
+		String authHeader = httpRequest.getHeader("Authorization");
+		if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+			return null;
+		}
+		try {
+			String token = authHeader.substring(7);
+			return jwtService.extractUsername(token);
+		} catch (Exception e) {
+			return null;
+		}
 	}
 
 	// ============================================================
@@ -453,54 +566,6 @@ public class AuthController {
 
 		public void setPassword(String password) {
 			this.password = password;
-		}
-	}
-
-	public static class RegistrarRequest {
-		private String username;
-		private String password;
-		private String email;
-		private String nome;
-		private String role = "USER";
-
-		public String getUsername() {
-			return username;
-		}
-
-		public void setUsername(String username) {
-			this.username = username;
-		}
-
-		public String getPassword() {
-			return password;
-		}
-
-		public void setPassword(String password) {
-			this.password = password;
-		}
-
-		public String getEmail() {
-			return email;
-		}
-
-		public void setEmail(String email) {
-			this.email = email;
-		}
-
-		public String getNome() {
-			return nome;
-		}
-
-		public void setNome(String nome) {
-			this.nome = nome;
-		}
-
-		public String getRole() {
-			return role;
-		}
-
-		public void setRole(String role) {
-			this.role = role;
 		}
 	}
 
@@ -563,6 +628,7 @@ public class AuthController {
 		private Long perfilId;
 		private String perfilNome;
 		private String role;
+		private String fotoBase64;
 
 		public UsuarioDTO() {
 		}
@@ -660,6 +726,14 @@ public class AuthController {
 		public void setRole(String role) {
 			this.role = role;
 		}
+
+		public String getFotoBase64() {
+			return fotoBase64;
+		}
+
+		public void setFotoBase64(String fotoBase64) {
+			this.fotoBase64 = fotoBase64;
+		}
 	}
 
 	public static class MenuDTO {
@@ -743,6 +817,49 @@ public class AuthController {
 
 		public void setSubMenus(List<MenuDTO> subMenus) {
 			this.subMenus = subMenus;
+		}
+	}
+
+	public static class TrocarSenhaRequest {
+		private String senhaAtual;
+		private String senhaNova;
+
+		public String getSenhaAtual() {
+			return senhaAtual;
+		}
+
+		public void setSenhaAtual(String senhaAtual) {
+			this.senhaAtual = senhaAtual;
+		}
+
+		public String getSenhaNova() {
+			return senhaNova;
+		}
+
+		public void setSenhaNova(String senhaNova) {
+			this.senhaNova = senhaNova;
+		}
+	}
+
+	/**
+	 * 🔥 Inner class para requisição de foto.
+	 *
+	 * O @JsonProperty(WRITE_ONLY) faz com que o Jackson:
+	 *   - ACEITE o campo no JSON de entrada (POST).
+	 *   - OMITA o campo em serialização de saída (útil quando o
+	 *     SistemaLogAspect serializa os argumentos para log).
+	 */
+	public static class FotoRequest {
+
+		private String fotoBase64;
+
+		@com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
+		public String getFotoBase64() {
+			return fotoBase64;
+		}
+
+		public void setFotoBase64(String fotoBase64) {
+			this.fotoBase64 = fotoBase64;
 		}
 	}
 }

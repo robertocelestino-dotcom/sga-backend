@@ -1,14 +1,15 @@
 package com.sga.config;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
-
-import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 public class CorsConfig {
@@ -22,20 +23,23 @@ public class CorsConfig {
         
         CorsConfiguration config = new CorsConfiguration();
         
-        // 🔥 CONFIGURAR ORIGENS A PARTIR DAS PROPRIEDADES
-        List<String> origins = Arrays.asList(allowedOrigins.split(","));
+        // 🔥 Trim + filter para tolerar espaços vindos de variáveis de ambiente
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+
         config.setAllowedOrigins(origins);
-        
         config.setAllowCredentials(true);
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
-        
-        // Headers expostos para o frontend
+
         config.addExposedHeader("Authorization");
         config.addExposedHeader("Content-Disposition");
         config.addExposedHeader("X-Total-Count");
-        
+
         source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
+        
     }
 }
